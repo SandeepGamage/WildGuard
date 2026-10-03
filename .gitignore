@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# environment files: real values are never committed
+.env
+.env.*
+!.env.example
+
+# Expo / Metro
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+/mobile/android/
+/mobile/ios/
+
+# credentials and signing
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# test output
+coverage/
+
+# logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
