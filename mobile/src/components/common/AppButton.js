@@ -6,6 +6,7 @@ const VARIANTS = {
   primary: { background: colors.primary, border: colors.primary, text: 'textOnPrimary' },
   secondary: { background: colors.surface, border: colors.border, text: 'text' },
   danger: { background: colors.danger, border: colors.danger, text: 'textOnPrimary' },
+  dangerOutline: { background: colors.surface, border: colors.danger, text: 'dangerText' },
   accent: { background: colors.highlight, border: colors.highlight, text: 'text' },
   soft: { background: colors.surfaceTint, border: colors.border, text: 'text' },
 };

@@ -1,10 +1,12 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import HistoryScreen from '../app/(liaison)/history';
 import { AppButton } from '../src/components/common/AppButton';
+import { ConfirmDialog } from '../src/components/common/ConfirmDialog';
 import { HeroCard } from '../src/components/common/HeroCard';
 import { LanguageSwitcher } from '../src/components/common/LanguageSwitcher';
 import { StatusBadge } from '../src/components/common/StatusBadge';
+import { Toast } from '../src/components/common/Toast';
 import { PhotoPicker } from '../src/components/forms/PhotoPicker';
 import { HistoryCard } from '../src/components/reports/HistoryCard';
 import { SafetyBanner } from '../src/components/reports/SafetyBanner';
@@ -190,5 +192,53 @@ describe('shared components', () => {
     expect(
       screen.getByText('That photo is too large. Choose a smaller one or send without a photo.'),
     ).toBeTruthy();
+  });
+
+  it('ConfirmDialog shows title, message, and handles confirm and cancel', () => {
+    const onConfirm = jest.fn();
+    const onCancel = jest.fn();
+    const { rerender } = renderScreen(
+      <ConfirmDialog
+        visible={true}
+        title="Sign out of account"
+        message="Are you sure you want to sign out?"
+        confirmText="Sign out"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+        testIDPrefix="test-dialog"
+      />,
+    );
+
+    expect(screen.getByText('Sign out of account')).toBeTruthy();
+    expect(screen.getByText('Are you sure you want to sign out?')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('test-dialog-cancel'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByTestId('test-dialog-confirm'));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('Toast displays message and can be dismissed', async () => {
+    const onDismiss = jest.fn();
+    renderScreen(
+      <Toast
+        visible={true}
+        type="success"
+        title="Report sent"
+        message="Tracking code: C-0142"
+        onDismiss={onDismiss}
+        duration={0}
+        testID="custom-toast"
+      />,
+    );
+
+    expect(screen.getByText('Report sent')).toBeTruthy();
+    expect(screen.getByText('Tracking code: C-0142')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('custom-toast-close'));
+    await waitFor(() => expect(onDismiss).toHaveBeenCalled());
   });
 });

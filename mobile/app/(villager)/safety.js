@@ -1,9 +1,12 @@
+import { LogOut } from 'lucide-react-native';
+import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '../../src/components/common/AppButton';
 import { AppHeader } from '../../src/components/common/AppHeader';
 import { AppText } from '../../src/components/common/AppText';
 import { Card } from '../../src/components/common/Card';
+import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { HeroCard } from '../../src/components/common/HeroCard';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { EMERGENCY_NUMBER } from '../../src/constants/domain';
@@ -20,6 +23,7 @@ const TIPS = [
 export default function SafetyScreen() {
   const { t } = useTranslation();
   const { signOut } = useAuth();
+  const [confirmVisible, setConfirmVisible] = useState(false);
 
   return (
     <ScreenContainer>
@@ -58,11 +62,27 @@ export default function SafetyScreen() {
 
       <AppButton
         compact
-        variant="secondary"
+        variant="danger"
+        icon={<LogOut size={18} color={colors.textOnPrimary} />}
         title={t('profile.signOut')}
-        onPress={signOut}
+        onPress={() => setConfirmVisible(true)}
         style={styles.signOut}
         testID="villager-sign-out"
+      />
+
+      <ConfirmDialog
+        visible={confirmVisible}
+        title={t('confirm.signOutTitle')}
+        message={t('confirm.signOutMessage')}
+        confirmText={t('confirm.signOutConfirm')}
+        cancelText={t('confirm.cancel')}
+        variant="danger"
+        onConfirm={() => {
+          setConfirmVisible(false);
+          signOut();
+        }}
+        onCancel={() => setConfirmVisible(false)}
+        testIDPrefix="confirm-dialog"
       />
     </ScreenContainer>
   );

@@ -1,13 +1,8 @@
-const { unwrap } = require('./support');
+const { SmsLog } = require('../../models/mongo/schemas');
 
-/** Data access for the simulated SMS gateway log. */
-class SmsLogRepository {
-  constructor(db) {
-    this.db = db;
-  }
-
+class MongoSmsLogRepository {
   async create({ direction, phone, message, parsedType, parsedLocation, incidentId, status }) {
-    const result = await this.db.from('sms_logs').insert({
+    await SmsLog.create({
       direction,
       phone,
       message,
@@ -15,9 +10,9 @@ class SmsLogRepository {
       parsed_location: parsedLocation ?? null,
       incident_id: incidentId ?? null,
       status,
+      created_at: new Date(),
     });
-    unwrap(result);
   }
 }
 
-module.exports = { SmsLogRepository };
+module.exports = { MongoSmsLogRepository };
