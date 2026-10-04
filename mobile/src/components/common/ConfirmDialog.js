@@ -63,8 +63,8 @@ export function ConfirmDialog({
             // Prevent clicks inside card from closing backdrop
             e?.stopPropagation?.();
           }}
-          accessibilityRole="alertdialog"
-          accessibilityModal
+          accessibilityRole="alert"
+          accessibilityViewIsModal
           testID={`${testIDPrefix}-container`}
         >
           <View

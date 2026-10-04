@@ -13,16 +13,16 @@ async function connectMongo(uri, logger) {
   }
 
   mongoose.connection.on('connected', () => {
-    logger.info('Connected to MongoDB database');
+    logger?.info?.('Connected to MongoDB database');
     isConnected = true;
   });
 
   mongoose.connection.on('error', (err) => {
-    logger.error('MongoDB connection error', { message: err.message });
+    logger?.error?.('MongoDB connection error', { message: err?.message });
   });
 
   mongoose.connection.on('disconnected', () => {
-    logger.warn('MongoDB disconnected');
+    logger?.warn?.('MongoDB disconnected');
     isConnected = false;
   });
 

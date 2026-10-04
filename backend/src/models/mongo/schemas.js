@@ -115,7 +115,10 @@ const CommunityIncidentSchema = new Schema(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
 CommunityIncidentSchema.index({ location: '2dsphere' });
-CommunityIncidentSchema.index({ reporter_id: 1, client_request_id: 1 }, { unique: true, sparse: true });
+CommunityIncidentSchema.index(
+  { reporter_id: 1, client_request_id: 1 },
+  { unique: true, partialFilterExpression: { client_request_id: { $type: 'string' } } },
+);
 
 const VerificationRecordSchema = new Schema({
   id: { type: String, required: true, unique: true },

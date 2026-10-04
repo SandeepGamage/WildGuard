@@ -16,16 +16,18 @@ async function start() {
   try {
     const { repositories, authGateway } = await createMongoDependencies({ config, logger });
 
-    // Auto-seed initial reference data if villages collection is empty
+    // Auto-seed initial reference data and demo accounts if empty
     try {
-      const villageCount = await Village.countDocuments();
-      if (villageCount === 0) {
-        logger.info('Initializing MongoDB with reference data (villages, sectors, divisions)...');
-        await seedReferenceData();
-        logger.info('Reference data initialized successfully.');
+      const { User } = require('./models/mongo/schemas');
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        logger.info('Initializing MongoDB with demo accounts & reference data...');
+        const { seedMongo } = require('../scripts/seed-mongo');
+        await seedMongo(config, logger);
+        logger.info('MongoDB database initialized with demo accounts.');
       }
     } catch (seedErr) {
-      logger.warn('Could not verify/seed initial reference data', { message: seedErr.message });
+      logger.warn('Could not verify/seed initial database data', { message: seedErr.message });
     }
 
     const services = buildServices({ config, logger, repositories, authGateway });
