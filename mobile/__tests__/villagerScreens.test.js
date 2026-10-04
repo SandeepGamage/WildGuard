@@ -175,6 +175,7 @@ describe('Safety tips', () => {
     expect(screen.getByText('Call 1990 if injured')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('villager-sign-out'));
+    fireEvent.press(screen.getByTestId('confirm-dialog-confirm'));
     expect(signOut).toHaveBeenCalled();
   });
 });

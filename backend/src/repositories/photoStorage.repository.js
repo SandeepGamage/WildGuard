@@ -1,5 +1,3 @@
-const { unwrap } = require('./support');
-
 /** Private Supabase Storage bucket for incident photos. */
 class PhotoStorageRepository {
   /**
@@ -12,14 +10,17 @@ class PhotoStorageRepository {
 
   /** @returns {Promise<{ path: string, token: string }>} One-time upload ticket for `path`. */
   async createSignedUpload(path) {
-    const data = unwrap(await this.storage.createSignedUploadUrl(path));
-    return { path: data.path, token: data.token };
+    const result = await this.storage.createSignedUploadUrl(path);
+    if (result.error) {
+      throw new Error(`Failed to create signed upload URL: ${result.error.message}`);
+    }
+    return { path: result.data.path, token: result.data.token };
   }
 
   /** @returns {Promise<string|null>} Short-lived read URL, or null when the object cannot be signed. */
   async createSignedUrl(path, ttlSeconds) {
     const result = await this.storage.createSignedUrl(path, ttlSeconds);
-    return result.error ? null : result.data.signedUrl;
+    return result.error ? null : result.data?.signedUrl ?? null;
   }
 }
 

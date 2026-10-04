@@ -1,4 +1,4 @@
-﻿// Native modules that do not exist in the Jest (Node) environment.
+// Native modules that do not exist in the Jest (Node) environment.
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
@@ -54,6 +54,9 @@ jest.mock('./src/services/supabase', () => ({
     storage: { from: jest.fn() },
   },
   getAccessToken: jest.fn().mockResolvedValue(null),
+  setStoredToken: jest.fn().mockResolvedValue(),
+  clearStoredToken: jest.fn().mockResolvedValue(),
+  TOKEN_STORAGE_KEY: 'wildguard_auth_token',
 }));
 
 // Initialise i18next with the real English resources.

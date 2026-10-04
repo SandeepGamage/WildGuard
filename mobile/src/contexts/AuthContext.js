@@ -1,12 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AppState } from 'react-native';
-import { getMe, registerVillager } from '../api/auth.api';
+import { getMe, registerVillager, loginUser } from '../api/auth.api';
 import { setUnauthorizedHandler } from '../api/client';
 import { isBackendConfigured } from '../constants/config';
 import i18n from '../i18n';
-import { supabase } from '../services/supabase';
-import { accountToLoginEmail, normalizePhone } from '../utils/phone';
+import { setStoredToken, clearStoredToken, getAccessToken } from '../services/supabase';
+import { normalizePhone } from '../utils/phone';
 
 export const AUTH_STATUS = Object.freeze({
   LOADING: 'loading',
@@ -26,7 +25,7 @@ const ACCOUNT_REJECTED_CODES = ['PROFILE_NOT_FOUND', 'ACCOUNT_DISABLED'];
 const AuthContext = createContext(null);
 
 /**
- * Owns the Supabase session and the backend profile (role). The role always
+ * Owns the authentication session and the backend profile (role). The role always
  * comes from /auth/me, never from the device.
  */
 export function AuthProvider({ children }) {
@@ -34,7 +33,7 @@ export function AuthProvider({ children }) {
   const [state, setState] = useState({ status: AUTH_STATUS.LOADING, profile: null, error: null });
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await clearStoredToken();
     queryClient.clear();
     setState(SIGNED_OUT_STATE);
   }, [queryClient]);
@@ -44,7 +43,7 @@ export function AuthProvider({ children }) {
       const profile = await getMe();
       setState({ status: AUTH_STATUS.SIGNED_IN, profile, error: null });
     } catch (error) {
-      if (ACCOUNT_REJECTED_CODES.includes(error.code)) {
+      if (ACCOUNT_REJECTED_CODES.includes(error?.code)) {
         await signOut();
         return;
       }
@@ -54,18 +53,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    (async () => {
+      const token = await getAccessToken();
       if (!active) return;
-      if (data.session) loadProfile();
-      else setState(SIGNED_OUT_STATE);
-    });
+      if (token) {
+        await loadProfile();
+      } else {
+        setState(SIGNED_OUT_STATE);
+      }
+    })();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') setState(SIGNED_OUT_STATE);
-    });
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
     };
   }, [loadProfile]);
 
@@ -74,47 +73,28 @@ export function AuthProvider({ children }) {
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (next) => {
-      if (next === 'active') supabase.auth.startAutoRefresh();
-      else supabase.auth.stopAutoRefresh();
-    });
-    return () => subscription.remove();
-  }, []);
-
   const signIn = useCallback(
     async (account, password) => {
-      const email = accountToLoginEmail(account);
-      
-      // TEST ENVIRONMENT BYPASS
-      if (__DEV__) {
-        if (email === 'v@gmail.com' && password === '123456789') {
-          setState({
-            status: AUTH_STATUS.SIGNED_IN,
-            profile: { id: 'demo-villager', role: 'VILLAGER', fullName: 'Demo Villager', email },
-            error: null,
-          });
-          return;
-        }
-        if (email === 'o@gmail.com' && password === '123456789') {
-          setState({
-            status: AUTH_STATUS.SIGNED_IN,
-            profile: { id: 'demo-officer', role: 'COMMUNITY_LIAISON_OFFICER', fullName: 'Demo Officer', email },
-            error: null,
-          });
-          return;
-        }
+      if (!isBackendConfigured()) {
+        throw Object.assign(new Error('not configured'), { code: AUTH_ERRORS.NOT_CONFIGURED });
       }
 
-      if (!isBackendConfigured())
-        throw Object.assign(new Error('not configured'), { code: AUTH_ERRORS.NOT_CONFIGURED });
-      
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        if (error.status === 400 || error.status === 401 || /invalid/i.test(error.message)) {
-          throw Object.assign(error, { code: AUTH_ERRORS.INVALID_CREDENTIALS });
+      try {
+        const res = await loginUser({ account, password });
+        if (res?.accessToken) {
+          await setStoredToken(res.accessToken);
+          if (res.profile) {
+            setState({ status: AUTH_STATUS.SIGNED_IN, profile: res.profile, error: null });
+            return;
+          }
+          await loadProfile();
+          return;
         }
-        throw error;
+      } catch (err) {
+        if (err.status === 400 || err.status === 401 || err.code === 'INVALID_CREDENTIALS') {
+          throw Object.assign(err, { code: AUTH_ERRORS.INVALID_CREDENTIALS });
+        }
+        throw err;
       }
       await loadProfile();
     },
@@ -123,8 +103,9 @@ export function AuthProvider({ children }) {
 
   const signUp = useCallback(
     async ({ fullName, phone, villageId, password }) => {
-      if (!isBackendConfigured())
+      if (!isBackendConfigured()) {
         throw Object.assign(new Error('not configured'), { code: AUTH_ERRORS.NOT_CONFIGURED });
+      }
       await registerVillager({
         fullName,
         phone: normalizePhone(phone),

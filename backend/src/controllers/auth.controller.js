@@ -13,6 +13,18 @@ function createAuthController({ authService }) {
         message: 'Account created. You can now sign in.',
       });
     },
+
+    login: async (req, res) => {
+      const result = await authService.login(req.validated.body);
+      return sendSuccess(
+        res,
+        {
+          profile: presentProfile(result.profile),
+          accessToken: result.accessToken,
+        },
+        { message: 'Signed in successfully.' },
+      );
+    },
   };
 }
 

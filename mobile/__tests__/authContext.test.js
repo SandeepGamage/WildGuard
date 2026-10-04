@@ -1,9 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { getMe, registerVillager } from '../src/api/auth.api';
+import { getMe, registerVillager, loginUser } from '../src/api/auth.api';
 import { ApiError } from '../src/api/client';
 import { AUTH_ERRORS, AUTH_STATUS, AuthProvider, useAuth } from '../src/contexts/AuthContext';
-import { supabase } from '../src/services/supabase';
+import { getAccessToken, setStoredToken, clearStoredToken } from '../src/services/supabase';
 
 jest.mock('../src/api/auth.api');
 jest.mock('../src/constants/config', () => ({
@@ -28,7 +28,7 @@ const officerProfile = {
 describe('AuthProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    getAccessToken.mockResolvedValue(null);
   });
 
   it('starts signed out when there is no stored session', async () => {
@@ -38,7 +38,7 @@ describe('AuthProvider', () => {
   });
 
   it('restores a stored session and loads the role from the backend', async () => {
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { access_token: 't' } } });
+    getAccessToken.mockResolvedValue('stored-token');
     getMe.mockResolvedValue(officerProfile);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -47,9 +47,8 @@ describe('AuthProvider', () => {
     expect(result.current.profile.role).toBe('COMMUNITY_LIAISON_OFFICER');
   });
 
-  it('signs in with a mobile number mapped to the pseudo-email and loads the profile', async () => {
-    supabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-    getMe.mockResolvedValue(villagerProfile);
+  it('signs in with an account and password and loads the profile', async () => {
+    loginUser.mockResolvedValue({ accessToken: 'new-token', profile: villagerProfile });
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe(AUTH_STATUS.SIGNED_OUT));
 
@@ -57,18 +56,22 @@ describe('AuthProvider', () => {
       await result.current.signIn('077 123 4567', 'secret-password');
     });
 
-    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-      email: '0771234567@phone.wildguard.example',
+    expect(loginUser).toHaveBeenCalledWith({
+      account: '077 123 4567',
       password: 'secret-password',
     });
+    expect(setStoredToken).toHaveBeenCalledWith('new-token');
     expect(result.current.status).toBe(AUTH_STATUS.SIGNED_IN);
     expect(result.current.profile.role).toBe('VILLAGER');
   });
 
   it('reports invalid credentials without signing in', async () => {
-    supabase.auth.signInWithPassword.mockResolvedValue({
-      error: Object.assign(new Error('Invalid login credentials'), { status: 400 }),
-    });
+    loginUser.mockRejectedValue(
+      Object.assign(new Error('Invalid login credentials'), {
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+      }),
+    );
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe(AUTH_STATUS.SIGNED_OUT));
 
@@ -82,17 +85,17 @@ describe('AuthProvider', () => {
   });
 
   it('signs the user out when the backend says the account has no profile', async () => {
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { access_token: 't' } } });
+    getAccessToken.mockResolvedValue('stored-token');
     getMe.mockRejectedValue(new ApiError(403, 'PROFILE_NOT_FOUND', 'x'));
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => expect(result.current.status).toBe(AUTH_STATUS.SIGNED_OUT));
-    expect(supabase.auth.signOut).toHaveBeenCalled();
+    expect(clearStoredToken).toHaveBeenCalled();
   });
 
   it('shows a retryable error state when the backend cannot be reached at startup', async () => {
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { access_token: 't' } } });
+    getAccessToken.mockResolvedValue('stored-token');
     getMe.mockRejectedValue(new ApiError(0, 'NETWORK_ERROR', 'x'));
 
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -107,8 +110,7 @@ describe('AuthProvider', () => {
 
   it('registers a villager (role assigned by the server) and then signs in', async () => {
     registerVillager.mockResolvedValue({});
-    supabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-    getMe.mockResolvedValue(villagerProfile);
+    loginUser.mockResolvedValue({ accessToken: 'new-token', profile: villagerProfile });
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe(AUTH_STATUS.SIGNED_OUT));
 
@@ -128,7 +130,7 @@ describe('AuthProvider', () => {
   });
 
   it('clears the session on sign out', async () => {
-    supabase.auth.getSession.mockResolvedValue({ data: { session: { access_token: 't' } } });
+    getAccessToken.mockResolvedValue('stored-token');
     getMe.mockResolvedValue(villagerProfile);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.status).toBe(AUTH_STATUS.SIGNED_IN));
@@ -137,7 +139,7 @@ describe('AuthProvider', () => {
       await result.current.signOut();
     });
 
-    expect(supabase.auth.signOut).toHaveBeenCalled();
+    expect(clearStoredToken).toHaveBeenCalled();
     expect(result.current.status).toBe(AUTH_STATUS.SIGNED_OUT);
     expect(result.current.profile).toBeNull();
   });

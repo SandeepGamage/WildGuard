@@ -389,5 +389,19 @@
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "invalidPhone": "Enter a valid mobile number.",
     "disabledFeature": "This feature is not available."
+  },
+  "confirm": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "signOutTitle": "Sign out",
+    "signOutMessage": "Are you sure you want to sign out?",
+    "signOutConfirm": "Sign out"
+  },
+  "toast": {
+    "reportSubmitted": "Report submitted successfully",
+    "reportSubmittedBody": "Tracking code: {{code}}",
+    "reportQueued": "Report saved offline",
+    "reportQueuedBody": "Will sync automatically once connected",
+    "dismiss": "Dismiss"
   }
 }

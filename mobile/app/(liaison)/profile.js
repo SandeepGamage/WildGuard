@@ -6,6 +6,7 @@ import { AppButton } from '../../src/components/common/AppButton';
 import { AppHeader } from '../../src/components/common/AppHeader';
 import { AppText } from '../../src/components/common/AppText';
 import { Card } from '../../src/components/common/Card';
+import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { LanguageSheet } from '../../src/components/common/LanguageSwitcher';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { EMERGENCY_NUMBER, LANGUAGE_OPTIONS } from '../../src/constants/domain';
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const { profile, signOut } = useAuth();
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const language = LANGUAGE_OPTIONS.find((option) => option.code === i18n.language) ?? LANGUAGE_OPTIONS[0];
   const divisionNames = profile.divisions?.map((division) => division.name).join(' · ');
@@ -81,11 +83,25 @@ export default function ProfileScreen() {
       </View>
 
       <AppButton
-        variant="secondary"
+        variant="danger"
         title={t('profile.signOut')}
-        onPress={signOut}
+        onPress={() => setConfirmOpen(true)}
         style={styles.signOut}
         testID="sign-out"
+      />
+      <ConfirmDialog
+        visible={confirmOpen}
+        title={t('confirm.signOutTitle')}
+        message={t('confirm.signOutMessage')}
+        confirmText={t('confirm.signOutConfirm')}
+        cancelText={t('confirm.cancel')}
+        variant="danger"
+        onConfirm={() => {
+          setConfirmOpen(false);
+          signOut();
+        }}
+        onCancel={() => setConfirmOpen(false)}
+        testIDPrefix="confirm-dialog"
       />
       <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
     </ScreenContainer>

@@ -16,6 +16,7 @@ import { SafetyBanner } from '../../../src/components/reports/SafetyBanner';
 import { ELEPHANT_COUNT_BANDS, INCIDENT_TYPES, OCCURRED_WHEN } from '../../../src/constants/domain';
 import { INCIDENT_TYPE_META, asksElephantCount } from '../../../src/constants/incidentTypes';
 import { ROUTES } from '../../../src/constants/routes';
+import { useToast } from '../../../src/contexts/ToastContext';
 import { usePhotoPicker } from '../../../src/hooks/usePhotoPicker';
 import { useReportLocation } from '../../../src/hooks/useReportLocation';
 import { useSubmitReport } from '../../../src/hooks/useSubmitReport';
@@ -45,6 +46,7 @@ function showConfirmation(params) {
  */
 export default function ReportDetailsScreen() {
   const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
   const { type } = useLocalSearchParams();
   const incidentType = Object.values(INCIDENT_TYPES).includes(type) ? type : INCIDENT_TYPES.OTHER_ANIMAL;
   const urgent = incidentType === INCIDENT_TYPES.PERSON_INJURED;
@@ -86,8 +88,18 @@ export default function ReportDetailsScreen() {
     try {
       const result = await submit.mutateAsync({ draft: parsed.data, photo: photoPicker.photo });
       if (result.state === SUBMIT_STATE.SENT) {
+        showToast({
+          type: 'success',
+          title: t('toast.reportSubmitted'),
+          message: t('toast.reportSubmittedBody', { code: result.report.trackingCode }),
+        });
         showConfirmation({ code: result.report.trackingCode, id: result.report.id });
       } else if (result.state === SUBMIT_STATE.QUEUED) {
+        showToast({
+          type: 'warning',
+          title: t('toast.reportQueued'),
+          message: t('toast.reportQueuedBody'),
+        });
         showConfirmation({ queued: '1' });
       } else {
         setFormError(friendlyError({ code: result.code }, t));
@@ -180,7 +192,7 @@ export default function ReportDetailsScreen() {
             options={whenOptions}
             value={when}
             onChange={setWhen}
-            variant="soft"
+            variant="solid"
             testIDPrefix="when"
           />
 

@@ -16,6 +16,8 @@ const envSchema = z.object({
   PHONE_LOGIN_EMAIL_DOMAIN: z.string().default('phone.wildguard.example'),
   SMS_SIMULATOR_ENABLED: booleanFromString.optional(),
   DEMO_USER_PASSWORD: z.string().default(''),
+  MONGODB_URI: z.string().default('mongodb://localhost:27017/wildguard'),
+  JWT_SECRET: z.string().default('wildguard-lk-secret-jwt-key-32chars-min'),
 });
 
 /**
@@ -30,6 +32,8 @@ function loadConfig(source = process.env) {
     port: env.PORT,
     nodeEnv: env.NODE_ENV,
     isProduction,
+    mongodbUri: env.MONGODB_URI,
+    jwtSecret: env.JWT_SECRET,
     supabase: Object.freeze({
       url: env.SUPABASE_URL,
       anonKey: env.SUPABASE_ANON_KEY,

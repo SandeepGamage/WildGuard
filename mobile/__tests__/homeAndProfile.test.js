@@ -137,6 +137,7 @@ describe('liaison officer profile', () => {
   it('signs out', () => {
     renderScreen(<ProfileScreen />);
     fireEvent.press(screen.getByTestId('sign-out'));
+    fireEvent.press(screen.getByTestId('confirm-dialog-confirm'));
     expect(signOut).toHaveBeenCalled();
   });
 });

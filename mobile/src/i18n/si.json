@@ -389,5 +389,19 @@
     "rateLimited": "උත්සාහයන් වැඩියි. කරුණාකර මොහොතක් රැඳී නැවත උත්සාහ කරන්න.",
     "invalidPhone": "වලංගු ජංගම අංකයක් ඇතුළත් කරන්න.",
     "disabledFeature": "මෙම පහසුකම ලබා ගත නොහැක."
+  },
+  "confirm": {
+    "cancel": "අවලංගු කරන්න",
+    "confirm": "තහවුරු කරන්න",
+    "signOutTitle": "ඉවත් වන්න",
+    "signOutMessage": "ඔබට මෙම ගිණුමෙන් ඉවත් වීමට අවශ්‍යද?",
+    "signOutConfirm": "ඉවත් වන්න"
+  },
+  "toast": {
+    "reportSubmitted": "වාර්තාව සාර්ථකව ඉදිරිපත් කරන ලදී",
+    "reportSubmittedBody": "හඳුනාගැනීමේ අංකය: {{code}}",
+    "reportQueued": "නොබැඳිව සුරකින ලදී",
+    "reportQueuedBody": "සම්බන්ධතාවය ලැබුණු පසු ස්වයංක්‍රීයව යවනු ලැබේ",
+    "dismiss": "ඉවත් කරන්න"
   }
 }

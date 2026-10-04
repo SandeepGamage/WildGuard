@@ -16,4 +16,9 @@ const registerBody = z.object({
   consent: z.literal(true),
 });
 
-module.exports = { registerBody };
+const loginBody = z.object({
+  account: z.string().trim().min(3).max(120),
+  password: z.string().min(1).max(72),
+});
+
+module.exports = { registerBody, loginBody };
