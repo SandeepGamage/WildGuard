@@ -1,0 +1,11 @@
+# dependencies
+node_modules/
+
+# build and test output
+dist/
+coverage/
+
+# environment files: real values are never committed
+.env
+.env.*
+!.env.example

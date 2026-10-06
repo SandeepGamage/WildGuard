@@ -6,6 +6,7 @@ import { AppButton } from '../src/components/common/AppButton';
 import { AppText } from '../src/components/common/AppText';
 import { ScreenContainer } from '../src/components/common/ScreenContainer';
 import { ErrorState, LoadingState } from '../src/components/common/StateViews';
+import { USER_ROLES } from '../src/constants/domain';
 import { ROUTES } from '../src/constants/routes';
 import { AUTH_STATUS, useAuth } from '../src/contexts/AuthContext';
 import { isOnboarded } from '../src/services/onboarding';
@@ -44,7 +45,11 @@ export default function Index() {
     if (route) return <Redirect href={route} />;
     return (
       <ScreenContainer scroll={false}>
-        <ErrorState message={t('errors.forbidden')} />
+        <ErrorState
+          message={t(
+            profile.role === USER_ROLES.PARK_MANAGER ? 'errors.useWebDashboard' : 'errors.forbidden',
+          )}
+        />
         <View style={{ paddingHorizontal: spacing.xxl }}>
           <AppText
             variant="caption"

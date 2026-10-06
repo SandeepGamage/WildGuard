@@ -10,7 +10,7 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ['VILLAGER', 'COMMUNITY_LIAISON_OFFICER', 'FIELD_RANGER'],
+      enum: ['VILLAGER', 'COMMUNITY_LIAISON_OFFICER', 'FIELD_RANGER', 'PARK_MANAGER'],
     },
     full_name: { type: String, required: true },
     is_active: { type: Boolean, default: true },
@@ -160,6 +160,22 @@ const SequenceSchema = new Schema({
   seq: { type: Number, default: 142 },
 });
 
+/** A generated UC4 report. Stored so export can fetch it by id (SQ4-04). */
+const ConservationReportSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  park_id: { type: String, required: true },
+  created_by: { type: String, required: true, index: true },
+  generated_at: { type: Date, default: Date.now, index: true },
+  filter: { type: Schema.Types.Mixed, required: true },
+  stats: { type: Schema.Types.Mixed, required: true },
+  trends: { type: Schema.Types.Mixed, required: true },
+  coverage: { type: Schema.Types.Mixed, required: true },
+  heatmap: { type: Schema.Types.Mixed, default: null },
+  top_hotspots: { type: [Schema.Types.Mixed], default: [] },
+  landmarks: { type: [Schema.Types.Mixed], default: [] },
+  incidents: { type: [Schema.Types.Mixed], default: [] },
+});
+
 // Guard against duplicate model compiling in watch/hot-reload
 const getModel = (name, schema) => mongoose.models[name] || mongoose.model(name, schema);
 
@@ -175,4 +191,5 @@ module.exports = {
   Notification: getModel('Notification', NotificationSchema),
   SmsLog: getModel('SmsLog', SmsLogSchema),
   Sequence: getModel('Sequence', SequenceSchema),
+  ConservationReport: getModel('ConservationReport', ConservationReportSchema),
 };

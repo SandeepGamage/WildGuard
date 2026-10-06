@@ -80,3 +80,19 @@ All results are limited to the officer's assigned GN divisions; other reports re
 | GET | `/officer/history?decision&limit&offset` | The officer's own decisions (audit trail) |
 
 `409 INCIDENT_ALREADY_REVIEWED` carries `details: { status, reviewedByName, reviewedAt }`; nothing is overwritten.
+
+## Park Manager (`PARK_MANAGER`) – UC4 analytics
+
+Only verified, non-duplicate community reports are counted. Patrol tracks, patrol incidents and collar alerts (UC1/UC2) are read through placeholder sources that return no rows until those use cases are merged, so `coverage.available` is `false` for now. Reporter ids and phone numbers never appear in a report or an export.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/analytics/parks` | `[{ id, name, block, boundary[], sectors[] }]` for the filter bar |
+| POST | `/analytics/reports` | Body `{ dateFrom: YYYY-MM-DD, dateTo: YYYY-MM-DD, parkId, reportType?: INCIDENT_SUMMARY\|HOTSPOT_MAP\|PATROL_COVERAGE\|HUMAN_WILDLIFE_CONFLICT, incidentTypes?: [...], bandwidthMetres?: 100-5000 }`. `201` -> report `{ id, park, generatedAt, filter, stats, trends, coverage, heatmap, topHotspots, landmarks }`; `200` -> `{ empty: true, filter }` when nothing matches (A2) |
+| GET | `/analytics/reports?limit` | The manager's saved reports, newest first |
+| GET | `/analytics/reports/:id` | A saved report (`404 REPORT_NOT_FOUND`) |
+| GET | `/analytics/reports/:id/export?format=PDF\|CSV&sections=KPI_SUMMARY,HOTSPOT_MAP,COVERAGE_GAPS,CONFLICT_TRENDS,INCIDENT_LIST` | File download (`Content-Disposition: attachment`). The report is fetched by id on the server; `sections` defaults to all but the incident list |
+
+Filter rules (E1) return `400 VALIDATION_FAILED` with field-level issues, e.g. `{ field: "body.dateTo", message: "\"To\" date is before \"From\" date." }`: dates in order, range of at most 3 years, a known park. `503 DATA_SOURCE_UNAVAILABLE` when the database cannot be read (E2). `500 EXPORT_FAILED` when a file cannot be produced (E3).
+
+`heatmap`: Gaussian kernel density on a 250 m grid over the park outline, in incidents per km². Each returned cell has a `level` 0-4 matching `classBreaks` (5, 20, 40, 60 and 80 % of the peak), which both the dashboard and the PDF draw with the same viridis ramp.

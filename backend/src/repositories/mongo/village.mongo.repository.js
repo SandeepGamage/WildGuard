@@ -1,17 +1,6 @@
 const { Village } = require('../../models/mongo/schemas');
 const { toVillage } = require('../../models/village.model');
-
-const EARTH_RADIUS_M = 6371000;
-
-function distanceM(aLat, aLng, bLat, bLng) {
-  const rad = (deg) => (deg * Math.PI) / 180;
-  const dLat = rad(bLat - aLat);
-  const dLng = rad(bLng - aLng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
-}
+const { distanceM } = require('../../utils/geo');
 
 class MongoVillageRepository {
   async listActive() {

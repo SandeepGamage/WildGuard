@@ -2,6 +2,7 @@ const USER_ROLES = Object.freeze({
   VILLAGER: 'VILLAGER',
   COMMUNITY_LIAISON_OFFICER: 'COMMUNITY_LIAISON_OFFICER',
   FIELD_RANGER: 'FIELD_RANGER',
+  PARK_MANAGER: 'PARK_MANAGER',
 });
 
 const LANGUAGES = Object.freeze({ EN: 'en', SI: 'si', TA: 'ta' });
@@ -97,6 +98,40 @@ const LIMITS = Object.freeze({
   NEAREST_VILLAGE_MAX_M: 20000,
 });
 
+/** UC4 report types (ReportType enumeration). */
+const REPORT_TYPES = Object.freeze({
+  INCIDENT_SUMMARY: 'INCIDENT_SUMMARY',
+  HOTSPOT_MAP: 'HOTSPOT_MAP',
+  PATROL_COVERAGE: 'PATROL_COVERAGE',
+  HUMAN_WILDLIFE_CONFLICT: 'HUMAN_WILDLIFE_CONFLICT',
+});
+
+const EXPORT_FORMATS = Object.freeze({ PDF: 'PDF', CSV: 'CSV' });
+
+/** Sections a manager can include in an exported report (UC4c, wireframe A2). */
+const EXPORT_SECTIONS = Object.freeze({
+  KPI_SUMMARY: 'KPI_SUMMARY',
+  HOTSPOT_MAP: 'HOTSPOT_MAP',
+  COVERAGE_GAPS: 'COVERAGE_GAPS',
+  CONFLICT_TRENDS: 'CONFLICT_TRENDS',
+  INCIDENT_LIST: 'INCIDENT_LIST',
+});
+
+/** UC4 rules from the revised scenario (section 7.4.5). */
+const ANALYTICS_RULES = Object.freeze({
+  MAX_RANGE_YEARS: 3,
+  DEFAULT_BANDWIDTH_M: 500,
+  UNPATROLLED_DAYS: 14,
+  GRID_CELL_M: 250,
+  TOP_HOTSPOTS: 5,
+  CONFLICT_TYPES: Object.freeze([
+    INCIDENT_TYPES.ELEPHANT_NEAR_VILLAGE,
+    INCIDENT_TYPES.CROP_DAMAGE,
+    INCIDENT_TYPES.PROPERTY_DAMAGE,
+    INCIDENT_TYPES.PERSON_INJURED,
+  ]),
+});
+
 module.exports = {
   USER_ROLES,
   LANGUAGES,
@@ -118,4 +153,8 @@ module.exports = {
   DUPLICATE_RULE,
   PHOTO_RULES,
   LIMITS,
+  REPORT_TYPES,
+  EXPORT_FORMATS,
+  EXPORT_SECTIONS,
+  ANALYTICS_RULES,
 };

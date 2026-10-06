@@ -2,6 +2,8 @@ export const USER_ROLES = Object.freeze({
   VILLAGER: 'VILLAGER',
   COMMUNITY_LIAISON_OFFICER: 'COMMUNITY_LIAISON_OFFICER',
   FIELD_RANGER: 'FIELD_RANGER',
+  /** Uses the separate web dashboard (web/); the phone app has no screens for this role. */
+  PARK_MANAGER: 'PARK_MANAGER',
 });
 
 export const LANGUAGES = Object.freeze({ EN: 'en', SI: 'si', TA: 'ta' });

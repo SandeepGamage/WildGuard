@@ -20,7 +20,7 @@ function distanceM(aLat, aLng, bLat, bLng) {
  * radius/window, row-locked review) so the service layer can be tested without
  * a database.
  */
-function createInMemoryRepositories({ villages, profiles, collars = [] }) {
+function createInMemoryRepositories({ villages, profiles, collars = [], sectors = [] }) {
   const state = {
     incidents: [],
     records: [],
@@ -29,6 +29,11 @@ function createInMemoryRepositories({ villages, profiles, collars = [] }) {
     sequence: 142,
     failNextInsert: false,
     photoCalls: [],
+    reports: [],
+    patrolTracks: [],
+    patrolIncidents: [],
+    collarAlerts: [],
+    failAnalyticsQuery: false,
   };
 
   const villageRows = villages.map((village) => ({
@@ -380,6 +385,66 @@ function createInMemoryRepositories({ villages, profiles, collars = [] }) {
     },
   };
 
+  const inRange = (date, from, to) => new Date(date) >= from && new Date(date) < to;
+
+  const analyticsRepository = {
+    async listSectors(parkName) {
+      return sectors.filter((s) => s.park === parkName).map((s) => ({ id: s.id, name: s.name }));
+    },
+    async queryAnalyticsData(filter) {
+      if (state.failAnalyticsQuery) throw new Error('MongoNetworkError: connection refused');
+      const inPark = (row) => filter.sectorIds.includes(row.sector_id);
+      const verifiedRoot = (row) =>
+        inPark(row) &&
+        !row.duplicate_of_id &&
+        row.status === INCIDENT_STATUS.VERIFIED &&
+        filter.incidentTypes.includes(row.incident_type);
+      const occurred = (row) => row.occurred_at ?? row.created_at;
+      return {
+        communityIncidents: state.incidents
+          .filter((row) => verifiedRoot(row) && inRange(occurred(row), filter.dateFrom, filter.dateTo))
+          .map((row) => ({
+            id: row.id,
+            trackingCode: row.tracking_code,
+            incidentType: row.incident_type,
+            source: row.source,
+            urgency: row.urgency,
+            occurredAt: new Date(occurred(row)),
+            latitude: row.latitude,
+            longitude: row.longitude,
+            villageName: villageById(row.village_id)?.name_en ?? null,
+            sectorId: row.sector_id,
+          })),
+        receivedCommunityReports: state.incidents.filter(
+          (row) => inPark(row) && inRange(occurred(row), filter.dateFrom, filter.dateTo),
+        ).length,
+        previousPeriodCount: state.incidents.filter(
+          (row) => verifiedRoot(row) && inRange(occurred(row), filter.previousFrom, filter.dateFrom),
+        ).length,
+        villages: villageRows
+          .filter((v) => filter.sectorIds.includes(v.sector_id))
+          .map((v) => ({ id: v.id, name: v.name_en, latitude: v.latitude, longitude: v.longitude })),
+        patrolTracks: state.patrolTracks,
+        patrolIncidents: state.patrolIncidents,
+        collarAlerts: state.collarAlerts,
+      };
+    },
+    async saveReport(report) {
+      state.reports.push(structuredClone(report));
+    },
+    async findReport(reportId) {
+      const report = state.reports.find((r) => r.id === reportId);
+      return report ? { ...structuredClone(report), parkId: report.park.id } : null;
+    },
+    async listReports(createdBy, limit) {
+      return state.reports
+        .filter((r) => r.createdBy === createdBy)
+        .reverse()
+        .slice(0, limit)
+        .map((r) => ({ ...r, parkId: r.park.id }));
+    },
+  };
+
   return {
     state,
     repositories: {
@@ -391,6 +456,7 @@ function createInMemoryRepositories({ villages, profiles, collars = [] }) {
       smsLogRepository,
       collarRepository,
       photoStorageRepository,
+      analyticsRepository,
     },
   };
 }

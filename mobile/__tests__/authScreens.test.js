@@ -216,6 +216,13 @@ describe('entry route', () => {
     expect(signOut).toHaveBeenCalled();
   });
 
+  it('points a park manager to the web dashboard', async () => {
+    state({ status: 'signedIn', profile: { role: 'PARK_MANAGER' }, signOut: jest.fn() });
+    renderScreen(<Index />);
+    expect(await screen.findByText(/The Park Manager dashboard is a web app/)).toBeTruthy();
+    expect(screen.queryByTestId('redirect')).toBeNull();
+  });
+
   it('offers retry when the profile could not be loaded', async () => {
     const reload = jest.fn();
     state({ status: 'error', error: { code: 'NETWORK_ERROR' }, reload });

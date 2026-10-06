@@ -9,6 +9,7 @@ Prerequisites: README setup done, `npm run seed:demo` run, backend running (`npm
 | Villager | `0771234812` (Nimali Perera) |
 | Liaison officer | `officer.perera@wildguard.example` |
 | Officer outside the main scope | `officer.fernando@wildguard.example` |
+| Park Manager (UC4, web) | `manager.wijesinghe@wildguard.example` |
 
 ## The six assignment flows
 
@@ -29,6 +30,18 @@ curl -X POST http://localhost:5000/api/v1/sms/simulate -H "Content-Type: applica
 **Flow 6 - Verify and notify (screenshot 6).** Open the grouped elephant report: map and caption, reporter, "Nearby collar data - EL-07 detected about 380 m from this location", the verification method selector. Choose a method -> *Verify* -> add notes -> switch on **Field action needed** ("Notify Sector 3 rangers", the marker preview turns orange) -> *Save and notify team*. Then show: the **Map** tab (orange *Action* marker with the group count), **History** (audit entry), the villager's **My Reports** (status *Verified* and "Field action has been requested"), and the notification record (`notifications` table, `FIELD_ACTION`, plus the `SIMULATED PUSH` line in the backend log). Show *Reject*: the reject button needs a reason; the marker disappears from the map and the report stays in History.
 
 Concurrency demo: open the same pending report on two officer sessions (`officer.perera` and another officer assigned to the same division), verify on one, then try on the other: "Another officer has already reviewed this report" with the first officer's name.
+
+## UC4 – Park Manager analytics (web dashboard)
+
+The Park Manager uses the separate web app: `cd web && npm run dev` (http://localhost:5173, with `VITE_API_URL` in `web/.env` pointing at the backend and `http://localhost:5173` in the backend's `CORS_ORIGINS`). The seed adds about six months of decided community reports around Yala so hotspots and trends are visible. Sign in as the Park Manager. Signing in with a villager or officer account is refused, and a manager signing in on the phone app is pointed to the web dashboard.
+
+**Screenshot 1 – Filters (A1).** Pick a date range with the date pickers (default: last 3 months), *Yala National Park*, a report type and incident types. Set *To* before *From* and press *Generate*: the field is highlighted with the hint and the filters are kept.
+
+**Screenshot 2 – Dashboard (A1).** Set *From* six months back and *Generate*: KPI tiles (incidents with change vs the previous period, verified of received community reports, patrol coverage shown as "No patrol data yet" until UC1 is connected, human–elephant conflict with injuries), the kernel-density heatmap on an OpenStreetMap base map (zoom and pan) with its numeric colour-blind-safe legend and village labels, the conflict-by-month chart and the top-hotspots table.
+
+**Screenshot 3 – Empty / error states (A3).** Choose a range in 2020: "No records for these filters" with *Widen to 3 months*. Stop the backend's database and generate: "Data source unavailable" with *Try again*, filters kept.
+
+**Screenshot 4 – Export (A2).** *Export…* -> PDF or CSV and the sections -> *Export*. The file downloads; community reports are verified only and no phone numbers are included. *Saved reports* lists earlier reports; opening one shows it again, ready to export.
 
 ## Coverage screenshot for the report
 

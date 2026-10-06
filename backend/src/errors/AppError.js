@@ -24,5 +24,6 @@ const unauthorized = (message = 'Authentication is required.') =>
 const forbidden = (code, message) => new AppError(403, code, message);
 const notFound = (code, message) => new AppError(404, code, message);
 const conflict = (code, message, details) => new AppError(409, code, message, details);
+const serviceUnavailable = (code, message) => new AppError(503, code, message);
 
-module.exports = { AppError, badRequest, unauthorized, forbidden, notFound, conflict };
+module.exports = { AppError, badRequest, unauthorized, forbidden, notFound, conflict, serviceUnavailable };

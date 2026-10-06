@@ -21,6 +21,7 @@ const ID = {
   officerTissa: '44444444-4444-4444-8444-444444444444',
   officerB: '66666666-6666-4666-8666-666666666666',
   ranger: '55555555-5555-4555-8555-555555555555',
+  manager: '77777777-7777-4777-8777-777777777777',
 };
 
 const TOKENS = {
@@ -30,6 +31,7 @@ const TOKENS = {
   officerB: 'token-officer-b',
   officerTissa: 'token-officer-tissa',
   ranger: 'token-ranger',
+  manager: 'token-manager',
   noProfile: 'token-no-profile',
 };
 
@@ -129,6 +131,16 @@ const makeProfiles = () => [
     role: 'FIELD_RANGER',
     sectorId: ID.sector3,
   }),
+  makeProfile({
+    id: ID.manager,
+    fullName: 'D. Wijesinghe',
+    role: 'PARK_MANAGER',
+  }),
+];
+
+const sectors = [
+  { id: ID.sector3, name: 'Sector 3', park: 'Yala National Park' },
+  { id: ID.sector4, name: 'Sector 4', park: 'Yala National Park' },
 ];
 
 const collars = [{ code: 'EL-07', name: 'Collared elephant EL-07', latitude: 6.3028, longitude: 81.3703 }];
@@ -142,6 +154,7 @@ function createFakeAuthGateway(profiles) {
     [TOKENS.officerB]: ID.officerB,
     [TOKENS.officerTissa]: ID.officerTissa,
     [TOKENS.ranger]: ID.ranger,
+    [TOKENS.manager]: ID.manager,
     [TOKENS.noProfile]: '99999999-9999-4999-8999-999999999999',
   };
   return {
@@ -165,7 +178,7 @@ function createFakeAuthGateway(profiles) {
  */
 function createTestApp(options = {}) {
   const profiles = makeProfiles();
-  const { repositories, state } = createInMemoryRepositories({ villages, profiles, collars });
+  const { repositories, state } = createInMemoryRepositories({ villages, profiles, collars, sectors });
   const authGateway = createFakeAuthGateway(profiles);
   const config = {
     ...loadConfig({ NODE_ENV: 'test', SMS_SIMULATOR_ENABLED: 'true', RATE_LIMIT_MAX: '1000' }),

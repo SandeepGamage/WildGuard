@@ -11,6 +11,10 @@ const { SmsResponseService } = require('./services/sms/smsResponse.service');
 const { SmsService } = require('./services/sms/sms.service');
 const { PendingSubmissionQueue } = require('./services/sms/pendingSubmissionQueue');
 const { createSimulatedPushAdapter } = require('./services/push/simulatedPushAdapter');
+const { GISMappingService } = require('./services/gisMapping.service');
+const { AnalyticsReportService } = require('./services/analyticsReport.service');
+const { AnalyticsService } = require('./services/analytics.service');
+const { ExportEngine } = require('./services/export/exportEngine');
 
 /**
  * Wire services to repositories. Nothing here knows about Supabase: the
@@ -20,7 +24,8 @@ const { createSimulatedPushAdapter } = require('./services/push/simulatedPushAda
  * @param {object} deps
  * @param {object} deps.config Parsed environment config.
  * @param {object} deps.logger
- * @param {object} deps.repositories incident, profile, village, verification, notification, smsLog, collar, photoStorage
+ * @param {object} deps.repositories incident, profile, village, verification, notification, smsLog, collar,
+ *   photoStorage, analytics
  * @param {object} deps.authGateway
  * @param {object} [deps.pushAdapter] Defaults to the simulated (logging) adapter.
  * @param {() => Date} [deps.clock]
@@ -36,6 +41,7 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     smsLogRepository,
     collarRepository,
     photoStorageRepository,
+    analyticsRepository,
   } = repositories;
 
   const authService = new AuthService({
@@ -97,6 +103,20 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     logger,
   });
 
+  // UC4 – conservation analytics and hotspot mapping.
+  const analyticsReportService = new AnalyticsReportService({
+    analyticsRepository,
+    hotspotCalculator: new GISMappingService(),
+    logger,
+    clock,
+  });
+  const analyticsService = new AnalyticsService({
+    analyticsRepository,
+    analyticsReportService,
+    exportEngine: new ExportEngine({ logger }),
+    logger,
+  });
+
   return {
     authService,
     villageService,
@@ -106,6 +126,7 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     photoService,
     smsService,
     pendingQueue,
+    analyticsService,
   };
 }
 
