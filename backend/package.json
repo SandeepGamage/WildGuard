@@ -13,6 +13,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.10.4",
+    "pdfkit": "^0.20.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {

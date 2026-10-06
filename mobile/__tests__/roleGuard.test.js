@@ -55,3 +55,19 @@ describe('role-based navigation guard', () => {
     expect(screen.queryByText('role content')).toBeNull();
   });
 });
+
+describe('sign-in flow layout', () => {
+  const AuthLayout = require('../app/(auth)/_layout').default;
+
+  it('sends a role without a mobile interface to the entry route instead of staying on sign-in', () => {
+    signedIn('PARK_MANAGER');
+    renderScreen(<AuthLayout />);
+    expect(screen.getByTestId('redirect').props.children).toBe('/');
+  });
+
+  it('sends a villager to their home', () => {
+    signedIn('VILLAGER');
+    renderScreen(<AuthLayout />);
+    expect(screen.getByTestId('redirect').props.children).toBe('/home');
+  });
+});

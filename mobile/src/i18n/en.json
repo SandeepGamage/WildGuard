@@ -388,7 +388,8 @@
     "notFound": "That report could not be found.",
     "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "invalidPhone": "Enter a valid mobile number.",
-    "disabledFeature": "This feature is not available."
+    "disabledFeature": "This feature is not available.",
+    "useWebDashboard": "The Park Manager dashboard is a web app. Open it on a computer and sign in there."
   },
   "confirm": {
     "cancel": "Cancel",

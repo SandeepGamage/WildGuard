@@ -178,6 +178,12 @@ const DEMO_USERS = [
     role: 'FIELD_RANGER',
     sectorId: ID.sector3,
   },
+  {
+    key: 'manager',
+    fullName: 'D. Wijesinghe',
+    email: 'manager.wijesinghe@wildguard.example',
+    role: 'PARK_MANAGER',
+  },
 ];
 
 const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60 * 1000);
@@ -455,6 +461,123 @@ async function seedIncidents(users) {
   });
 }
 
+/**
+ * UC4 demo history: about six months of decided community reports around Yala,
+ * clustered so hotspots and trends are visible. Deterministic (fixed random seed)
+ * and idempotent (upsert by tracking code), like the rest of this seed.
+ */
+const HISTORY_CLUSTERS = [
+  {
+    centre: { latitude: 6.2994, longitude: 81.3703 },
+    villageId: ID.palatupana,
+    weight: 0.4,
+    types: [
+      'ELEPHANT_NEAR_VILLAGE',
+      'ELEPHANT_NEAR_VILLAGE',
+      'CROP_DAMAGE',
+      'CROP_DAMAGE',
+      'PROPERTY_DAMAGE',
+    ],
+  },
+  {
+    centre: { latitude: 6.2386, longitude: 81.3138 },
+    villageId: ID.kirinda,
+    weight: 0.2,
+    types: ['CROP_DAMAGE', 'CROP_DAMAGE', 'ELEPHANT_NEAR_VILLAGE', 'PROPERTY_DAMAGE'],
+  },
+  {
+    // Water holes inside Sector 3: snares set on elephant paths.
+    centre: { latitude: 6.335, longitude: 81.345 },
+    villageId: ID.palatupana,
+    weight: 0.2,
+    types: ['SNARE_POACHING', 'SNARE_POACHING', 'OTHER_ANIMAL'],
+  },
+  {
+    centre: { latitude: 6.355, longitude: 81.392 },
+    villageId: ID.yodakandiya,
+    weight: 0.12,
+    types: ['ELEPHANT_NEAR_VILLAGE', 'CROP_DAMAGE', 'PERSON_INJURED', 'OTHER_ANIMAL'],
+  },
+  {
+    centre: { latitude: 6.2836, longitude: 81.2889 },
+    villageId: ID.tissa,
+    weight: 0.08,
+    types: ['CROP_DAMAGE', 'OTHER_ANIMAL'],
+  },
+];
+const HISTORY_MONTHS = 6;
+const HISTORY_SPREAD_M = 450;
+
+/** Small seeded PRNG (mulberry32) so every seed run produces the same history. */
+function seededRandom(seed) {
+  let state = seed;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildHistory(now = new Date()) {
+  const random = seededRandom(20261009);
+  const gaussian = () => Math.sqrt(-2 * Math.log(random() || 1e-9)) * Math.cos(2 * Math.PI * random());
+  const pick = (items) => items[Math.floor(random() * items.length)];
+  const rows = [];
+  for (let monthsBack = HISTORY_MONTHS - 1; monthsBack >= 0; monthsBack -= 1) {
+    // More reports in recent months, so the conflict-trend chart has a shape.
+    const count = 22 + (HISTORY_MONTHS - monthsBack) * 6;
+    for (let i = 0; i < count; i += 1) {
+      let roll = random();
+      const cluster = HISTORY_CLUSTERS.find((c) => (roll -= c.weight) < 0) ?? HISTORY_CLUSTERS[0];
+      const village = VILLAGES.find((v) => v.id === cluster.villageId);
+      const latitude = cluster.centre.latitude + (gaussian() * HISTORY_SPREAD_M) / 111320;
+      const longitude = cluster.centre.longitude + (gaussian() * HISTORY_SPREAD_M) / 110600;
+      const occurredAt = daysAgo(monthsBack * 30 + 2 + random() * 28);
+      if (occurredAt > now) continue;
+      const decided = random();
+      rows.push({
+        tracking_code: `H-${String(rows.length + 1).padStart(4, '0')}`,
+        source: random() < 0.35 ? 'SMS' : 'APP',
+        incident_type: pick(cluster.types),
+        // About 1 in 7 reports is rejected after checking; the rest are verified.
+        status: decided < 0.14 ? 'REJECTED' : 'VERIFIED',
+        urgency: 'NORMAL',
+        village_id: village.id,
+        gn_division_id: village.gn_division_id,
+        sector_id: village.sector_id,
+        latitude: Number(latitude.toFixed(6)),
+        longitude: Number(longitude.toFixed(6)),
+        location: { type: 'Point', coordinates: [Number(longitude.toFixed(6)), Number(latitude.toFixed(6))] },
+        occurred_when: 'NOW',
+        occurred_at: occurredAt,
+        created_at: occurredAt,
+        updated_at: occurredAt,
+        duplicate_of_id: null,
+      });
+    }
+  }
+  rows.forEach((row) => {
+    if (row.incident_type === 'PERSON_INJURED') row.urgency = 'URGENT';
+  });
+  return rows;
+}
+
+async function seedAnalyticsHistory() {
+  const rows = buildHistory();
+  await CommunityIncident.bulkWrite(
+    rows.map((row) => ({
+      updateOne: {
+        filter: { tracking_code: row.tracking_code },
+        update: { $setOnInsert: { id: require('node:crypto').randomUUID(), ...row } },
+        upsert: true,
+        timestamps: false,
+      },
+    })),
+  );
+  return rows.length;
+}
+
 async function seedMongo(config, logger) {
   await connectMongo(config.mongodbUri, logger);
 
@@ -472,6 +595,10 @@ async function seedMongo(config, logger) {
   logger.info('Seeding MongoDB demo incidents & verifications...');
   await seedIncidents(users);
 
+  logger.info('Seeding UC4 analytics history (six months of decided reports)...');
+  const historyCount = await seedAnalyticsHistory();
+  logger.info(`Analytics history ready: ${historyCount} reports.`);
+
   logger.info('MongoDB database seeding complete!');
   return { users, password };
 }
@@ -487,6 +614,7 @@ if (require.main === module) {
       console.log('  Villager  : 0771234812            (Nimali Perera)');
       console.log(`  Officer   : ${users.officer.email}   (N. Perera, 3 GN divisions)`);
       console.log(`  Officer 2 : ${users.officerTissa.email}  (A. Fernando, Tissamaharama only)`);
+      console.log(`  Manager   : ${users.manager.email}  (D. Wijesinghe, analytics)`);
       console.log(`  Password  : ${password}`);
       console.log('=============================================\n');
       return disconnectMongo();
@@ -497,4 +625,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { seedMongo, seedReferenceData };
+module.exports = { seedMongo, seedReferenceData, seedAnalyticsHistory, buildHistory };

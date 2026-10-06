@@ -16,6 +16,7 @@ async function main() {
     console.log('  Villager  : 0771234812            (Nimali Perera)');
     console.log(`  Officer   : ${users.officer.email}   (N. Perera, 3 GN divisions)`);
     console.log(`  Officer 2 : ${users.officerTissa.email}  (A. Fernando, Tissamaharama only)`);
+    console.log(`  Manager   : ${users.manager.email}  (D. Wijesinghe, analytics)`);
     console.log(`  Password  : ${password}`);
     console.log('=============================================\n');
   } catch (err) {

@@ -26,6 +26,8 @@ function createApp({ config, services, logger }) {
         if (!origin || config.corsOrigins.includes(origin)) return callback(null, true);
         return callback(null, false);
       },
+      // Lets the web dashboard read the file name of an exported report.
+      exposedHeaders: ['Content-Disposition'],
     }),
   );
   app.use(createRequestContext(logger));
