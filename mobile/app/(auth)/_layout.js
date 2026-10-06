@@ -8,8 +8,8 @@ export default function AuthLayout() {
   const { status, profile } = useAuth();
 
   if (status === AUTH_STATUS.SIGNED_IN) {
-    const home = homeRouteForRole(profile.role);
-    if (home) return <Redirect href={home} />;
+    // Roles without a mobile interface go to the entry route, which explains where to sign in instead.
+    return <Redirect href={homeRouteForRole(profile.role) ?? '/'} />;
   }
 
   return (
