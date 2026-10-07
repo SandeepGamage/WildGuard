@@ -14,6 +14,9 @@ const UserSchema = new Schema(
     },
     full_name: { type: String, required: true },
     is_active: { type: Boolean, default: true },
+  signal_lost: { type: Boolean, default: false },
+  battery_pct: { type: Number, default: 95 },
+  last_heartbeat: { type: Date, default: Date.now },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
@@ -182,11 +185,16 @@ const ConservationReportSchema = new Schema({
 const GeofenceZoneSchema = new Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  type: { type: String, enum: ['BUFFER', 'CORE', 'SETTLEMENT_BOUNDARY', 'CORRIDOR'], default: 'BUFFER' },
+  type: {
+    type: String,
+    enum: ['FARMLAND', 'VILLAGE', 'ROAD', 'RAILWAY', 'BUFFER', 'CORE', 'SETTLEMENT_BOUNDARY', 'CORRIDOR'],
+    default: 'FARMLAND',
+  },
   centre_lat: { type: Number, required: true },
   centre_lng: { type: Number, required: true },
   radius_metres: { type: Number, required: true },
-  severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'HIGH' },
+  approach_buffer_metres: { type: Number, default: 500 },
+  severity: { type: String, enum: ['CRITICAL', 'WARNING', 'LOW', 'MEDIUM', 'HIGH'], default: 'CRITICAL' },
   sector_id: { type: String, default: null },
   nearest_settlement: { type: String, default: null },
 });
@@ -203,13 +211,50 @@ const CollarAlertSchema = new Schema({
   longitude: { type: Number, required: true },
   zone_id: { type: String, required: true },
   zone_name: { type: String, required: true },
-  severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'HIGH' },
+  severity: { type: String, enum: ['CRITICAL', 'WARNING', 'LOW', 'MEDIUM', 'HIGH'], default: 'CRITICAL' },
+  proximity: { type: String, enum: ['INSIDE', 'APPROACHING'], default: 'INSIDE' },
   status: {
     type: String,
-    enum: ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'FALSE_ALARM', 'DELAYED_INCIDENT'],
-    default: 'ACTIVE',
+    enum: [
+      'RAISED',
+      'VILLAGE_SMS_SENT',
+      'DISPATCHED',
+      'ACKNOWLEDGED',
+      'ESCALATED',
+      'RESOLVED',
+      'FALSE_ALARM',
+      'DELAYED_INCIDENT',
+      'ACTIVE',
+    ],
+    default: 'RAISED',
     index: true,
   },
+  status_timeline: [
+    {
+      status: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now },
+      details: { type: String, default: '' },
+      actor: { type: String, default: 'System' },
+    },
+  ],
+  dispatch: {
+    responder_id: { type: String, default: null },
+    responder_name: { type: String, default: null },
+    responder_phone: { type: String, default: null },
+    distance_m: { type: Number, default: null },
+    dispatched_at: { type: Date, default: null },
+    acknowledged_at: { type: Date, default: null },
+    timeout_at: { type: Date, default: null },
+    status: { type: String, default: null },
+  },
+  village_sms: {
+    sent: { type: Boolean, default: false },
+    count: { type: Number, default: 0 },
+    sample_message: { type: String, default: null },
+    sent_at: { type: Date, default: null },
+  },
+  resolution_reason: { type: String, default: null },
+  camera_trap_id: { type: String, default: null },
   response_action: {
     type: String,
     enum: ['DISPATCH_RANGER', 'MONITOR_CLOSELY', 'NOTIFY_COMMUNITY', 'MARK_FALSE_ALARM'],
@@ -221,6 +266,25 @@ const CollarAlertSchema = new Schema({
   triggered_at: { type: Date, default: Date.now, index: true },
   acknowledged_at: { type: Date, default: null },
   resolved_at: { type: Date, default: null },
+});
+
+const CameraTrapReviewSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  trap_id: { type: String, required: true },
+  image_url: { type: String, required: true },
+  ai_species: { type: String, required: true },
+  ai_confidence: { type: Number, required: true },
+  ai_threat: { type: Boolean, default: false },
+  status: {
+    type: String,
+    enum: ['PENDING_REVIEW', 'APPROVED_ALERT', 'DISMISSED'],
+    default: 'PENDING_REVIEW',
+  },
+  reviewed_by: { type: String, default: null },
+  reviewed_at: { type: Date, default: null },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  created_at: { type: Date, default: Date.now },
 });
 
 /**
@@ -252,5 +316,6 @@ module.exports = {
   ConservationReport: getModel('ConservationReport', ConservationReportSchema),
   GeofenceZone: getModel('GeofenceZone', GeofenceZoneSchema),
   CollarAlert: getModel('CollarAlert', CollarAlertSchema),
+  CameraTrapReview: getModel('CameraTrapReview', CameraTrapReviewSchema),
   CollarTelemetryLog: getModel('CollarTelemetryLog', CollarTelemetryLogSchema),
 };

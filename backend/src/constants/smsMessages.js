@@ -44,6 +44,11 @@ const SMS_MESSAGES = Object.freeze({
     ta: '{code} ஐ உறுதிப்படுத்த முடியவில்லை. தெரிவித்தமைக்கு நன்றி. தொடர்ந்தால் மீண்டும் தெரிவிக்கவும்.',
   }),
   /** Format help always lists all three languages (UC3.1 E1). */
+  earlyWarning: Object.freeze({
+    en: 'WILDGUARD ALERT: Wild animal {animal} detected near {zone}. Please stay in safe areas and avoid approaching.',
+    si: 'WILDGUARD SI: {animal} detected near {zone}. Please stay in safe areas.',
+    ta: 'WILDGUARD TA: {animal} detected near {zone}. Please stay in safe areas.',
+  }),
   formatHelp: Object.freeze([
     'Send: ALIYA <village>  e.g. ALIYA PALATUPANA',
     'යවන්න: ALIYA <ගම>  උදා: ALIYA PALATUPANA',

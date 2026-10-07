@@ -525,6 +525,107 @@
           background: #ef4444;
         }
       }
+    
+      /* 5-Stage Status Timeline (Table 24 Item 2 & O1) */
+      .timeline-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.9rem 1.2rem;
+        margin: 1rem 0;
+        position: relative;
+      }
+      .t-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        position: relative;
+        z-index: 2;
+        min-width: 65px;
+      }
+      .t-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #1f2937;
+        border: 2px solid #4b5563;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #9ca3af;
+        transition: all 0.3s ease;
+      }
+      .t-step.active .t-circle {
+        background: #10b981;
+        border-color: #34d399;
+        color: #ffffff;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+        animation: pulse 1.8s infinite;
+      }
+      .t-step.completed .t-circle {
+        background: #059669;
+        border-color: #10b981;
+        color: #ffffff;
+      }
+      .t-step.escalated .t-circle {
+        background: #ef4444;
+        border-color: #f87171;
+        color: #ffffff;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+      }
+      .t-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .t-step.active .t-label, .t-step.completed .t-label {
+        color: #34d399;
+      }
+      .t-step.escalated .t-label {
+        color: #f87171;
+      }
+      .t-line {
+        flex: 1;
+        height: 2px;
+        background: #374151;
+        margin: 0 -4px 14px -4px;
+        z-index: 1;
+        transition: background 0.3s ease;
+      }
+      .t-line.filled {
+        background: #10b981;
+      }
+      .sms-box {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
+        color: #a7f3d0;
+        margin: 0.75rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+      .phone-mockup {
+        background: #111827;
+        border: 3px solid #374151;
+        border-radius: 28px;
+        padding: 1.25rem;
+        max-width: 320px;
+        margin: 0 auto;
+        box-shadow: 0 12px 36px rgba(0,0,0,0.7);
+        text-align: center;
+      }
+
     </style>
   </head>
   <body>
@@ -670,46 +771,256 @@
       </aside>
     </main>
 
+    
+    <!-- Screenshot 3 / Wireframe O4: Responder Dispatch Mobile Phone View Modal -->
+    <div id="phoneDispatchModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 380px;">
+        <div class="modal-header" style="background: #1f2937;">
+          <span>📱 Responder Phone Push View (Wireframe O4)</span>
+          <button onclick="closePhoneDispatchModal()" style="background:none; border:none; color:#9ca3af; font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem;">
+          <div class="phone-mockup">
+            <div style="font-size: 0.7rem; color: #ef4444; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">
+              🚨 HIGH PRIORITY DISPATCH
+            </div>
+            <h3 id="phoneDispatchTitle" style="font-size: 1.05rem; color: #f3f4f6; margin: 0.5rem 0;">Elephant EL-07</h3>
+            <p id="phoneDispatchDetails" style="font-size: 0.78rem; color: #9ca3af; margin-bottom: 0.75rem;">
+              Breached Palatupana Farmland Perimeter (320m away).
+            </p>
+            <div style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 0.5rem; margin-bottom: 1rem;">
+              <div style="font-size: 0.65rem; color: #fca5a5; text-transform: uppercase; font-weight: 700;">Timeout Auto-Reassign</div>
+              <div id="phoneTimer" style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700; color: #ffffff;">02:58</div>
+            </div>
+            <button class="btn btn-danger" style="width: 100%; margin-bottom: 0.5rem; padding: 0.7rem;" onclick="confirmResponderAck()">
+              ✅ Acknowledge & Navigate
+            </button>
+            <button class="btn btn-secondary" style="width: 100%; padding: 0.5rem; font-size: 0.75rem;" onclick="closePhoneDispatchModal()">
+              ❌ I Can't Respond
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screenshot 4 / Wireframe O2: Escalation & Manual Responder Assignment Modal -->
+    <div id="escalationModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 580px;">
+        <div class="modal-header" style="background: #991b1b;">
+          <span>⚠️ Escalation Panel: Manual Responder Assignment (Wireframe O2)</span>
+          <button onclick="closeEscalationModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem;">
+          <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.8rem; color: #fca5a5;">
+            <strong>Exception Flow E2 Triggered:</strong> Primary responder timed out or unavailable. Select an active candidate responder to reassign immediately:
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); color: #9ca3af;">
+                <th style="padding: 0.5rem;">Responder</th>
+                <th style="padding: 0.5rem;">Role</th>
+                <th style="padding: 0.5rem;">Distance</th>
+                <th style="padding: 0.5rem; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="candidateRespondersBody">
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 0.6rem;"><strong>R. M. Bandara</strong></td>
+                <td>Field Ranger</td>
+                <td style="color: #34d399;">320 m</td>
+                <td style="text-align: right;"><button class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="assignCandidate('RESP-01', 'R. M. Bandara')">Assign</button></td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 0.6rem;"><strong>K. S. Perera</strong></td>
+                <td>Field Ranger</td>
+                <td style="color: #34d399;">1.2 km</td>
+                <td style="text-align: right;"><button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="assignCandidate('RESP-02', 'K. S. Perera')">Assign</button></td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 0.6rem;"><strong>M. T. Fernando</strong></td>
+                <td>CLO</td>
+                <td style="color: #fbbf24;">2.1 km</td>
+                <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="assignCandidate('RESP-03', 'M. T. Fernando')">Assign</button></td>
+              </tr>
+              <tr>
+                <td style="padding: 0.6rem;"><strong>D. M. Jayasinghe</strong></td>
+                <td>Field Ranger</td>
+                <td style="color: #9ca3af;">3.4 km</td>
+                <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="assignCandidate('RESP-04', 'D. M. Jayasinghe')">Assign</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screenshot 5 / Wireframe O3: Camera-Trap Image Verification Modal -->
+    <div id="cameraTrapModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header" style="background: #1e3a8a;">
+          <span>📷 Camera-Trap AI Image Verification (Wireframe O3)</span>
+          <button onclick="closeCameraTrapModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem;">
+          <div style="text-align: center; margin-bottom: 1rem;">
+            <img src="https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?w=600&auto=format&fit=crop" alt="Camera Trap Capture" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);" />
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
+              <span>AI Classification Guess:</span>
+              <strong style="color: #60a5fa;">Asian Elephant (Bull)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.5rem;">
+              <span>Confidence Score:</span>
+              <strong style="color: #f59e0b;">65% (&lt; 80% Threshold)</strong>
+            </div>
+            <div style="height: 6px; background: #374151; border-radius: 3px; overflow: hidden;">
+              <div style="width: 65%; height: 100%; background: #f59e0b;"></div>
+            </div>
+            <p style="font-size: 0.72rem; color: #9ca3af; margin-top: 0.4rem;">
+              *Sub-threshold detection queued for Operations Officer manual verification (UC2c).
+            </p>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.72rem; text-transform: uppercase; color: #9ca3af; font-weight: 700; margin-bottom: 0.3rem;">Confirm Species</label>
+            <select id="cameraSpeciesSelect" style="width: 100%; background: #1f2937; color: white; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+              <option value="Asian Elephant">Asian Elephant (Elephas maximus)</option>
+              <option value="Sri Lankan Leopard">Sri Lankan Leopard (Panthera pardus kotiya)</option>
+              <option value="Sloth Bear">Sloth Bear (Melursus ursinus)</option>
+              <option value="Wild Boar">Wild Boar (Sus scrofa)</option>
+            </select>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #f3f4f6; cursor: pointer;">
+              <input type="checkbox" id="cameraThreatCheckbox" checked style="accent-color: #ef4444; width: 16px; height: 16px;" />
+              Confirmed Community Threat (Requires immediate response)
+            </label>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="closeCameraTrapModal()">Dismiss Non-Threat</button>
+            <button class="btn btn-danger" style="flex: 1;" onclick="confirmCameraTrapAlert()">Threat — Raise Alert</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screenshot 6 / Step 10: Resolve Alert Modal with Reason -->
+    <div id="resolveModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 460px;">
+        <div class="modal-header" style="background: #065f46;">
+          <span>✅ Resolve Boundary Alert (Table 18 Step 10)</span>
+          <button onclick="closeResolveModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem;">
+          <p style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 1rem;">
+            A formal resolution reason is mandatory for operations audit logging before an emergency alert can be closed.
+          </p>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.72rem; text-transform: uppercase; color: #9ca3af; font-weight: 700; margin-bottom: 0.3rem;">Resolution Reason *</label>
+            <input id="resolveReasonInput" type="text" value="Elephant guided back to park boundary safely with vehicle escort" style="width: 100%; background: #1f2937; color: white; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.8rem;" />
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.72rem; text-transform: uppercase; color: #9ca3af; font-weight: 700; margin-bottom: 0.3rem;">Officer Field Notes</label>
+            <textarea id="resolveNotesInput" style="width: 100%; height: 60px; background: #1f2937; color: white; padding: 0.6rem; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.8rem;">No crop damage incurred; villagers notified via liaison officer.</textarea>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="closeResolveModal()">Cancel</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="confirmResolveAlert()">Confirm & Close Alert</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Wireframe Page 28 Alert Detail Modal -->
     <div id="breachModal" class="modal-overlay">
-      <div class="modal-card">
+      <div class="modal-card" style="max-width: 680px;">
         <div class="modal-header">
-          <span>⚠️ CRITICAL ALERT: Boundary Breach Detected</span>
+          <span>🚨 CRITICAL ALERT: Boundary Breach & Nearest-Responder Dispatch</span>
         </div>
         <div class="modal-body">
           <div class="modal-thumb">
             <div class="modal-thumb-icon">🐘</div>
-            <strong id="modalAnimalLabel">Asset E-402</strong>
-            <span style="font-size: 0.7rem; color: var(--text-muted)">Collar COL-402</span>
-            <span class="badge badge-critical" style="margin-top: 0.5rem">CRITICAL</span>
+            <strong id="modalAnimalLabel">Elephant EL-07</strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted)">Collar EL-07</span>
+            <span id="modalSeverityBadge" class="badge badge-critical" style="margin-top: 0.5rem">CRITICAL</span>
           </div>
           <div class="modal-details">
+            <!-- 5-Stage Status Timeline (Section 7.4.2 Table 18 & Section 8.2 O1) -->
+            <div class="timeline-bar">
+              <div class="t-step active" id="tlStepRaised">
+                <div class="t-circle">1</div>
+                <div class="t-label">Raised</div>
+              </div>
+              <div class="t-line" id="tlLine1"></div>
+              <div class="t-step" id="tlStepVillage">
+                <div class="t-circle">2</div>
+                <div class="t-label">Village SMS</div>
+              </div>
+              <div class="t-line" id="tlLine2"></div>
+              <div class="t-step" id="tlStepDispatch">
+                <div class="t-circle">3</div>
+                <div class="t-label">Dispatched</div>
+              </div>
+              <div class="t-line" id="tlLine3"></div>
+              <div class="t-step" id="tlStepAck">
+                <div class="t-circle">4</div>
+                <div class="t-label">Ack</div>
+              </div>
+              <div class="t-line" id="tlLine4"></div>
+              <div class="t-step" id="tlStepResolve">
+                <div class="t-circle">5</div>
+                <div class="t-label">Resolved</div>
+              </div>
+            </div>
+
+            <div id="modalSmsBox" class="sms-box" style="display: flex;">
+              <strong>📩 Automated Village Early-Warning Broadcast (UC2e):</strong>
+              <span id="modalSmsContent">WILDGUARD ALERT: Wild animal Elephant EL-07 detected near Palatupana Farmland & Paddy Perimeter. Please stay vigilant.</span>
+            </div>
+
+            <div id="modalDispatchBox" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.5rem 0; font-size: 0.8rem; color: #93c5fd; display: flex; justify-content: space-between; align-items: center;">
+              <span>🚓 Dispatched: <strong id="modalResponderName">R. M. Bandara</strong> (<span id="modalResponderDist">320m</span> away)</span>
+              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="openPhoneDispatchModal()">Open Phone View (O4)</button>
+            </div>
+
             <div class="field-row">
               <div class="field-label">Breach Zone</div>
-              <div id="modalZoneName" class="field-value">Northern Agricultural Boundary (Zone 4)</div>
+              <div id="modalZoneName" class="field-value">Palatupana Farmland & Paddy Perimeter</div>
             </div>
             <div class="field-row">
               <div class="field-label">Threat Level</div>
               <div id="modalThreatLevel" class="field-value" style="color: #f87171">
-                HIGH (Human Settlement Border)
+                CRITICAL (Inside Agricultural Risk Zone)
               </div>
             </div>
             <div class="field-row">
-              <div class="field-label">Breach Location Coordinates</div>
-              <div id="modalCoords" class="field-value font-mono">6.4245° N, 81.3852° E</div>
+              <div class="field-label">Breach Coordinates</div>
+              <div id="modalCoords" class="field-value font-mono">6.2994° N, 81.3703° E</div>
             </div>
             <div class="field-row">
-              <div class="field-label">Alert Details</div>
+              <div class="field-label">Status Details</div>
               <div
                 id="modalDetailsText"
                 class="field-value"
                 style="font-weight: 400; font-size: 0.8rem; color: #d1d5db"
               >
-                Animal crossed the designated park boundary into non-protected sugarcane farmland. Immediate
-                intervention required.
+                Animal crossed virtual geofence perimeter into human settlement farmlands. Automated village warnings sent and nearest responder dispatched.
               </div>
             </div>
           </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" onclick="dismissFalseAlarm()">False Alarm</button>
+            <button class="btn btn-warning" onclick="openEscalationModal()">Escalate (O2)</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-danger" id="modalDispatchBtn" onclick="confirmDispatchRanger()">Dispatch Nearest</button>
+            <button class="btn btn-primary" onclick="openResolveModal()">Resolve (Reason)</button>
+          </div>
+        </div>
+      </div>
+    </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="dismissFalseAlarm()">
@@ -1528,6 +1839,266 @@
             document.execCommand('copy');
           }
         }
+      }
+
+      
+      // Universal API base path
+      const UC2_API = window.location.pathname.includes('/collar-console') || window.location.port === '5000'
+        ? '/api/v1/collar'
+        : '/api';
+
+      let lastActiveAlertId = null;
+
+      function updateTimelineUI(status) {
+        const s = (status || 'RAISED').toUpperCase();
+        const steps = ['Raised', 'Village', 'Dispatch', 'Ack', 'Resolve'];
+        const elRaised = document.getElementById('tlStepRaised');
+        const elVillage = document.getElementById('tlStepVillage');
+        const elDispatch = document.getElementById('tlStepDispatch');
+        const elAck = document.getElementById('tlStepAck');
+        const elResolve = document.getElementById('tlStepResolve');
+
+        const line1 = document.getElementById('tlLine1');
+        const line2 = document.getElementById('tlLine2');
+        const line3 = document.getElementById('tlLine3');
+        const line4 = document.getElementById('tlLine4');
+
+        // Reset
+        [elRaised, elVillage, elDispatch, elAck, elResolve].forEach(e => {
+          if (e) e.className = 't-step';
+        });
+        [line1, line2, line3, line4].forEach(l => {
+          if (l) l.className = 't-line';
+        });
+
+        if (s === 'RAISED') {
+          elRaised.className = 't-step active';
+        } else if (s === 'VILLAGE_SMS_SENT') {
+          elRaised.className = 't-step completed';
+          line1.className = 't-line filled';
+          elVillage.className = 't-step active';
+        } else if (s === 'DISPATCHED') {
+          elRaised.className = 't-step completed';
+          line1.className = 't-line filled';
+          elVillage.className = 't-step completed';
+          line2.className = 't-line filled';
+          elDispatch.className = 't-step active';
+        } else if (s === 'ACKNOWLEDGED') {
+          elRaised.className = 't-step completed';
+          line1.className = 't-line filled';
+          elVillage.className = 't-step completed';
+          line2.className = 't-line filled';
+          elDispatch.className = 't-step completed';
+          line3.className = 't-line filled';
+          elAck.className = 't-step active';
+        } else if (s === 'ESCALATED') {
+          elRaised.className = 't-step completed';
+          line1.className = 't-line filled';
+          elVillage.className = 't-step completed';
+          line2.className = 't-line filled';
+          elDispatch.className = 't-step escalated';
+          elDispatch.querySelector('.t-label').innerText = 'Escalated';
+        } else if (s === 'RESOLVED') {
+          elRaised.className = 't-step completed';
+          line1.className = 't-line filled';
+          elVillage.className = 't-step completed';
+          line2.className = 't-line filled';
+          elDispatch.className = 't-step completed';
+          line3.className = 't-line filled';
+          elAck.className = 't-step completed';
+          line4.className = 't-line filled';
+          elResolve.className = 't-step active';
+        }
+      }
+
+      // 1. Screenshot 1: Collar Simulation in HazardMonitoringController
+      async function runScenario1CollarSimulation() {
+        userSilenced = false;
+        try {
+          const res = await fetch(`${UC2_API}/telemetry`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              collarId: 'EL-07',
+              animalLabel: 'Collared Elephant EL-07',
+              latitude: 6.2994,
+              longitude: 81.3703,
+              recordedAt: new Date().toISOString()
+            })
+          });
+          const data = await res.json();
+          if (data.data && data.data.alert) {
+            lastActiveAlertId = data.data.alert.id;
+          }
+          await refreshDashboard();
+          alert('Screenshot 1: Collar simulation reading ingested. HazardMonitoringController evaluated geofence and triggered alarm.');
+        } catch (e) {
+          console.warn('API error, simulating locally', e);
+        }
+      }
+
+      // 2. Screenshot 2: Dashboard Alert with Status Timeline (O1 & UC2e)
+      async function runScenario2DashboardAlert() {
+        if (!lastActiveAlertId) await runScenario1CollarSimulation();
+        updateTimelineUI('VILLAGE_SMS_SENT');
+        document.getElementById('modalSmsBox').style.display = 'flex';
+        document.getElementById('breachModal').classList.add('active');
+      }
+
+      // 3. Screenshot 3: Responder Dispatch (O4 & UC2b)
+      async function runScenario3ResponderDispatch() {
+        if (!lastActiveAlertId) await runScenario1CollarSimulation();
+        updateTimelineUI('DISPATCHED');
+        document.getElementById('modalDispatchBox').style.display = 'flex';
+        openPhoneDispatchModal();
+      }
+
+      function openPhoneDispatchModal() {
+        document.getElementById('phoneDispatchModal').classList.add('active');
+        let sec = 180;
+        const timer = setInterval(() => {
+          sec--;
+          if (sec <= 0) { clearInterval(timer); return; }
+          const m = String(Math.floor(sec / 60)).padStart(2, '0');
+          const s = String(sec % 60).padStart(2, '0');
+          const el = document.getElementById('phoneTimer');
+          if (el) el.innerText = `${m}:${s}`;
+        }, 1000);
+      }
+
+      function closePhoneDispatchModal() {
+        document.getElementById('phoneDispatchModal').classList.remove('active');
+      }
+
+      async function confirmResponderAck() {
+        closePhoneDispatchModal();
+        if (lastActiveAlertId) {
+          try {
+            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/respond`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ responderId: 'RESP-01', notes: 'Jeep unit arriving at boundary' })
+            });
+          } catch (e) {}
+        }
+        updateTimelineUI('ACKNOWLEDGED');
+        alert('Screenshot 3 (O4): Responder R. M. Bandara acknowledged dispatch. Timeline updated to ACKNOWLEDGED.');
+        document.getElementById('breachModal').classList.add('active');
+      }
+
+      // 4. Screenshot 4: Escalation & Manual Responder Assignment (O2, UC2d & E2)
+      function openEscalationModal() {
+        document.getElementById('breachModal').classList.remove('active');
+        document.getElementById('escalationModal').classList.add('active');
+      }
+
+      function closeEscalationModal() {
+        document.getElementById('escalationModal').classList.remove('active');
+      }
+
+      async function runScenario4Escalation() {
+        if (!lastActiveAlertId) await runScenario1CollarSimulation();
+        if (lastActiveAlertId) {
+          try {
+            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/escalate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: '3-minute acknowledgement window timed out (E2)' })
+            });
+          } catch (e) {}
+        }
+        updateTimelineUI('ESCALATED');
+        openEscalationModal();
+      }
+
+      async function assignCandidate(responderId, responderName) {
+        closeEscalationModal();
+        if (lastActiveAlertId) {
+          try {
+            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/assign-responder`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ responderId, officerId: 'OFF-01', officerNotes: 'Manually assigned by officer' })
+            });
+          } catch (e) {}
+        }
+        document.getElementById('modalResponderName').innerText = responderName;
+        updateTimelineUI('DISPATCHED');
+        alert(`Screenshot 4 (O2): Manually assigned responder ${responderName}. Status updated to DISPATCHED.`);
+        document.getElementById('breachModal').classList.add('active');
+      }
+
+      // 5. Screenshot 5: Camera-Trap Review (O3, UC2c & A3)
+      function runScenario5CameraTrap() {
+        document.getElementById('cameraTrapModal').classList.add('active');
+      }
+
+      function closeCameraTrapModal() {
+        document.getElementById('cameraTrapModal').classList.remove('active');
+      }
+
+      async function confirmCameraTrapAlert() {
+        closeCameraTrapModal();
+        const species = document.getElementById('cameraSpeciesSelect').value;
+        const isThreat = document.getElementById('cameraThreatCheckbox').checked;
+        try {
+          const res = await fetch(`${UC2_API}/camera-trap`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trapId: 'TRAP-04',
+              species,
+              confidence: 0.95,
+              isThreat,
+              latitude: 6.2994,
+              longitude: 81.3703
+            })
+          });
+          const data = await res.json();
+          if (data.data && data.data.alert) lastActiveAlertId = data.data.alert.id;
+        } catch (e) {}
+        await refreshDashboard();
+        alert(`Screenshot 5 (O3): Operations Officer confirmed ${species} threat. Critical alert raised and dispatched.`);
+        runScenario2DashboardAlert();
+      }
+
+      // 6. Screenshot 6: Signal Lost & Resolution with reason (E1 & Table 18 Step 10)
+      async function runScenario6SignalLostResolve() {
+        try {
+          await fetch(`${UC2_API}/devices/COL-402/simulate-signal-lost`, { method: 'POST' });
+        } catch (e) {}
+        document.getElementById('gatewayStatusBadge').innerText = 'COL-402 Signal Lost (>30m)';
+        document.getElementById('gatewayStatusBadge').className = 'badge badge-critical';
+        alert('Screenshot 6 (E1): Collar COL-402 silent for >30 minutes. Status flagged as "Signal Lost" with last known location.');
+        openResolveModal();
+      }
+
+      function openResolveModal() {
+        document.getElementById('breachModal').classList.remove('active');
+        document.getElementById('resolveModal').classList.add('active');
+      }
+
+      function closeResolveModal() {
+        document.getElementById('resolveModal').classList.remove('active');
+      }
+
+      async function confirmResolveAlert() {
+        const reason = document.getElementById('resolveReasonInput').value;
+        if (!reason) { alert('Resolution reason is mandatory!'); return; }
+        closeResolveModal();
+        if (lastActiveAlertId) {
+          try {
+            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/resolve`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason, officerId: 'OFF-01', notes: document.getElementById('resolveNotesInput').value })
+            });
+          } catch (e) {}
+        }
+        updateTimelineUI('RESOLVED');
+        stopAcousticAlarm();
+        alert(`Screenshot 6: Alert successfully resolved with reason: '${reason}'.`);
+        document.getElementById('breachModal').classList.add('active');
       }
 
       // Init

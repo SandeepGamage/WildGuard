@@ -384,6 +384,53 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
         collar.last_seen_at = lastSeenAt || new Date();
       }
     },
+    async setSignalLost(collarId, isLost = true) {
+      const collar = (state.collars || collars).find((c) => c.code === collarId);
+      if (collar) {
+        collar.signal_lost = isLost;
+      }
+      return collar || null;
+    },
+    async listAvailableResponders() {
+      return [
+        {
+          id: 'RESP-01',
+          name: 'R. M. Bandara',
+          role: 'FIELD_RANGER',
+          phone: '+94771234567',
+          latitude: 6.241,
+          longitude: 81.315,
+          status: 'AVAILABLE',
+        },
+        {
+          id: 'RESP-02',
+          name: 'K. S. Perera',
+          role: 'FIELD_RANGER',
+          phone: '+94772345678',
+          latitude: 6.302,
+          longitude: 81.372,
+          status: 'AVAILABLE',
+        },
+        {
+          id: 'RESP-03',
+          name: 'M. T. Fernando',
+          role: 'COMMUNITY_LIAISON_OFFICER',
+          phone: '+94773456789',
+          latitude: 6.280,
+          longitude: 81.290,
+          status: 'AVAILABLE',
+        },
+        {
+          id: 'RESP-04',
+          name: 'D. M. Jayasinghe',
+          role: 'FIELD_RANGER',
+          phone: '+94774567890',
+          latitude: 6.360,
+          longitude: 81.395,
+          status: 'AVAILABLE',
+        },
+      ];
+    },
     async listGeofenceZones() {
       if (!state.zones || state.zones.length === 0) {
         state.zones = [
@@ -394,6 +441,7 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
             centre_lat: 6.2386,
             centre_lng: 81.3138,
             radius_metres: 3500,
+            approach_buffer_metres: 500,
             severity: 'HIGH',
             nearest_settlement: 'Kirinda Village',
           },
@@ -404,15 +452,66 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
             centre_lat: 6.2994,
             centre_lng: 81.3703,
             radius_metres: 4000,
+            approach_buffer_metres: 500,
             severity: 'HIGH',
             nearest_settlement: 'Palatupana Settlement',
+          },
+          {
+            id: 'ZONE-FARMLAND-01',
+            name: 'Palatupana Farmland & Paddy Perimeter',
+            type: 'FARMLAND',
+            centre_lat: 6.2994,
+            centre_lng: 81.3703,
+            radius_metres: 3000,
+            approach_buffer_metres: 500,
+            severity: 'CRITICAL',
+            nearest_settlement: 'Palatupana Village',
+          },
+          {
+            id: 'ZONE-VILLAGE-02',
+            name: 'Kirinda Coastal Settlement Zone',
+            type: 'VILLAGE',
+            centre_lat: 6.2386,
+            centre_lng: 81.3138,
+            radius_metres: 2500,
+            approach_buffer_metres: 500,
+            severity: 'CRITICAL',
+            nearest_settlement: 'Kirinda Village',
+          },
+          {
+            id: 'ZONE-ROAD-03',
+            name: 'B399 Tissamaharama Highway Transit',
+            type: 'ROAD',
+            centre_lat: 6.355,
+            centre_lng: 81.392,
+            radius_metres: 2000,
+            approach_buffer_metres: 500,
+            severity: 'CRITICAL',
+            nearest_settlement: 'Yodakandiya Farm Borders',
+          },
+          {
+            id: 'ZONE-RAILWAY-04',
+            name: 'Southern Railway Track Buffer',
+            type: 'RAILWAY',
+            centre_lat: 6.2836,
+            centre_lng: 81.2889,
+            radius_metres: 1800,
+            approach_buffer_metres: 500,
+            severity: 'CRITICAL',
+            nearest_settlement: 'Tissa Township',
           },
         ];
       }
       return state.zones;
     },
     async findActiveAlertByCollar(collarId) {
-      return state.collarAlerts.find((a) => a.collar_id === collarId && a.status === 'ACTIVE') || null;
+      return (
+        state.collarAlerts.find(
+          (a) =>
+            a.collar_id === collarId &&
+            ['ACTIVE', 'RAISED', 'VILLAGE_SMS_SENT', 'DISPATCHED', 'ACKNOWLEDGED', 'ESCALATED'].includes(a.status),
+        ) || null
+      );
     },
     async findAlertById(alertId) {
       return state.collarAlerts.find((a) => a.id === alertId) || null;
@@ -432,8 +531,19 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
         zone_id: data.zoneId,
         zone_name: data.zoneName,
         severity: data.severity,
-        status: data.status,
-        triggered_at: data.triggeredAt,
+        proximity: data.proximity || 'INSIDE',
+        status: data.status || 'ACTIVE',
+        status_timeline: data.statusTimeline || [
+          {
+            status: data.status || 'ACTIVE',
+            timestamp: data.triggeredAt || new Date().toISOString(),
+            details: `Alert created for ${data.animalLabel} in ${data.zoneName}`,
+            actor: 'HazardMonitoringController',
+          },
+        ],
+        dispatch: data.dispatch || null,
+        village_sms: data.villageSms || null,
+        triggered_at: data.triggeredAt || new Date().toISOString(),
       };
       state.collarAlerts.push(alert);
       return { ...alert };
@@ -454,12 +564,19 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
       const alert = state.collarAlerts.find((a) => a.id === alertId);
       if (alert) {
         alert.status = data.status;
-        alert.response_action = data.responseAction;
-        alert.officer_id = data.officerId;
-        alert.officer_notes = data.officerNotes;
-        alert.dispatched_ranger_id = data.dispatchedRangerId;
-        alert.acknowledged_at = data.acknowledgedAt;
-        alert.resolved_at = data.resolvedAt;
+        if (data.responseAction !== undefined) alert.response_action = data.responseAction;
+        if (data.officerId !== undefined) alert.officer_id = data.officerId;
+        if (data.officerNotes !== undefined) alert.officer_notes = data.officerNotes;
+        if (data.dispatchedRangerId !== undefined) alert.dispatched_ranger_id = data.dispatchedRangerId;
+        if (data.acknowledgedAt !== undefined) alert.acknowledged_at = data.acknowledgedAt;
+        if (data.resolvedAt !== undefined) alert.resolved_at = data.resolvedAt;
+        if (data.resolutionReason !== undefined) alert.resolution_reason = data.resolutionReason;
+        if (data.dispatch) alert.dispatch = data.dispatch;
+        if (data.villageSms) alert.village_sms = data.villageSms;
+        if (data.timelineEntry) {
+          alert.status_timeline = alert.status_timeline || [];
+          alert.status_timeline.push(data.timelineEntry);
+        }
       }
       return alert ? { ...alert } : null;
     },
@@ -474,6 +591,38 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
     async recordTelemetryLog(data) {
       state.telemetryLogs = state.telemetryLogs || [];
       state.telemetryLogs.push({ ...data });
+    },
+    async createCameraTrapReview(data) {
+      const item = {
+        id: data.id,
+        trap_id: data.trapId,
+        image_url: data.imageUrl,
+        ai_species: data.aiSpecies,
+        ai_confidence: data.aiConfidence,
+        ai_threat: Boolean(data.aiThreat),
+        status: data.status || 'PENDING_REVIEW',
+        latitude: data.latitude,
+        longitude: data.longitude,
+        created_at: new Date().toISOString(),
+      };
+      state.cameraTrapReviews = state.cameraTrapReviews || [];
+      state.cameraTrapReviews.push(item);
+      return { ...item };
+    },
+    async listPendingCameraTrapReviews() {
+      return (state.cameraTrapReviews || []).filter((r) => r.status === 'PENDING_REVIEW');
+    },
+    async findCameraTrapReviewById(id) {
+      return (state.cameraTrapReviews || []).find((r) => r.id === id) || null;
+    },
+    async updateCameraTrapReview(id, data) {
+      const review = (state.cameraTrapReviews || []).find((r) => r.id === id);
+      if (review) {
+        review.status = data.status;
+        review.reviewed_by = data.reviewedBy;
+        review.reviewed_at = data.reviewedAt || new Date().toISOString();
+      }
+      return review ? { ...review } : null;
     },
   };
 
