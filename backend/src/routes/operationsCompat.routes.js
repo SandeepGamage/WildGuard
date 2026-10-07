@@ -60,6 +60,7 @@ function createOperationsCompatRouter({ services }) {
       const animals = devices.map((d) => ({
         collarId: d.code,
         name: d.name,
+        label: d.name || ('Elephant ' + d.code),
         species: 'Elephas maximus (Asian Elephant)',
         lastKnownLocation: {
           latitude: (d.last_location && d.last_location.coordinates) ? d.last_location.coordinates[1] : 6.42,

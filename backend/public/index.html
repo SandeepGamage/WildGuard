@@ -632,7 +632,7 @@
     <header>
       <div class="brand">
         <div class="brand-logo">WG</div>
-        <div class="brand-title">WildGuardLK</div>
+        <div class="brand-title">WildGuard LK · Operations Desk (UC2)</div>
       </div>
       <nav>
         <button class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</button>
@@ -1587,7 +1587,7 @@
               animalMarkers[animal.collarId].setLatLng([latitude, longitude]);
             } else {
               animalMarkers[animal.collarId] = L.marker([latitude, longitude])
-                .bindPopup(`<b>${animal.label}</b><br>Collar: ${animal.collarId}`)
+                .bindPopup(`<b>${animal.label || animal.name || animal.collarId}</b><br>Collar: ${animal.collarId}`)
                 .addTo(map);
             }
           }
@@ -1865,7 +1865,43 @@
         await refreshDashboard();
       }
 
-      async function silenceAlarm() {
+      async 
+      async function triggerAutoDispatch() {
+        if (!currentAlert && status && status.activeAlerts && status.activeAlerts.length > 0) {
+          const first = status.activeAlerts[0];
+          openAlertModal(first.alertReference || first.id);
+        } else if (currentAlert) {
+          confirmDispatchRanger();
+        } else {
+          await triggerMainBreach();
+        }
+      }
+
+      function triggerEscalationPanel() {
+        openEscalationModal('c680a8b1-1aa9-46a2-936e-4032e943d823');
+      }
+
+      function triggerCameraTrapReview() {
+        openCameraTrapModal({
+          trapId: 'CAM-TISSA-04',
+          location: 'Palatupana Farmland & Paddy Perimeter',
+          confidence: 0.74,
+          species: 'Elephas maximus (Asian Elephant)',
+          capturedAt: new Date().toISOString()
+        });
+      }
+
+      async function triggerSignalLost() {
+        try {
+          await fetch('/api/collars/COL-402/signal-lost', { method: 'POST' });
+          await refreshDashboard();
+          openSignalLostModal('COL-402', 'Elephant E-402 (Rambo)', '6.2994° N, 81.3703° E');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+  
+      function silenceAlarm() {
         await fetch('/api/dashboard/silence', { method: 'POST' });
         userSilenced = true;
         stopAcousticAlarm();
@@ -2197,6 +2233,12 @@
       // Init
       checkAuthOnLoad();
       loadZones();
+      setTimeout(() => {
+        if (map) {
+          map.invalidateSize();
+          map.setView([6.285, 81.345], 11);
+        }
+      }, 300);
       refreshDashboard();
       setInterval(refreshDashboard, 5000);
     </script>
