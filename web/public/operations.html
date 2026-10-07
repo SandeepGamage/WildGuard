@@ -1518,15 +1518,19 @@
               status.activeAlerts.length + status.delayedIncidents.length;
             let html = '';
             status.activeAlerts.forEach((item) => {
-              const a = item.alert;
+              const a = item.alert || item;
+              const ref = a.alertReference || a.reference || a.id;
+              const label = a.animalLabel || a.animalName || 'Collared Animal';
+              const zone = a.zoneName || a.zone_name || 'Boundary Zone';
+              const sev = a.severity || 'CRITICAL';
               html += `
-              <div class="alert-card critical" onclick="openAlertModal('${a.alertReference}')">
+              <div class="alert-card critical" onclick="openAlertModal('${ref}')">
                 <div class="alert-card-header">
-                  <strong style="color: #ef4444;">${a.alertReference}</strong>
-                  <span class="badge badge-critical">${a.severity}</span>
+                  <strong style="color: #ef4444;">${ref}</strong>
+                  <span class="badge badge-critical">${sev}</span>
                 </div>
-                <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
-                <div style="font-size: 0.75rem; color: #9ca3af;">${a.zoneName}</div>
+                <div style="font-weight: 600; font-size: 0.85rem;">${label}</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">${zone}</div>
                 <div style="font-size: 0.7rem; color: #6ee7b7; margin-top: 0.3rem;">⚡ Click to review & dispatch</div>
               </div>
             `;

@@ -92,19 +92,23 @@ function createOperationsCompatRouter({ services }) {
   router.get('/dashboard/status', async (_req, res) => {
     try {
       const rawAlerts = await collarService.listActiveAlerts();
-      const activeAlerts = rawAlerts.map((a) => ({
-        alertReference: a.reference || a.id,
-        collarId: a.collar_id || a.collarId,
-        animalName: a.animal_label || a.animalLabel || ('Elephant ' + (a.collar_id || a.collarId)),
-        zoneName: a.zone_name || a.zoneName || 'Boundary Zone',
-        status: a.status || 'RAISED',
-        severity: a.severity || 'CRITICAL',
-        raisedAt: a.raised_at || a.createdAt || new Date().toISOString(),
-        location: {
-          latitude: (a.location && a.location.coordinates) ? a.location.coordinates[1] : (a.location ? a.location.latitude : 6.425),
-          longitude: (a.location && a.location.coordinates) ? a.location.coordinates[0] : (a.location ? a.location.longitude : 81.385),
-        },
-      }));
+      const activeAlerts = rawAlerts.map((a) => {
+        const obj = {
+          alertReference: a.reference || a.id,
+          collarId: a.collar_id || a.collarId,
+          animalLabel: a.animal_label || a.animalLabel || ('Elephant ' + (a.collar_id || a.collarId)),
+          animalName: a.animal_label || a.animalLabel || ('Elephant ' + (a.collar_id || a.collarId)),
+          zoneName: a.zone_name || a.zoneName || 'Boundary Zone',
+          status: a.status || 'RAISED',
+          severity: a.severity || 'CRITICAL',
+          raisedAt: a.raised_at || a.createdAt || new Date().toISOString(),
+          location: {
+            latitude: (a.location && a.location.coordinates) ? a.location.coordinates[1] : (a.location ? a.location.latitude : 6.2994),
+            longitude: (a.location && a.location.coordinates) ? a.location.coordinates[0] : (a.location ? a.location.longitude : 81.3703),
+          },
+        };
+        return { ...obj, alert: obj };
+      });
       res.json({
         acousticAlarmActive: !userSilenced && activeAlerts.some((a) => a.status === 'RAISED'),
         activeAlerts,
@@ -147,7 +151,24 @@ function createOperationsCompatRouter({ services }) {
       const alerts = await collarService.listActiveAlerts();
       const found = alerts.find((a) => (a.reference === req.params.ref || a.id === req.params.ref));
       if (!found) return res.status(404).json({ error: 'Alert not found' });
-      res.json({ alert: found });
+      const alertObj = {
+        alertReference: found.reference || found.id,
+        collarId: found.collar_id || found.collarId,
+        animalLabel: found.animal_label || found.animalLabel || 'Collared Animal',
+        zoneName: found.zone_name || found.zoneName || 'Palatupana Farmland & Paddy Perimeter',
+        status: found.status || 'RAISED',
+        severity: found.severity || 'CRITICAL',
+        location: {
+          latitude: (found.location && found.location.coordinates) ? found.location.coordinates[1] : (found.location ? found.location.latitude : 6.2994),
+          longitude: (found.location && found.location.coordinates) ? found.location.coordinates[0] : (found.location ? found.location.longitude : 81.3703),
+        },
+      };
+      res.json({
+        alert: alertObj,
+        animal: { label: alertObj.animalLabel },
+        zone: { name: alertObj.zoneName, type: 'FARMLAND' },
+        threatLevel: alertObj.severity,
+      });
     } catch (e) {
       res.status(404).json({ error: 'Alert not found' });
     }
