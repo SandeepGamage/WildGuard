@@ -1403,6 +1403,17 @@
       let userSilenced = false;
       let prevAlertCount = 0;
       let currentOfficer = {};
+      
+      // Auto-unlock AudioContext on first user click anywhere on page
+      document.addEventListener('click', () => {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext && audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+      }, { once: false });
+  
       let sessionToken = localStorage.getItem('wildguard_session_token') || '';
 
       // Web Audio Synthesizer for Acoustic Alarm
@@ -1418,7 +1429,7 @@
           sirenOscillator = audioContext.createOscillator();
           sirenGain = audioContext.createGain();
           sirenOscillator.type = 'sawtooth';
-          sirenGain.gain.setValueAtTime(0.06, audioContext.currentTime);
+          sirenGain.gain.setValueAtTime(0.20, audioContext.currentTime);
           sirenOscillator.connect(sirenGain);
           sirenGain.connect(audioContext.destination);
           sirenOscillator.start();
@@ -1806,6 +1817,9 @@
 
       // Scenarios
       async function triggerMainBreach() {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        startAcousticAlarm();
         userSilenced = false;
         await fetch('/api/demo/main-flow-breach', { method: 'POST' });
         await refreshDashboard();

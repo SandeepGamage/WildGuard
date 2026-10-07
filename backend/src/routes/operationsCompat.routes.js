@@ -110,7 +110,7 @@ function createOperationsCompatRouter({ services }) {
         return { ...obj, alert: obj };
       });
       res.json({
-        acousticAlarmActive: !userSilenced && activeAlerts.some((a) => a.status === 'RAISED'),
+        acousticAlarmActive: !userSilenced && activeAlerts.some((a) => a.status === 'RAISED' || a.status === 'ACTIVE' || a.status === 'OPEN'),
         activeAlerts,
         delayedIncidents: [],
       });
