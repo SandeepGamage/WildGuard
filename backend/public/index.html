@@ -1036,6 +1036,50 @@
       </div>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirmModal" class="modal-overlay">
+      <div
+        class="modal-card"
+        style="
+          background: rgba(18, 28, 25, 0.95);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          max-width: 420px;
+          border-radius: 16px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+          padding: 1.75rem;
+          text-align: center;
+        "
+      >
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin: 0 auto 1rem auto;">
+          🚪
+        </div>
+        <h3 style="color: #f3f4f6; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Confirm Sign Out</h3>
+        <p style="color: #9ca3af; font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.5rem;">
+          Are you sure you want to log out of the Wildlife Operations Control Room? Any unsaved real-time monitoring views will be closed.
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <button
+            class="btn btn-secondary"
+            onclick="closeLogoutModal()"
+            style="flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #e5e7eb; cursor: pointer; font-weight: 600; font-size: 0.9rem;"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn"
+            onclick="executeLogout()"
+            style="flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: 1px solid #b91c1c; background: #dc2626; color: #ffffff; cursor: pointer; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(220,38,38,0.4);"
+            onmouseover="this.style.background='#b91c1c'"
+            onmouseout="this.style.background='#dc2626'"
+          >
+            Yes, Log Out
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Exception Flow 2: Operations Officer Login Modal -->
     <div id="loginModal" class="modal-overlay">
       <div
@@ -1678,7 +1722,25 @@
         }
       }
 
-      async function logout() {
+      function logout() {
+        openLogoutModal();
+      }
+
+      function openLogoutModal() {
+        const modal = document.getElementById('logoutConfirmModal');
+        if (modal) {
+          modal.classList.add('active');
+        } else if (confirm('Are you sure you want to log out of the Operations Control Room?')) {
+          executeLogout();
+        }
+      }
+
+      function closeLogoutModal() {
+        const modal = document.getElementById('logoutConfirmModal');
+        if (modal) modal.classList.remove('active');
+      }
+
+      async function executeLogout() {
         try {
           await fetch('/api/auth/expire-session', {
             method: 'POST',
