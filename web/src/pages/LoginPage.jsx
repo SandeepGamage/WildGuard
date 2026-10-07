@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('PARK_MANAGER');
   const target = location.state?.from ?? ROUTES.reports;
 
   if (status === AUTH_STATUS.SIGNED_IN) return <Navigate to={target} replace />;
@@ -110,7 +111,7 @@ export default function LoginPage() {
           ) : null}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-            {busy ? t('common.loading') : t('login.submit')}
+            {busy ? t('common.loading') : (selectedRole === 'OPERATIONS_OFFICER' ? 'Open Operations Console (UC2) →' : t('login.submit'))}
           </button>
 
           <p className="login-help muted">{t('login.help')}</p>
