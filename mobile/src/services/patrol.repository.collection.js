@@ -107,10 +107,24 @@ export function createCollectionPatrolRepository(storage) {
 
     /** Most recent finished patrol, for the summary screen. */
     async getLatestCompletedSession(rangerId) {
+      return (await this.listCompletedSessions(rangerId))[0] ?? null;
+    },
+
+    /** Finished patrols, newest first. */
+    async listCompletedSessions(rangerId) {
+      return read()
+        .sessions.filter((s) => s.rangerId === rangerId && s.status === PATROL_STATUS.COMPLETED)
+        .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    },
+
+    /** Items of one patrol that the server has not acknowledged yet. */
+    async countPendingForSession(sessionId) {
+      const data = read();
+      const session = data.sessions.find((s) => s.id === sessionId);
       return (
-        read()
-          .sessions.filter((s) => s.rangerId === rangerId && s.status === PATROL_STATUS.COMPLETED)
-          .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null
+        data.points.filter((p) => p.sessionId === sessionId && pending(p)).length +
+        data.incidents.filter((i) => i.sessionId === sessionId && pending(i)).length +
+        (session && session.syncedStatus !== session.status ? 1 : 0)
       );
     },
   };

@@ -4,6 +4,7 @@
     "continue": "Continue",
     "back": "Back",
     "cancel": "Cancel",
+    "close": "Close",
     "retry": "Try again",
     "loading": "Loading…",
     "somethingWrong": "Something went wrong",
@@ -67,6 +68,7 @@
     "queue": "Queue",
     "map": "Map",
     "history": "History",
+    "patrol": "Patrol",
     "profile": "Profile"
   },
   "home": {
@@ -373,6 +375,24 @@
     "reasonRequired": "Choose a reason to continue.",
     "notesTooLong": "Notes can be up to 1000 characters.",
     "messageRequired": "Enter the SMS text."
+  },
+  "patrolHistory": {
+    "title": "Patrol history",
+    "subtitle": "Your past patrols, saved on this phone.",
+    "empty": "No completed patrols yet.",
+    "failed": "Your patrol history could not be loaded.",
+    "uploaded": "Uploaded",
+    "waiting": "Waiting: {{count}}",
+    "notUploaded": "Not uploaded",
+    "detail": {
+      "title": "Patrol details",
+      "started": "Started",
+      "ended": "Ended",
+      "incidents": "Incidents logged",
+      "noIncidents": "No incidents were logged on this patrol.",
+      "lastKnownLocation": "No GPS fix: last known location used.",
+      "photoCompressed": "Photo was compressed (low storage)."
+    }
   },
   "patrol": {
     "start": {
