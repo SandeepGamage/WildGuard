@@ -12,10 +12,11 @@ describe('role routing', () => {
   it('sends each role to its own interface', () => {
     expect(homeRouteForRole(USER_ROLES.VILLAGER)).toBe(ROUTES.villager.home);
     expect(homeRouteForRole(USER_ROLES.COMMUNITY_LIAISON_OFFICER)).toBe(ROUTES.liaison.queue);
+    expect(homeRouteForRole(USER_ROLES.FIELD_RANGER)).toBe(ROUTES.ranger.start);
   });
 
   it('has no mobile interface for other roles', () => {
-    expect(homeRouteForRole(USER_ROLES.FIELD_RANGER)).toBeNull();
+    expect(homeRouteForRole(USER_ROLES.PARK_MANAGER)).toBeNull();
     expect(homeRouteForRole(undefined)).toBeNull();
   });
 });

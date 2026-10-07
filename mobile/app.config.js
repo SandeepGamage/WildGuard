@@ -22,8 +22,9 @@ module.exports = {
       bundleIdentifier: 'lk.wildguard.mobile',
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
-          'WildGuard LK uses your location to find your village when you report wildlife conflict.',
-        NSCameraUsageDescription: 'WildGuard LK uses the camera so you can attach a photo to a report.',
+          'WildGuard LK uses your location to find your village when you report wildlife conflict, and to record your route while you patrol.',
+        NSCameraUsageDescription:
+          'WildGuard LK uses the camera so you can attach a photo to a report or a patrol incident.',
         NSPhotoLibraryUsageDescription: 'WildGuard LK lets you attach a photo to a report.',
       },
     },
@@ -47,7 +48,7 @@ module.exports = {
         'expo-location',
         {
           locationWhenInUsePermission:
-            'WildGuard LK uses your location to find your village when you report wildlife conflict.',
+            'WildGuard LK uses your location to find your village when you report wildlife conflict, and to record your route while you patrol.',
         },
       ],
       [
