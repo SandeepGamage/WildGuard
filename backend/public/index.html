@@ -1331,7 +1331,7 @@
                 id="qrUrlInput"
                 type="text"
                 readonly
-                value="http://10.87.108.139:4000/collar.html"
+                value="http://10.87.108.139:5000/collar.html"
                 style="
                   flex: 1;
                   background: #0b1311;
@@ -1876,18 +1876,20 @@
         const modal = document.getElementById('phoneQrModal');
         if (modal) {
           modal.classList.add('active');
-          const host =
-            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-              ? '10.87.108.139'
-              : window.location.hostname;
-          const port = window.location.port ? window.location.port : '4000';
-          const fullUrl = `http://${host}:${port}/collar.html`;
-          const input = document.getElementById('qrUrlInput');
-          if (input) input.value = fullUrl;
-          const qrImg = document.getElementById('phoneQrImage');
-          if (qrImg) {
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(fullUrl)}`;
-          }
+          updateQrDisplay();
+        }
+      }
+
+      function updateQrDisplay() {
+        const ipInput = document.getElementById('customIpInput');
+        const customIp = ipInput ? ipInput.value.trim() : '';
+        const host = customIp || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? window.location.hostname : '10.87.108.139');
+        const fullUrl = 'http://' + host + ':5000/collar.html';
+        const input = document.getElementById('qrUrlInput');
+        if (input) input.value = fullUrl;
+        const qrImg = document.getElementById('phoneQrImage');
+        if (qrImg) {
+          qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(fullUrl);
         }
       }
 
