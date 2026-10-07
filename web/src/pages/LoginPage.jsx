@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AUTH_STATUS, useAuth } from '../auth/AuthContext';
@@ -13,23 +13,27 @@ const FEATURES = [
   { key: 'trends', Icon: TrendIcon },
 ];
 
-/** Park Manager sign in (email + password; accounts are created by the DWC administrator). */
+/** Sign in: Park Manager (UC4) or Operations Officer (UC2). */
 export default function LoginPage() {
   const { t } = useTranslation();
   const { status, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedRole, setSelectedRole] = useState('PARK_MANAGER');
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('PARK_MANAGER');
   const target = location.state?.from ?? ROUTES.reports;
 
   if (status === AUTH_STATUS.SIGNED_IN) return <Navigate to={target} replace />;
 
   const submit = async (event) => {
     event.preventDefault();
+    if (selectedRole === 'OPERATIONS_OFFICER') {
+      window.location.href = 'http://localhost:4000/';
+      return;
+    }
     if (!account.trim() || !password) {
       setError(t('login.required'));
       return;
@@ -45,6 +49,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleRoleChange = (role) => {
+    setSelectedRole(role);
+    setError(null);
+    if (role === 'OPERATIONS_OFFICER') {
+      setAccount('officer.hanaan@wildlife.gov.lk');
+      setPassword('password123');
+    } else {
+      setAccount('');
+      setPassword('');
+    }
+  };
+
   return (
     <main className="login">
       <section className="login-hero">
@@ -56,20 +72,49 @@ export default function LoginPage() {
           <span>{t('common.appName')}</span>
         </div>
         <div className="login-pitch">
-          <p className="login-headline">{t('login.headline')}</p>
-          <p className="login-lead">{t('login.lead')}</p>
+          <p className="login-headline">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Real-time Collar Hazards & Emergency Control.'
+              : t('login.headline')}
+          </p>
+          <p className="login-lead">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Control room monitoring for GPS elephant collar breaches, automated villager warnings, nearest responder dispatch, and camera trap verification.'
+              : t('login.lead')}
+          </p>
           <ul className="login-features">
-            {FEATURES.map(({ key, Icon }) => (
-              <li key={key}>
-                <span className="login-feature-icon">
-                  <Icon />
-                </span>
-                {t(`login.features.${key}`)}
-              </li>
-            ))}
+            {selectedRole === 'OPERATIONS_OFFICER' ? (
+              <>
+                <li>
+                  <span className="login-feature-icon">🚨</span>
+                  Virtual Geofence Boundary Breach Alarm System
+                </li>
+                <li>
+                  <span className="login-feature-icon">📲</span>
+                  Automated Early-Warning SMS to Surrounding Villages
+                </li>
+                <li>
+                  <span className="login-feature-icon">🚓</span>
+                  Nearest Field Responder Auto-Dispatch &amp; Escalation
+                </li>
+              </>
+            ) : (
+              FEATURES.map(({ key, Icon }) => (
+                <li key={key}>
+                  <span className="login-feature-icon">
+                    <Icon />
+                  </span>
+                  {t(`login.features.${key}`)}
+                </li>
+              ))
+            )}
           </ul>
         </div>
-        <p className="login-hero-note">{t('login.restricted')}</p>
+        <p className="login-hero-note">
+          {selectedRole === 'OPERATIONS_OFFICER'
+            ? 'Department of Wildlife Conservation • Control Room Operator Desk (UC2 - Hanaan / IT23594586)'
+            : t('login.restricted')}
+        </p>
       </section>
 
       <section className="login-panel">
@@ -77,13 +122,72 @@ export default function LoginPage() {
           <LanguageSelect />
         </div>
         <form className="login-form" onSubmit={submit} noValidate>
+          {/* Role Switcher Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              background: '#e5e7eb',
+              padding: '4px',
+              borderRadius: '10px',
+              marginBottom: '0.75rem',
+              border: '1px solid #d1d5db',
+            }}
+          >
+            <button
+              type="button"
+              id="roleBtnManager"
+              onClick={() => handleRoleChange('PARK_MANAGER')}
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                fontSize: '13px',
+                fontWeight: '700',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedRole === 'PARK_MANAGER' ? '#0c3b2e' : 'transparent',
+                color: selectedRole === 'PARK_MANAGER' ? '#ffffff' : '#4b5563',
+                boxShadow: selectedRole === 'PARK_MANAGER' ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              📊 Park Manager (UC4)
+            </button>
+            <button
+              type="button"
+              id="roleBtnOperations"
+              onClick={() => handleRoleChange('OPERATIONS_OFFICER')}
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                fontSize: '13px',
+                fontWeight: '700',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedRole === 'OPERATIONS_OFFICER' ? '#0c3b2e' : 'transparent',
+                color: selectedRole === 'OPERATIONS_OFFICER' ? '#ffffff' : '#4b5563',
+                boxShadow: selectedRole === 'OPERATIONS_OFFICER' ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🛡️ Operations Officer (UC2)
+            </button>
+          </div>
+
           <div className="login-intro">
             <h1>{t('login.title')}</h1>
-            <p className="muted">{t('login.subtitle')}</p>
+            <p className="muted">
+              {selectedRole === 'OPERATIONS_OFFICER'
+                ? 'Sign in to open the Real-time Wildlife Hazard & Collar Alert Console (UC2 - Hanaan / IT23594586).'
+                : t('login.subtitle')}
+            </p>
           </div>
 
           <label className="field">
-            <span className="field-label">{t('login.account')}</span>
+            <span className="field-label">
+              {selectedRole === 'OPERATIONS_OFFICER' ? 'Officer Email / ID' : t('login.account')}
+            </span>
             <input
               type="email"
               autoComplete="username"
@@ -111,10 +215,18 @@ export default function LoginPage() {
           ) : null}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-            {busy ? t('common.loading') : (selectedRole === 'OPERATIONS_OFFICER' ? 'Open Operations Console (UC2) →' : t('login.submit'))}
+            {busy
+              ? t('common.loading')
+              : selectedRole === 'OPERATIONS_OFFICER'
+                ? 'Open Operations Control Room (UC2) →'
+                : t('login.submit')}
           </button>
 
-          <p className="login-help muted">{t('login.help')}</p>
+          <p className="login-help muted">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Authorized DWC control room operators only (UC2 - Hanaan / IT23594586).'
+              : t('login.help')}
+          </p>
         </form>
         <p className="login-footer">{t('login.footer')}</p>
       </section>
