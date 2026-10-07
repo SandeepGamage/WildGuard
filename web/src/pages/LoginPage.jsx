@@ -122,56 +122,63 @@ export default function LoginPage() {
           <LanguageSelect />
         </div>
         <form className="login-form" onSubmit={submit} noValidate>
-          {/* Role Switcher Tabs */}
+          {/* Role Switcher Segmented Control */}
           <div
+            role="tablist"
+            aria-label="Switch Profile"
             style={{
               display: 'flex',
-              background: '#e5e7eb',
-              padding: '4px',
-              borderRadius: '10px',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '3px',
               marginBottom: '0.75rem',
-              border: '1px solid #d1d5db',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
             }}
           >
             <button
               type="button"
+              role="tab"
               id="roleBtnManager"
+              aria-selected={selectedRole === 'PARK_MANAGER'}
               onClick={() => handleRoleChange('PARK_MANAGER')}
               style={{
                 flex: 1,
-                padding: '9px 12px',
-                fontSize: '13px',
-                fontWeight: '700',
-                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: selectedRole === 'PARK_MANAGER' ? '500' : '400',
+                borderRadius: '6px',
                 border: 'none',
                 cursor: 'pointer',
-                background: selectedRole === 'PARK_MANAGER' ? '#0c3b2e' : 'transparent',
-                color: selectedRole === 'PARK_MANAGER' ? '#ffffff' : '#4b5563',
-                boxShadow: selectedRole === 'PARK_MANAGER' ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
-                transition: 'all 0.2s ease',
+                background: selectedRole === 'PARK_MANAGER' ? '#e9ecef' : 'transparent',
+                color: selectedRole === 'PARK_MANAGER' ? '#1f2937' : '#6b7280',
+                transition: 'all 0.15s ease-in-out',
+                textAlign: 'center',
               }}
             >
-              📊 Park Manager (UC4)
+              Park Manager
             </button>
             <button
               type="button"
+              role="tab"
               id="roleBtnOperations"
+              aria-selected={selectedRole === 'OPERATIONS_OFFICER'}
               onClick={() => handleRoleChange('OPERATIONS_OFFICER')}
               style={{
                 flex: 1,
-                padding: '9px 12px',
-                fontSize: '13px',
-                fontWeight: '700',
-                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: selectedRole === 'OPERATIONS_OFFICER' ? '500' : '400',
+                borderRadius: '6px',
                 border: 'none',
                 cursor: 'pointer',
-                background: selectedRole === 'OPERATIONS_OFFICER' ? '#0c3b2e' : 'transparent',
-                color: selectedRole === 'OPERATIONS_OFFICER' ? '#ffffff' : '#4b5563',
-                boxShadow: selectedRole === 'OPERATIONS_OFFICER' ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
-                transition: 'all 0.2s ease',
+                background: selectedRole === 'OPERATIONS_OFFICER' ? '#e9ecef' : 'transparent',
+                color: selectedRole === 'OPERATIONS_OFFICER' ? '#1f2937' : '#6b7280',
+                transition: 'all 0.15s ease-in-out',
+                textAlign: 'center',
               }}
             >
-              🛡️ Operations Officer (UC2)
+              Operations Officer
             </button>
           </div>
 
