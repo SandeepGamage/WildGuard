@@ -18,6 +18,7 @@ function createOperationsCompatRouter({ services }) {
         accuracyM: accuracyMetres,
       });
       const isBreach = !!result.alert;
+      if (isBreach) userSilenced = false;
       res.json({
         isBreach,
         alert: result.alert
