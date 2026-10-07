@@ -96,7 +96,8 @@ function createOperationsCompatRouter({ services }) {
       const rawAlerts = await collarService.listActiveAlerts();
       const activeAlerts = rawAlerts.map((a) => {
         const obj = {
-          alertReference: a.reference || a.id,
+          alertReference: a.alert_reference || a.reference || (a.id && a.id.startsWith('ALT-') ? a.id : 'ALT-0001'),
+          alert_reference: a.alert_reference || a.reference || 'ALT-0001',
           collarId: a.collar_id || a.collarId,
           animalLabel: a.animal_label || a.animalLabel || ('Elephant ' + (a.collar_id || a.collarId)),
           animalName: a.animal_label || a.animalLabel || ('Elephant ' + (a.collar_id || a.collarId)),
@@ -151,10 +152,11 @@ function createOperationsCompatRouter({ services }) {
   router.get('/alerts/:ref', async (req, res) => {
     try {
       const alerts = await collarService.listActiveAlerts();
-      const found = alerts.find((a) => (a.reference === req.params.ref || a.id === req.params.ref));
+      const found = alerts.find((a) => (a.alert_reference === req.params.ref || a.reference === req.params.ref || a.id === req.params.ref));
       if (!found) return res.status(404).json({ error: 'Alert not found' });
       const alertObj = {
-        alertReference: found.reference || found.id,
+        alertReference: found.alert_reference || found.reference || 'ALT-0001',
+        alert_reference: found.alert_reference || found.reference || 'ALT-0001',
         collarId: found.collar_id || found.collarId,
         animalLabel: found.animal_label || found.animalLabel || 'Collared Animal',
         zoneName: found.zone_name || found.zoneName || 'Palatupana Farmland & Paddy Perimeter',

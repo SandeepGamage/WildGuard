@@ -1537,7 +1537,7 @@
               html += `
               <div class="alert-card critical" onclick="openAlertModal('${ref}')">
                 <div class="alert-card-header">
-                  <strong style="color: #ef4444;">${ref}</strong>
+                  <strong style="color: #ef4444; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 0.05em;">${ref && ref.length > 15 ? ('ALT-' + ref.slice(0, 4).toUpperCase()) : (ref || 'ALT-0001')}</strong>
                   <span class="badge badge-critical">${sev}</span>
                 </div>
                 <div style="font-weight: 600; font-size: 0.85rem;">${label}</div>
@@ -1550,7 +1550,7 @@
               html += `
               <div class="alert-card delayed" onclick="openAlertModal('${a.alertReference}')">
                 <div class="alert-card-header">
-                  <strong style="color: #f59e0b;">${a.alertReference}</strong>
+                  <strong style="color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 0.05em;">${a.alertReference && a.alertReference.length > 15 ? ('ALT-' + a.alertReference.slice(0, 4).toUpperCase()) : (a.alertReference || 'ALT-0002')}</strong>
                   <span class="badge badge-delayed">DELAYED</span>
                 </div>
                 <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
