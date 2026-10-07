@@ -180,30 +180,47 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Manual Boundary Breach Triggers</div>
-      <p style="font-size: 0.7rem; color: #9ca3af; margin-bottom: 0.4rem">
-        Simulate elephant movement near Yala boundary geofences directly from your phone:
+      <div class="card-title">Boundary Breach Triggers</div>
+      <p style="font-size: 0.72rem; color: #9ca3af; margin-bottom: 0.6rem; line-height: 1.4">
+        Simulate elephant movement near Yala National Park geofences directly from your phone:
       </p>
       <button
         class="btn-scenario"
-        style="border-left: 3px solid #ef4444"
-        onclick="sendCoordinate(6.4245, 81.3852, 'Breached Northern Farmland (Zone 4)')"
+        style="border-left: 4px solid #ef4444; margin-bottom: 0.5rem;"
+        onclick="sendCoordinate(6.2994, 81.3703, 'Breached Palatupana Farmland (Zone 1)')"
       >
-        🚨 Trigger Critical Breach (Zone 4 Boundary)
+        🚨 Trigger Farmland Breach (Palatupana Zone)
       </button>
       <button
         class="btn-scenario"
-        style="border-left: 3px solid #f59e0b"
-        onclick="sendCoordinate(6.434, 81.385, 'Approaching Boundary (within 300m)')"
+        style="border-left: 4px solid #f97316; margin-bottom: 0.5rem;"
+        onclick="sendCoordinate(6.2386, 81.3138, 'Breached Kirinda Village (Zone 2)')"
+      >
+        🚨 Trigger Village Breach (Kirinda Settlement)
+      </button>
+      <button
+        class="btn-scenario"
+        style="border-left: 4px solid #f59e0b; margin-bottom: 0.5rem;"
+        onclick="sendCoordinate(6.3300, 81.3850, 'Approaching Boundary (within 300m)')"
       >
         ⚠️ Trigger Approaching Warning (300m Buffer)
       </button>
       <button
         class="btn-scenario"
-        style="border-left: 3px solid #10b981"
-        onclick="sendCoordinate(6.32, 81.35, 'Inside Protected Safe Park Core')"
+        style="border-left: 4px solid #10b981; margin-bottom: 0.5rem;"
+        onclick="sendCoordinate(6.1500, 81.4500, 'Inside Protected Safe Park Core')"
       >
         🟢 Transmit Safe Coordinate (Silent Log)
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Live GPS Stream Simulation</div>
+      <p style="font-size: 0.72rem; color: #9ca3af; margin-bottom: 0.6rem">
+        Stream continuous elephant telemetry toward the agricultural boundary:
+      </p>
+      <button id="simToggleBtn" class="btn-toggle" onclick="toggleSimulatedMovement()">
+        🐘 Start Live Elephant Movement Stream
       </button>
     </div>
 
@@ -296,6 +313,37 @@
           }, 8000);
         }
       }
-    </script>
+    
+      let simInterval = null;
+      let simStep = 0;
+      const simPath = [
+        { lat: 6.2000, lng: 81.4200, desc: 'Safe Zone (Deep Park Core)' },
+        { lat: 6.2400, lng: 81.4000, desc: 'Moving toward buffer (Safe)' },
+        { lat: 6.2750, lng: 81.3850, desc: 'Approaching Farmland perimeter' },
+        { lat: 6.2994, lng: 81.3703, desc: 'CRITICAL: Entered Palatupana Farmland!' },
+        { lat: 6.3050, lng: 81.3650, desc: 'Deep inside Paddy Fields!' },
+      ];
+
+      function toggleSimulatedMovement() {
+        const btn = document.getElementById('simToggleBtn');
+        if (simInterval !== null) {
+          clearInterval(simInterval);
+          simInterval = null;
+          btn.innerText = '🐘 Start Live Elephant Movement Stream';
+          btn.className = 'btn-toggle';
+          log('Elephant movement stream paused.');
+        } else {
+          btn.innerText = '⏹️ Stop Movement Stream';
+          btn.className = 'btn-toggle active';
+          simStep = 0;
+          log('Started streaming elephant movement telemetry...');
+          simInterval = setInterval(() => {
+            const pt = simPath[simStep % simPath.length];
+            simStep++;
+            sendCoordinate(pt.lat, pt.lng, pt.desc);
+          }, 4000);
+        }
+      }
+  </script>
   </body>
 </html>

@@ -11,6 +11,8 @@ function createOperationsCompatRouter({ services }) {
       const { collarId, latitude, longitude, accuracyMetres } = req.body;
       const result = await collarService.ingestReading({
         collarId,
+        latitude,
+        longitude,
         location: { latitude, longitude },
         recordedAt: new Date().toISOString(),
         accuracyM: accuracyMetres,
@@ -33,7 +35,7 @@ function createOperationsCompatRouter({ services }) {
   // 1. Zones
   router.get('/zones', async (_req, res) => {
     try {
-      const rawZones = await collarService.listGeofenceZones();
+      const rawZones = await collarService.listZones();
       const zones = rawZones.map((z) => ({
         id: z.id || z.zone_id,
         name: z.name,
@@ -53,7 +55,7 @@ function createOperationsCompatRouter({ services }) {
   // 2. Animals / Devices
   router.get('/animals', async (_req, res) => {
     try {
-      const devices = await collarService.listDevices();
+      const devices = await collarService.listCollars();
       const animals = devices.map((d) => ({
         collarId: d.code,
         name: d.name,
@@ -186,7 +188,9 @@ function createOperationsCompatRouter({ services }) {
     userSilenced = false;
     const result = await collarService.ingestReading({
       collarId: 'COL-402',
-      location: { latitude: 6.425, longitude: 81.385 },
+      latitude: 6.2994,
+      longitude: 81.3703,
+      location: { latitude: 6.2994, longitude: 81.3703 },
       recordedAt: new Date().toISOString(),
       animalLabel: 'Elephant E-402 (Rambo)',
     });
@@ -196,7 +200,9 @@ function createOperationsCompatRouter({ services }) {
   router.post('/demo/safe-zone', async (_req, res) => {
     const result = await collarService.ingestReading({
       collarId: 'COL-305',
-      location: { latitude: 6.300, longitude: 81.350 },
+      latitude: 6.1500,
+      longitude: 81.4500,
+      location: { latitude: 6.1500, longitude: 81.4500 },
       recordedAt: new Date().toISOString(),
       animalLabel: 'Elephant E-305',
     });

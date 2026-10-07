@@ -46,7 +46,9 @@ class CollarService {
   async ingestReading(reading) {
     const recordedAt = reading.recordedAt ? new Date(reading.recordedAt) : this.clock();
     const isDelayed = Boolean(reading.isDelayed);
-    const location = { latitude: reading.latitude, longitude: reading.longitude };
+    const lat = typeof reading.latitude === 'number' ? reading.latitude : (reading.location ? reading.location.latitude : undefined);
+    const lng = typeof reading.longitude === 'number' ? reading.longitude : (reading.location ? reading.location.longitude : undefined);
+    const location = { latitude: lat, longitude: lng };
 
     // 1. Update collar device location in directory
     await this.collarRepository.updateDeviceLocation(reading.collarId, location, recordedAt);
