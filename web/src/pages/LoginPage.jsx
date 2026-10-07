@@ -31,7 +31,7 @@ export default function LoginPage() {
   const submit = async (event) => {
     event.preventDefault();
     if (selectedRole === 'OPERATIONS_OFFICER') {
-      window.location.href = 'http://localhost:4000/';
+      window.location.href = '/operations.html';
       return;
     }
     if (!account.trim() || !password) {
