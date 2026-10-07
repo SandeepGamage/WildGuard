@@ -374,6 +374,71 @@
     "notesTooLong": "Notes can be up to 1000 characters.",
     "messageRequired": "Enter the SMS text."
   },
+  "patrol": {
+    "start": {
+      "title": "Start patrol",
+      "subtitle": "Hello {{name}}. Check your assignment, then begin.",
+      "deviceCheck": "Device check",
+      "interval": "Your position is recorded every {{seconds}} seconds.",
+      "foregroundNote": "Keep the app open while you patrol. Tracking runs only while the app is open.",
+      "button": "Start patrol",
+      "permissionDenied": "Location permission is needed to track a patrol. Allow it in your phone settings and try again.",
+      "failed": "The patrol could not be started. Please try again.",
+      "simulate": "Simulated GPS (demo)"
+    },
+    "active": {
+      "title": "Patrol in progress",
+      "subtitle": "{{park}} · {{sector}}",
+      "duration": "Time",
+      "distance": "Distance",
+      "points": "Track points",
+      "incidents": "Incidents",
+      "savedOnPhone": "Saved on phone",
+      "gpsWeak": "GPS signal is weak. Points are not recorded until it improves.",
+      "logIncident": "Log incident",
+      "endHold": "Hold to end patrol",
+      "endHint": "Press and hold to confirm.",
+      "simWeak": "Simulate weak GPS",
+      "simNoGps": "Simulate no GPS fix"
+    },
+    "log": {
+      "title": "Log incident",
+      "subtitle": "What did you find?",
+      "type": "Incident type",
+      "note": "Note (optional)",
+      "notePlaceholder": "Add a short description",
+      "save": "Save on phone",
+      "saved": "Saved on phone",
+      "savedBody": "It will upload automatically. Items waiting: {{count}}",
+      "chooseType": "Choose an incident type.",
+      "locationWarning": "No GPS fix. The last known location was used.",
+      "storageWarning": "Phone storage is low. The photo was compressed.",
+      "noLocation": "No GPS position yet. Wait for the first fix and try again.",
+      "failed": "The incident could not be saved. Please try again."
+    },
+    "summary": {
+      "title": "Patrol summary",
+      "subtitle": "{{park}} · {{sector}}",
+      "done": "Back to start"
+    },
+    "sync": {
+      "allUploaded": "All data uploaded",
+      "waiting": "Waiting to upload",
+      "offline": "Offline. Will upload when a connection is available.",
+      "syncing": "Uploading...",
+      "retrying": "Upload failed. Retrying automatically in {{time}}.",
+      "pending": "Items waiting: {{count}}",
+      "retryNow": "Retry now"
+    },
+    "types": {
+      "SNARE_POACHING": "Snare / poaching",
+      "CARCASS": "Carcass",
+      "ELEPHANT_SIGHTING": "Elephant sighting",
+      "ILLEGAL_ACTIVITY": "Illegal activity",
+      "OTHER_ANIMAL": "Other animal",
+      "OTHER": "Other"
+    }
+  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "network": "Could not reach the server. Check your connection and try again.",

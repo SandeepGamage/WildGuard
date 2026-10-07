@@ -176,6 +176,47 @@ const ConservationReportSchema = new Schema({
   incidents: { type: [Schema.Types.Mixed], default: [] },
 });
 
+/** UC1 – a ranger's patrol. The id is generated on the phone so uploads are idempotent. */
+const PatrolSessionSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    ranger_id: { type: String, required: true, index: true },
+    sector_id: { type: String, required: true, index: true },
+    status: { type: String, required: true },
+    started_at: { type: Date, required: true, index: true },
+    ended_at: { type: Date, default: null },
+  },
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
+);
+
+const PatrolTrackPointSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  session_id: { type: String, required: true, index: true },
+  ranger_id: { type: String, required: true },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  accuracy_m: { type: Number, default: null },
+  recorded_at: { type: Date, required: true },
+});
+
+const PatrolIncidentSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    session_id: { type: String, required: true, index: true },
+    ranger_id: { type: String, required: true },
+    sector_id: { type: String, required: true, index: true },
+    incident_type: { type: String, required: true },
+    note: { type: String, default: null },
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true },
+    location_warning: { type: Boolean, default: false },
+    location_fix_at: { type: Date, default: null },
+    occurred_at: { type: Date, required: true, index: true },
+    photo_path: { type: String, default: null },
+  },
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
+);
+
 // Guard against duplicate model compiling in watch/hot-reload
 const getModel = (name, schema) => mongoose.models[name] || mongoose.model(name, schema);
 
@@ -192,4 +233,7 @@ module.exports = {
   SmsLog: getModel('SmsLog', SmsLogSchema),
   Sequence: getModel('Sequence', SequenceSchema),
   ConservationReport: getModel('ConservationReport', ConservationReportSchema),
+  PatrolSession: getModel('PatrolSession', PatrolSessionSchema),
+  PatrolTrackPoint: getModel('PatrolTrackPoint', PatrolTrackPointSchema),
+  PatrolIncident: getModel('PatrolIncident', PatrolIncidentSchema),
 };

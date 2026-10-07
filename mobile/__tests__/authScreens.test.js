@@ -209,7 +209,7 @@ describe('entry route', () => {
 
   it('does not open an interface for a role without a mobile UI and offers sign out', async () => {
     const signOut = jest.fn();
-    state({ status: 'signedIn', profile: { role: 'FIELD_RANGER' }, signOut });
+    state({ status: 'signedIn', profile: { role: 'UNKNOWN_ROLE' }, signOut });
     renderScreen(<Index />);
     expect(await screen.findByText('You do not have access to this.')).toBeTruthy();
     fireEvent.press(screen.getByText('Sign out'));
