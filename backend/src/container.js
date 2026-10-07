@@ -1,3 +1,4 @@
+const { CollarService } = require('./services/collar.service');
 const { AuthService } = require('./services/auth.service');
 const { VillageService } = require('./services/village.service');
 const { LocationResolver } = require('./services/locationResolver');
@@ -117,6 +118,14 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     logger,
   });
 
+  // UC2: Wildlife Collar Boundary Alerts (Hanaan / IT23594586)
+  const collarService = new CollarService({
+    collarRepository,
+    notificationService,
+    logger,
+    clock,
+  });
+
   return {
     authService,
     villageService,
@@ -127,6 +136,7 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     smsService,
     pendingQueue,
     analyticsService,
+    collarService,
   };
 }
 

@@ -176,6 +176,64 @@ const ConservationReportSchema = new Schema({
   incidents: { type: [Schema.Types.Mixed], default: [] },
 });
 
+/**
+ * UC2 GeofenceZone: predefined high-risk geographic boundary buffer.
+ */
+const GeofenceZoneSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  type: { type: String, enum: ['BUFFER', 'CORE', 'SETTLEMENT_BOUNDARY', 'CORRIDOR'], default: 'BUFFER' },
+  centre_lat: { type: Number, required: true },
+  centre_lng: { type: Number, required: true },
+  radius_metres: { type: Number, required: true },
+  severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'HIGH' },
+  sector_id: { type: String, default: null },
+  nearest_settlement: { type: String, default: null },
+});
+
+/**
+ * UC2 CollarAlert: boundary breach events triggered by GeofenceEngine.
+ */
+const CollarAlertSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  alert_reference: { type: String, required: true, unique: true },
+  collar_id: { type: String, required: true, index: true },
+  animal_label: { type: String, required: true },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  zone_id: { type: String, required: true },
+  zone_name: { type: String, required: true },
+  severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'HIGH' },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'FALSE_ALARM', 'DELAYED_INCIDENT'],
+    default: 'ACTIVE',
+    index: true,
+  },
+  response_action: {
+    type: String,
+    enum: ['DISPATCH_RANGER', 'MONITOR_CLOSELY', 'NOTIFY_COMMUNITY', 'MARK_FALSE_ALARM'],
+    default: null,
+  },
+  officer_id: { type: String, default: null },
+  dispatched_ranger_id: { type: String, default: null },
+  officer_notes: { type: String, default: null },
+  triggered_at: { type: Date, default: Date.now, index: true },
+  acknowledged_at: { type: Date, default: null },
+  resolved_at: { type: Date, default: null },
+});
+
+/**
+ * UC2 CollarTelemetryLog: silent periodic location tracking logs.
+ */
+const CollarTelemetryLogSchema = new Schema({
+  collar_id: { type: String, required: true, index: true },
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  recorded_at: { type: Date, default: Date.now, index: true },
+  is_delayed: { type: Boolean, default: false },
+});
+
 // Guard against duplicate model compiling in watch/hot-reload
 const getModel = (name, schema) => mongoose.models[name] || mongoose.model(name, schema);
 
@@ -192,4 +250,7 @@ module.exports = {
   SmsLog: getModel('SmsLog', SmsLogSchema),
   Sequence: getModel('Sequence', SequenceSchema),
   ConservationReport: getModel('ConservationReport', ConservationReportSchema),
+  GeofenceZone: getModel('GeofenceZone', GeofenceZoneSchema),
+  CollarAlert: getModel('CollarAlert', CollarAlertSchema),
+  CollarTelemetryLog: getModel('CollarTelemetryLog', CollarTelemetryLogSchema),
 };

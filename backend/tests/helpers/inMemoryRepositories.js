@@ -364,7 +364,7 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
 
   const collarRepository = {
     async findNearby(latitude, longitude, radiusM) {
-      return collars
+      return (state.collars || collars)
         .map((collar) => ({
           code: collar.code,
           name: collar.name,
@@ -372,6 +372,108 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
           lastSeenAt: new Date().toISOString(),
         }))
         .filter((collar) => collar.distanceM <= radiusM);
+    },
+    async listDevices() {
+      return state.collars || collars;
+    },
+    async updateDeviceLocation(collarId, location, lastSeenAt) {
+      const collar = (state.collars || collars).find((c) => c.code === collarId);
+      if (collar) {
+        collar.latitude = location.latitude;
+        collar.longitude = location.longitude;
+        collar.last_seen_at = lastSeenAt || new Date();
+      }
+    },
+    async listGeofenceZones() {
+      if (!state.zones || state.zones.length === 0) {
+        state.zones = [
+          {
+            id: 'ZONE-NORTH-01',
+            name: 'North Boundary - Kirinda Buffer',
+            type: 'BUFFER',
+            centre_lat: 6.2386,
+            centre_lng: 81.3138,
+            radius_metres: 3500,
+            severity: 'HIGH',
+            nearest_settlement: 'Kirinda Village',
+          },
+          {
+            id: 'ZONE-SOUTH-02',
+            name: 'South Boundary - Palatupana Farm Zone',
+            type: 'SETTLEMENT_BOUNDARY',
+            centre_lat: 6.2994,
+            centre_lng: 81.3703,
+            radius_metres: 4000,
+            severity: 'HIGH',
+            nearest_settlement: 'Palatupana Settlement',
+          },
+        ];
+      }
+      return state.zones;
+    },
+    async findActiveAlertByCollar(collarId) {
+      return state.collarAlerts.find((a) => a.collar_id === collarId && a.status === 'ACTIVE') || null;
+    },
+    async findAlertById(alertId) {
+      return state.collarAlerts.find((a) => a.id === alertId) || null;
+    },
+    async generateAlertReference() {
+      state.sequence = (state.sequence || 100) + 1;
+      return `ALT-${String(state.sequence).padStart(4, '0')}`;
+    },
+    async createAlert(data) {
+      const alert = {
+        id: data.id,
+        alert_reference: data.alertReference,
+        collar_id: data.collarId,
+        animal_label: data.animalLabel,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        zone_id: data.zoneId,
+        zone_name: data.zoneName,
+        severity: data.severity,
+        status: data.status,
+        triggered_at: data.triggeredAt,
+      };
+      state.collarAlerts.push(alert);
+      return { ...alert };
+    },
+    async updateAlertLocation(alertId, data) {
+      const alert = state.collarAlerts.find((a) => a.id === alertId);
+      if (alert) {
+        alert.latitude = data.latitude;
+        alert.longitude = data.longitude;
+        alert.zone_id = data.zoneId;
+        alert.zone_name = data.zoneName;
+        alert.severity = data.severity;
+        alert.triggered_at = data.triggeredAt;
+      }
+      return alert ? { ...alert } : null;
+    },
+    async updateAlertStatus(alertId, data) {
+      const alert = state.collarAlerts.find((a) => a.id === alertId);
+      if (alert) {
+        alert.status = data.status;
+        alert.response_action = data.responseAction;
+        alert.officer_id = data.officerId;
+        alert.officer_notes = data.officerNotes;
+        alert.dispatched_ranger_id = data.dispatchedRangerId;
+        alert.acknowledged_at = data.acknowledgedAt;
+        alert.resolved_at = data.resolvedAt;
+      }
+      return alert ? { ...alert } : null;
+    },
+    async listAlertsByStatuses(statuses) {
+      return state.collarAlerts.filter((a) => statuses.includes(a.status));
+    },
+    async listAuditTrail({ collarId, limit = 50 } = {}) {
+      let filtered = state.collarAlerts;
+      if (collarId) filtered = filtered.filter((a) => a.collar_id === collarId);
+      return filtered.slice(0, limit);
+    },
+    async recordTelemetryLog(data) {
+      state.telemetryLogs = state.telemetryLogs || [];
+      state.telemetryLogs.push({ ...data });
     },
   };
 

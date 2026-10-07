@@ -1,0 +1,1540 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WildGuardLK | Wildlife Collar Boundary Alert System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-dark: #0f1715;
+        --bg-card: rgba(18, 28, 25, 0.85);
+        --bg-surface: #15221e;
+        --border-color: rgba(46, 74, 65, 0.6);
+        --primary: #10b981;
+        --primary-hover: #059669;
+        --danger: #ef4444;
+        --danger-hover: #dc2626;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --text-main: #f3f4f6;
+        --text-muted: #9ca3af;
+        --accent-glow: rgba(16, 185, 129, 0.25);
+        --danger-glow: rgba(239, 68, 68, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-dark);
+        color: var(--text-main);
+        overflow-x: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Top Navigation Bar */
+      header {
+        background: linear-gradient(180deg, #13221d 0%, #0e1815 100%);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.5rem;
+        height: 60px;
+        z-index: 1000;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .brand-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #10b981, #047857);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: white;
+      }
+
+      .brand-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #34d399;
+      }
+
+      nav {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .nav-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        padding: 0.45rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .nav-btn.active,
+      .nav-btn:hover {
+        color: #fff;
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.4);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+      }
+
+      .live-clock {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+        font-size: 0.95rem;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        color: #10b981;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.35rem 0.8rem;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+      }
+
+      .avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #0f1715;
+        font-size: 0.75rem;
+      }
+
+      /* Main Container */
+      main {
+        flex: 1;
+        position: relative;
+        display: flex;
+      }
+
+      #map {
+        flex: 1;
+        height: 100%;
+        background: #090e0c;
+      }
+
+      /* Sidebar Panel */
+      .sidebar {
+        width: 380px;
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        z-index: 500;
+        overflow-y: auto;
+      }
+
+      .sidebar-section {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .sidebar-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6ee7b7;
+        margin-bottom: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* Stat Cards */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      .stat-card {
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem;
+        border-radius: 8px;
+      }
+
+      .stat-val {
+        font-size: 1.5rem;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .stat-val.critical {
+        color: var(--danger);
+      }
+      .stat-val.high {
+        color: var(--warning);
+      }
+      .stat-val.normal {
+        color: var(--primary);
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+      }
+
+      /* Queue Items */
+      .alert-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.85rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .alert-card:hover {
+        border-color: #34d399;
+        transform: translateY(-2px);
+      }
+
+      .alert-card.critical {
+        border-left: 4px solid var(--danger);
+        box-shadow: 0 0 12px var(--danger-glow);
+      }
+
+      .alert-card.delayed {
+        border-left: 4px solid var(--warning);
+      }
+
+      .alert-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.35rem;
+      }
+
+      .badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+
+      .badge-critical {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+      }
+      .badge-delayed {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+      }
+      .badge-safe {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+      }
+
+      /* Floating Interactive Controls */
+      .controls-panel {
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        background: rgba(15, 23, 21, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem;
+        z-index: 1000;
+        box-shadow:
+          0 25px 50px -12px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        width: 400px;
+        max-width: calc(100vw - 48px);
+      }
+
+      .controls-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--primary);
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+
+      .btn-group .btn:nth-child(7) {
+        grid-column: 1 / -1;
+        justify-content: center;
+      }
+
+      .btn {
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 0.65rem 0.8rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-main);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: flex-start;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      /* Subtle colored accents */
+      .btn-primary {
+        border-left: 3px solid var(--primary);
+      }
+      .btn-primary:hover {
+        border-left-color: #34d399;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+      }
+
+      .btn-danger {
+        border-left: 3px solid var(--danger);
+      }
+      .btn-danger:hover {
+        border-left-color: #f87171;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+      }
+
+      .btn-warning {
+        border-left: 3px solid var(--warning);
+      }
+      .btn-warning:hover {
+        border-left-color: #fbbf24;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+      }
+
+      .btn-secondary {
+        border-left: 3px solid #6b7280;
+        color: #d1d5db;
+      }
+      .btn-secondary:hover {
+        border-left-color: #9ca3af;
+        color: #fff;
+      }
+
+      /* Critical Modal Popup (Matching Page 28 Wireframe) */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .modal-card {
+        background: #182622;
+        border: 2px solid var(--danger);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 620px;
+        box-shadow: 0 0 40px var(--danger-glow);
+        overflow: hidden;
+        animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes modalPop {
+        0% {
+          transform: scale(0.92);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        background: linear-gradient(90deg, #b91c1c 0%, #dc2626 100%);
+        color: white;
+        padding: 0.9rem 1.25rem;
+        font-weight: 800;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .modal-body {
+        padding: 1.25rem;
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 1.25rem;
+      }
+
+      .modal-thumb {
+        background: #0d1714;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem;
+        text-align: center;
+      }
+
+      .modal-thumb-icon {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .field-row {
+        margin-bottom: 0.65rem;
+      }
+
+      .field-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #9ca3af;
+        letter-spacing: 0.05em;
+      }
+
+      .field-value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #f3f4f6;
+      }
+
+      .modal-footer {
+        background: rgba(0, 0, 0, 0.25);
+        border-top: 1px solid var(--border-color);
+        padding: 1rem 1.25rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+      }
+
+      /* Sound Alarm Flashing Banner */
+      .alarm-banner {
+        background: #dc2626;
+        color: white;
+        text-align: center;
+        padding: 0.5rem 1rem;
+        font-weight: 700;
+        font-size: 0.82rem;
+        letter-spacing: 0.05em;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        animation: pulseAlert 1s infinite alternate;
+      }
+
+      .alarm-banner.active {
+        display: flex;
+      }
+
+      @keyframes pulseAlert {
+        from {
+          background: #b91c1c;
+        }
+        to {
+          background: #ef4444;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="brand-logo">WG</div>
+        <div class="brand-title">WildGuardLK</div>
+      </div>
+      <nav>
+        <button class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="switchTab('logs')">Data Logs</button>
+        <button class="nav-btn" onclick="switchTab('rangers')">Ranger Inbox</button>
+        <button
+          class="nav-btn"
+          onclick="openQrModal()"
+          style="
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+          "
+        >
+          📱 Connect Phone (QR)
+        </button>
+      </nav>
+      <div class="header-right">
+        <div id="liveClock" class="live-clock">15:02:00 UTC</div>
+        <div class="user-profile">
+          <div class="avatar" id="officerAvatar">H</div>
+          <span id="officerNameDisplay">Operations Officer (Hanaan M F A S)</span>
+          <button
+            onclick="logout()"
+            title="Log out of monitoring console"
+            style="
+              background: rgba(239, 68, 68, 0.2);
+              border: 1px solid rgba(239, 68, 68, 0.4);
+              color: #fca5a5;
+              padding: 0.2rem 0.55rem;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 0.72rem;
+              font-weight: 700;
+              margin-left: 0.5rem;
+              transition: all 0.2s;
+            "
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="alarmBanner" class="alarm-banner">
+      <span>⚠️ ACOUSTIC & VISUAL ALARM ACTIVE: HIGH-RISK BOUNDARY BREACH DETECTED</span>
+      <button
+        onclick="silenceAlarm()"
+        style="
+          padding: 0.25rem 0.75rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          background: rgba(0, 0, 0, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          color: white;
+          border-radius: 6px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+        "
+      >
+        🔇 Silence Siren
+      </button>
+    </div>
+
+    <main>
+      <div id="map"></div>
+
+      <!-- Floating Scenario Control Panel -->
+      <div class="controls-panel">
+        <div class="controls-title">
+          <span>Interactive Demo Controls (UC4)</span>
+          <span id="gatewayStatusBadge" class="badge badge-safe">Gateway Online</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-danger" onclick="triggerMainBreach()">⚡ 1. Main Breach (E-402)</button>
+          <button class="btn btn-primary" onclick="triggerSafeTelemetry()">🟢 2. Safe Telemetry (A)</button>
+          <button class="btn btn-warning" onclick="triggerSimultaneous()">🚨 3. Multi-Breach (B)</button>
+          <button class="btn btn-secondary" onclick="triggerDelayedBatch()">⏱️ 4. Delayed Batch (D)</button>
+          <button class="btn btn-secondary" onclick="toggleSignalLost()">📡 5. Signal Lost (Ex 1)</button>
+          <button class="btn btn-danger" onclick="triggerDispatchFail()">🔄 6. Dispatch Fail (Ex 3)</button>
+          <button class="btn btn-warning" onclick="simulateSessionTimeout()">
+            🔒 7. Session Timeout (Ex 2)
+          </button>
+          <button class="btn btn-secondary" onclick="silenceAlarm()">🔇 Silence</button>
+          <button class="btn btn-secondary" onclick="resetState()">🧹 Reset</button>
+        </div>
+      </div>
+
+      <!-- Right Sidebar Queue -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Operations Metrics</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div id="statCritical" class="stat-val critical">0</div>
+              <div class="stat-label">Active Critical</div>
+            </div>
+            <div class="stat-card">
+              <div id="statHigh" class="stat-val high">0</div>
+              <div class="stat-label">Active High</div>
+            </div>
+            <div class="stat-card">
+              <div id="statDelayed" class="stat-val normal">0</div>
+              <div class="stat-label">Delayed Incidents</div>
+            </div>
+            <div class="stat-card">
+              <div id="statResolved" class="stat-val normal">0</div>
+              <div class="stat-label">Resolved Today</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section" style="flex: 1">
+          <div class="sidebar-title">
+            <span>Active Boundary Alerts</span>
+            <span id="alertCountBadge" class="badge badge-critical">0</span>
+          </div>
+          <div id="alertQueueContainer">
+            <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 2rem">
+              No active boundary alerts.<br />System is actively monitoring all GPS collars.
+            </p>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Recent Event Stream</div>
+          <div
+            id="eventStreamContainer"
+            style="font-size: 0.75rem; color: #9ca3af; max-height: 180px; overflow-y: auto"
+          >
+            <div>[System] Monitoring engine initialised. 4 Geofences active.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Wireframe Page 28 Alert Detail Modal -->
+    <div id="breachModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <span>⚠️ CRITICAL ALERT: Boundary Breach Detected</span>
+        </div>
+        <div class="modal-body">
+          <div class="modal-thumb">
+            <div class="modal-thumb-icon">🐘</div>
+            <strong id="modalAnimalLabel">Asset E-402</strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted)">Collar COL-402</span>
+            <span class="badge badge-critical" style="margin-top: 0.5rem">CRITICAL</span>
+          </div>
+          <div class="modal-details">
+            <div class="field-row">
+              <div class="field-label">Breach Zone</div>
+              <div id="modalZoneName" class="field-value">Northern Agricultural Boundary (Zone 4)</div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Threat Level</div>
+              <div id="modalThreatLevel" class="field-value" style="color: #f87171">
+                HIGH (Human Settlement Border)
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Breach Location Coordinates</div>
+              <div id="modalCoords" class="field-value font-mono">6.4245° N, 81.3852° E</div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">Alert Details</div>
+              <div
+                id="modalDetailsText"
+                class="field-value"
+                style="font-weight: 400; font-size: 0.8rem; color: #d1d5db"
+              >
+                Animal crossed the designated park boundary into non-protected sugarcane farmland. Immediate
+                intervention required.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="dismissFalseAlarm()">
+            Dismiss &amp; Log (False Alarm)
+          </button>
+          <button class="btn btn-danger" onclick="confirmDispatchRanger()">
+            Acknowledge &amp; Dispatch Ranger
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exception Flow 2: Operations Officer Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+      <div
+        class="modal-card"
+        style="
+          background: rgba(18, 28, 25, 0.75);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-top: 1px solid rgba(16, 185, 129, 0.5);
+          max-width: 420px;
+          border-radius: 16px;
+          box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.7),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        "
+      >
+        <div
+          class="modal-header"
+          style="
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 0.75rem">
+            <div
+              style="
+                background: linear-gradient(135deg, #10b981, #047857);
+                color: white;
+                font-weight: 800;
+                font-size: 0.85rem;
+                padding: 4px 8px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+              "
+            >
+              WG
+            </div>
+            <span style="font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; color: #f3f4f6"
+              >WildGuardLK Authentication</span
+            >
+          </div>
+        </div>
+        <div style="padding: 1.5rem">
+          <div
+            id="loginAlertBox"
+            style="
+              display: none;
+              padding: 0.75rem 1rem;
+              border-radius: 8px;
+              font-size: 0.8rem;
+              margin-bottom: 1.25rem;
+              background: rgba(239, 68, 68, 0.15);
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              color: #fca5a5;
+              line-height: 1.5;
+              backdrop-filter: blur(4px);
+            "
+          ></div>
+
+          <div style="margin-bottom: 1.25rem">
+            <label
+              style="
+                display: block;
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #9ca3af;
+                text-transform: uppercase;
+                margin-bottom: 0.5rem;
+                letter-spacing: 0.05em;
+              "
+              >Select Officer Identity</label
+            >
+            <select
+              id="loginOfficerSelect"
+              style="
+                width: 100%;
+                background: rgba(0, 0, 0, 0.25);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: #f3f4f6;
+                padding: 0.75rem 0.85rem;
+                border-radius: 8px;
+                font-size: 0.85rem;
+                font-weight: 500;
+                outline: none;
+                transition: all 0.2s ease;
+                cursor: pointer;
+              "
+              onfocus="
+                this.style.borderColor = '#10b981';
+                this.style.boxShadow = '0 0 0 2px rgba(16,185,129,0.1)';
+              "
+              onblur="
+                this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                this.style.boxShadow = 'none';
+              "
+            >
+              <option value="OFF-01">OFF-01 — Hanaan M F A S (Lead Operations Officer)</option>
+              <option value="OFF-02">OFF-02 — S. Karunaratne (Senior Patrol Officer)</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 1.5rem">
+            <label
+              style="
+                display: block;
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #9ca3af;
+                text-transform: uppercase;
+                margin-bottom: 0.5rem;
+                letter-spacing: 0.05em;
+              "
+              >Security Password / Passcode</label
+            >
+            <input
+              type="password"
+              id="loginPasswordInput"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              onkeydown="if (event.key === 'Enter') handleLogin();"
+              style="
+                width: 100%;
+                background: rgba(0, 0, 0, 0.25);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: #f3f4f6;
+                padding: 0.75rem 0.85rem;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                outline: none;
+                transition: all 0.2s ease;
+              "
+              onfocus="
+                this.style.borderColor = '#10b981';
+                this.style.boxShadow = '0 0 0 2px rgba(16,185,129,0.1)';
+              "
+              onblur="
+                this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                this.style.boxShadow = 'none';
+              "
+            />
+          </div>
+
+          <button
+            id="loginSubmitBtn"
+            class="btn"
+            onclick="handleLogin()"
+            style="
+              width: 100%;
+              justify-content: center;
+              padding: 0.85rem;
+              font-size: 0.9rem;
+              font-weight: 700;
+              background: linear-gradient(135deg, #10b981, #059669);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+              margin-top: 0.25rem;
+              transition: all 0.2s ease;
+            "
+            onmouseover="
+              this.style.transform = 'translateY(-2px)';
+              this.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.35)';
+            "
+            onmouseout="
+              this.style.transform = 'translateY(0)';
+              this.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.25)';
+            "
+          >
+            🔐 Authenticate &amp; Access Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone IoT Collar QR Code Modal -->
+    <div id="phoneQrModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 440px; text-align: center">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center">
+          <h2 style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; color: #f3f4f6">
+            <span>📱</span> Connect Phone (Mock IoT Collar)
+          </h2>
+          <button
+            onclick="closeQrModal()"
+            style="
+              background: transparent;
+              border: none;
+              color: #9ca3af;
+              font-size: 1.4rem;
+              cursor: pointer;
+              line-height: 1;
+            "
+          >
+            &times;
+          </button>
+        </div>
+        <div
+          class="modal-body"
+          style="padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.1rem"
+        >
+          <p style="font-size: 0.85rem; color: #9ca3af; line-height: 1.45">
+            Scan this QR code with your phone's Camera app (iOS / Android) to open the
+            <strong>Live GPS Collar Controller</strong>:
+          </p>
+
+          <div
+            style="
+              background: #ffffff;
+              padding: 12px;
+              border-radius: 12px;
+              box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+              display: inline-block;
+            "
+          >
+            <img
+              id="phoneQrImage"
+              src="/collar_qr.png"
+              alt="Scan to Connect Phone Collar"
+              style="width: 220px; height: 220px; display: block"
+            />
+          </div>
+
+          <div
+            style="
+              width: 100%;
+              text-align: left;
+              background: rgba(0, 0, 0, 0.35);
+              border: 1px solid var(--border-color);
+              border-radius: 8px;
+              padding: 0.75rem 0.9rem;
+            "
+          >
+            <div
+              style="
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                color: #9ca3af;
+                font-weight: 700;
+                margin-bottom: 0.35rem;
+                letter-spacing: 0.05em;
+              "
+            >
+              Direct URL
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <input
+                id="qrUrlInput"
+                type="text"
+                readonly
+                value="http://10.87.108.139:4000/collar.html"
+                style="
+                  flex: 1;
+                  background: #0b1311;
+                  border: 1px solid var(--border-color);
+                  color: #34d399;
+                  font-family: 'JetBrains Mono', monospace;
+                  font-size: 0.8rem;
+                  padding: 0.45rem 0.65rem;
+                  border-radius: 4px;
+                "
+              />
+              <button
+                id="copyQrBtn"
+                onclick="copyQrUrl()"
+                class="btn btn-secondary"
+                style="padding: 0.45rem 0.75rem; font-size: 0.75rem; font-weight: 700"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div
+            style="
+              font-size: 0.76rem;
+              color: #9ca3af;
+              text-align: left;
+              line-height: 1.45;
+              background: rgba(16, 185, 129, 0.08);
+              border: 1px solid rgba(16, 185, 129, 0.2);
+              border-radius: 6px;
+              padding: 0.6rem 0.8rem;
+              width: 100%;
+            "
+          >
+            📡 <strong>Network note:</strong> Ensure your phone is connected to the same Wi-Fi network, or
+            connected via USB cable with USB tethering.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // Live Clock
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById('liveClock').innerText = d.toTimeString().split(' ')[0] + ' UTC';
+      }, 1000);
+
+      // Map Setup (Centered on Yala National Park, Sri Lanka)
+      const map = L.map('map', { zoomControl: false }).setView([6.38, 81.4], 12);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // Satellite Imagery Layer
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 18,
+          attribution: 'Esri Satellite',
+        },
+      ).addTo(map);
+
+      let currentAlert = null;
+      let audioContext = null;
+      let sirenOscillator = null;
+      let sirenGain = null;
+      let sirenInterval = null;
+      let userSilenced = false;
+      let prevAlertCount = 0;
+      let currentOfficer = {};
+      let sessionToken = localStorage.getItem('wildguard_session_token') || '';
+
+      // Web Audio Synthesizer for Acoustic Alarm
+      function startAcousticAlarm() {
+        if (sirenOscillator || sirenInterval) return;
+        try {
+          if (!audioContext || audioContext.state === 'closed') {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+          sirenOscillator = audioContext.createOscillator();
+          sirenGain = audioContext.createGain();
+          sirenOscillator.type = 'sawtooth';
+          sirenGain.gain.setValueAtTime(0.06, audioContext.currentTime);
+          sirenOscillator.connect(sirenGain);
+          sirenGain.connect(audioContext.destination);
+          sirenOscillator.start();
+
+          // Modulate frequency to create an emergency siren warble (600Hz <-> 900Hz)
+          let high = true;
+          sirenInterval = setInterval(() => {
+            if (!sirenOscillator || !audioContext) return;
+            try {
+              const targetFreq = high ? 900 : 600;
+              sirenOscillator.frequency.cancelScheduledValues(audioContext.currentTime);
+              sirenOscillator.frequency.linearRampToValueAtTime(targetFreq, audioContext.currentTime + 0.35);
+              high = !high;
+            } catch (err) {}
+          }, 400);
+        } catch (e) {
+          console.warn('AudioContext could not start', e);
+        }
+      }
+
+      function stopAcousticAlarm() {
+        if (sirenInterval) {
+          clearInterval(sirenInterval);
+          sirenInterval = null;
+        }
+        if (sirenOscillator) {
+          try {
+            if (sirenGain && audioContext) {
+              sirenGain.gain.setValueAtTime(0, audioContext.currentTime);
+            }
+            sirenOscillator.stop();
+            sirenOscillator.disconnect();
+          } catch (e) {}
+          sirenOscillator = null;
+          sirenGain = null;
+        }
+        const banner = document.getElementById('alarmBanner');
+        if (banner) banner.classList.remove('active');
+      }
+
+      // Load Geofence Zones from backend
+      async function loadZones() {
+        const res = await fetch('/api/zones');
+        const zones = await res.json();
+        zones.forEach((z) => {
+          const color =
+            z.type === 'HUMAN_SETTLEMENT' ? '#ef4444' : z.type === 'PROTECTED_CORE' ? '#f59e0b' : '#3b82f6';
+          L.circle([z.centre.latitude, z.centre.longitude], {
+            radius: z.radiusMetres,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.25,
+            weight: 2,
+            dashArray: '4, 6',
+          })
+            .bindPopup(`<b>${z.name}</b><br>Type: ${z.type}<br>Radius: ${z.radiusMetres}m`)
+            .addTo(map);
+        });
+      }
+
+      // Refresh Dashboard Status
+      async function refreshDashboard() {
+        try {
+          const [countsRes, statusRes] = await Promise.all([
+            fetch('/api/alerts/counts'),
+            fetch('/api/dashboard/status'),
+          ]);
+          const counts = await countsRes.json();
+          const status = await statusRes.json();
+
+          document.getElementById('statCritical').innerText = counts.activeCritical;
+          document.getElementById('statHigh').innerText = counts.activeHigh;
+          document.getElementById('statDelayed').innerText = counts.delayedIncidents;
+          document.getElementById('statResolved').innerText = counts.acknowledgedToday;
+
+          const totalAlerts = status.activeAlerts ? status.activeAlerts.length : 0;
+          if (totalAlerts > prevAlertCount) {
+            // A brand new breach arrived; reset mute so operator hears it
+            userSilenced = false;
+          }
+          prevAlertCount = totalAlerts;
+
+          if (status.acousticAlarmActive && !userSilenced) {
+            document.getElementById('alarmBanner').classList.add('active');
+            startAcousticAlarm();
+          } else {
+            stopAcousticAlarm();
+          }
+
+          // Render queue
+          const container = document.getElementById('alertQueueContainer');
+          if (status.activeAlerts.length === 0 && status.delayedIncidents.length === 0) {
+            container.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 2rem;">No active boundary alerts.<br>System is actively monitoring all GPS collars.</p>`;
+            document.getElementById('alertCountBadge').innerText = '0';
+          } else {
+            document.getElementById('alertCountBadge').innerText =
+              status.activeAlerts.length + status.delayedIncidents.length;
+            let html = '';
+            status.activeAlerts.forEach((item) => {
+              const a = item.alert;
+              html += `
+              <div class="alert-card critical" onclick="openAlertModal('${a.alertReference}')">
+                <div class="alert-card-header">
+                  <strong style="color: #ef4444;">${a.alertReference}</strong>
+                  <span class="badge badge-critical">${a.severity}</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">${a.zoneName}</div>
+                <div style="font-size: 0.7rem; color: #6ee7b7; margin-top: 0.3rem;">⚡ Click to review & dispatch</div>
+              </div>
+            `;
+            });
+            status.delayedIncidents.forEach((a) => {
+              html += `
+              <div class="alert-card delayed" onclick="openAlertModal('${a.alertReference}')">
+                <div class="alert-card-header">
+                  <strong style="color: #f59e0b;">${a.alertReference}</strong>
+                  <span class="badge badge-delayed">DELAYED</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">${a.zoneName} (Retroactive)</div>
+              </div>
+            `;
+            });
+            container.innerHTML = html;
+          }
+
+          // Event stream
+          if (status.recentEvents && status.recentEvents.length > 0) {
+            document.getElementById('eventStreamContainer').innerHTML = status.recentEvents
+              .map((e) => `<div>[${e.timestamp.split('T')[1].split('.')[0]}] ${e.message}</div>`)
+              .join('');
+          }
+
+          // Fetch and update animal locations
+          const animalsRes = await fetch('/api/animals');
+          const animals = await animalsRes.json();
+          updateAnimalMarkers(animals);
+        } catch (e) {
+          console.error('Failed to refresh dashboard', e);
+        }
+      }
+
+      let animalMarkers = {};
+
+      function updateAnimalMarkers(animals) {
+        animals.forEach((animal) => {
+          if (animal.lastKnownLocation) {
+            const { latitude, longitude } = animal.lastKnownLocation;
+            if (animalMarkers[animal.collarId]) {
+              animalMarkers[animal.collarId].setLatLng([latitude, longitude]);
+            } else {
+              animalMarkers[animal.collarId] = L.marker([latitude, longitude])
+                .bindPopup(`<b>${animal.label}</b><br>Collar: ${animal.collarId}`)
+                .addTo(map);
+            }
+          }
+        });
+      }
+
+      async function openAlertModal(ref) {
+        const res = await fetch(`/api/alerts/${ref}`);
+        const data = await res.json();
+        currentAlert = data;
+        document.getElementById('modalAnimalLabel').innerText = data.animal
+          ? data.animal.label
+          : data.alert.animalLabel;
+        document.getElementById('modalZoneName').innerText = data.zone.name;
+        document.getElementById('modalThreatLevel').innerText = `${data.threatLevel} (${data.zone.type})`;
+        document.getElementById('modalCoords').innerText =
+          `${data.alert.location.latitude.toFixed(4)}° N, ${data.alert.location.longitude.toFixed(4)}° E`;
+        document.getElementById('breachModal').classList.add('active');
+      }
+
+      async function confirmDispatchRanger() {
+        if (!currentAlert) return;
+        const ref = currentAlert.alert.alertReference;
+        await fetch(`/api/alerts/${ref}/acknowledge`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({
+            officerId: currentOfficer.officerId,
+            responseAction: 'DISPATCH_RANGER',
+            notes: `Dispatched ranger unit via operations dashboard (${currentOfficer.name})`,
+          }),
+        });
+        // Silence alarm once officer acts on emergency
+        await fetch('/api/dashboard/silence', { method: 'POST' });
+        userSilenced = true;
+        stopAcousticAlarm();
+        document.getElementById('breachModal').classList.remove('active');
+        currentAlert = null;
+        await refreshDashboard();
+      }
+
+      async function dismissFalseAlarm() {
+        if (!currentAlert) return;
+        const ref = currentAlert.alert.alertReference;
+        await fetch(`/api/alerts/${ref}/false-alarm`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({
+            officerId: currentOfficer.officerId,
+            notes: `Stationary GPS signal drift verified by ${currentOfficer.name}`,
+          }),
+        });
+        await fetch('/api/dashboard/silence', { method: 'POST' });
+        userSilenced = true;
+        stopAcousticAlarm();
+        document.getElementById('breachModal').classList.remove('active');
+        currentAlert = null;
+        await refreshDashboard();
+      }
+
+      // --- Authentication & Session Management (Exception Flow 2) ---
+
+      function updateOfficerHeader() {
+        const initial = currentOfficer.name ? currentOfficer.name.trim()[0] : '?';
+        const avatarEl = document.getElementById('officerAvatar');
+        const nameEl = document.getElementById('officerNameDisplay');
+        if (avatarEl) avatarEl.innerText = initial;
+        if (nameEl)
+          nameEl.innerText = currentOfficer.name
+            ? `Operations Officer (${currentOfficer.name})`
+            : 'Not Authenticated';
+      }
+
+      function showLoginModal(message) {
+        const pwdInput = document.getElementById('loginPasswordInput');
+        if (pwdInput) pwdInput.value = '';
+        const alertBox = document.getElementById('loginAlertBox');
+        if (alertBox) {
+          if (message) {
+            alertBox.innerText = message;
+            alertBox.style.display = 'block';
+          } else {
+            alertBox.style.display = 'none';
+          }
+        }
+        document.getElementById('loginModal').classList.add('active');
+        if (pwdInput) setTimeout(() => pwdInput.focus(), 150);
+      }
+
+      function hideLoginModal() {
+        document.getElementById('loginModal').classList.remove('active');
+      }
+
+      async function handleLogin() {
+        const officerId = document.getElementById('loginOfficerSelect').value;
+        const pwdInput = document.getElementById('loginPasswordInput');
+        const password = pwdInput ? pwdInput.value.trim() : '';
+        const alertBox = document.getElementById('loginAlertBox');
+        alertBox.style.display = 'none';
+
+        if (!password) {
+          alertBox.innerText = 'Please type your password to authenticate.';
+          alertBox.style.display = 'block';
+          if (pwdInput) pwdInput.focus();
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ officerId, password }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            alertBox.innerText = err.message || 'Login failed. Invalid officer credentials.';
+            alertBox.style.display = 'block';
+            if (pwdInput) {
+              pwdInput.value = '';
+              pwdInput.focus();
+            }
+            return;
+          }
+
+          const data = await res.json();
+          sessionToken = data.token;
+          currentOfficer = data.officer;
+          localStorage.setItem('wildguard_session_token', sessionToken);
+          localStorage.setItem('wildguard_officer', JSON.stringify(currentOfficer));
+
+          if (pwdInput) pwdInput.value = '';
+          updateOfficerHeader();
+          hideLoginModal();
+
+          // Exception Flow 2: Restore previous dashboard view & queues
+          await refreshDashboard();
+        } catch (e) {
+          alertBox.innerText = 'Network error connecting to auth server.';
+          alertBox.style.display = 'block';
+        }
+      }
+
+      async function logout() {
+        try {
+          await fetch('/api/auth/expire-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken }),
+          });
+        } catch (e) {}
+        localStorage.removeItem('wildguard_session_token');
+        sessionToken = '';
+        showLoginModal('You have successfully logged out of the WildGuardLK console.');
+      }
+
+      async function simulateSessionTimeout() {
+        try {
+          await fetch('/api/auth/expire-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: sessionToken }),
+          });
+        } catch (e) {}
+        localStorage.removeItem('wildguard_session_token');
+        sessionToken = '';
+        showLoginModal(
+          '⚠️ Exception Flow 2: Session timeout detected. Your session has expired. Please re-authenticate to restore your active alerts queue.',
+        );
+      }
+
+      async function checkAuthOnLoad() {
+        const saved = localStorage.getItem('wildguard_officer');
+        if (saved) {
+          try {
+            currentOfficer = JSON.parse(saved);
+          } catch (e) {}
+        }
+        updateOfficerHeader();
+
+        if (sessionToken) {
+          try {
+            const res = await fetch('/api/auth/validate', {
+              headers: { Authorization: `Bearer ${sessionToken}` },
+            });
+            const data = await res.json();
+            if (!data.valid) {
+              showLoginModal('Session expired. Please log in with valid credentials.');
+            }
+          } catch (e) {}
+        } else {
+          showLoginModal('Please log in with your authorized Operations Officer credentials.');
+        }
+      }
+
+      // Scenarios
+      async function triggerMainBreach() {
+        userSilenced = false;
+        await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        await refreshDashboard();
+        openAlertModal('ALT-0001');
+      }
+
+      async function triggerSafeTelemetry() {
+        const res = await fetch('/api/demo/safe-zone', { method: 'POST' });
+        const data = await res.json();
+        alert(`Alternate Flow A: ${data.message}`);
+        await refreshDashboard();
+      }
+
+      async function triggerSimultaneous() {
+        userSilenced = false;
+        await fetch('/api/demo/simultaneous-breaches', { method: 'POST' });
+        await refreshDashboard();
+      }
+
+      async function triggerDelayedBatch() {
+        await fetch('/api/demo/delayed-batch', { method: 'POST' });
+        await refreshDashboard();
+      }
+
+      async function toggleSignalLost() {
+        await fetch('/api/collars/COL-402/signal-lost', { method: 'POST' });
+        document.getElementById('gatewayStatusBadge').innerText = 'Collar 402 Signal Lost';
+        document.getElementById('gatewayStatusBadge').className = 'badge badge-critical';
+        alert('Exception Flow 1: Collar COL-402 status flagged as "Signal Lost" on dashboard.');
+        await refreshDashboard();
+      }
+
+      async function triggerDispatchFail() {
+        userSilenced = false;
+        await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        const res = await fetch('/api/demo/dispatch-failure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reference: 'ALT-0001' }),
+        });
+        const data = await res.json();
+        alert(`Exception Flow 3 Triggered:\n${data.dispatchResult.message}`);
+        await refreshDashboard();
+      }
+
+      async function silenceAlarm() {
+        await fetch('/api/dashboard/silence', { method: 'POST' });
+        userSilenced = true;
+        stopAcousticAlarm();
+        await refreshDashboard();
+      }
+
+      async function resetState() {
+        await fetch('/api/demo/reset', { method: 'POST' });
+        userSilenced = false;
+        prevAlertCount = 0;
+        document.getElementById('gatewayStatusBadge').innerText = 'Gateway Online';
+        document.getElementById('gatewayStatusBadge').className = 'badge badge-safe';
+        stopAcousticAlarm();
+        await refreshDashboard();
+      }
+
+      function switchTab(t) {
+        if (t === 'logs') {
+          window.location.href = '/api/alerts/audit-trail';
+        } else if (t === 'rangers') {
+          window.location.href = '/api/notifications';
+        }
+      }
+
+      function openQrModal() {
+        const modal = document.getElementById('phoneQrModal');
+        if (modal) {
+          modal.classList.add('active');
+          const host =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+              ? '10.87.108.139'
+              : window.location.hostname;
+          const port = window.location.port ? window.location.port : '4000';
+          const fullUrl = `http://${host}:${port}/collar.html`;
+          const input = document.getElementById('qrUrlInput');
+          if (input) input.value = fullUrl;
+          const qrImg = document.getElementById('phoneQrImage');
+          if (qrImg) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(fullUrl)}`;
+          }
+        }
+      }
+
+      function closeQrModal() {
+        const modal = document.getElementById('phoneQrModal');
+        if (modal) modal.classList.remove('active');
+      }
+
+      async function copyQrUrl() {
+        const input = document.getElementById('qrUrlInput');
+        if (input) {
+          try {
+            await navigator.clipboard.writeText(input.value);
+            const btn = document.getElementById('copyQrBtn');
+            if (btn) {
+              const prev = btn.innerText;
+              btn.innerText = 'Copied!';
+              setTimeout(() => (btn.innerText = prev), 2000);
+            }
+          } catch {
+            input.select();
+            document.execCommand('copy');
+          }
+        }
+      }
+
+      // Init
+      checkAuthOnLoad();
+      loadZones();
+      refreshDashboard();
+      setInterval(refreshDashboard, 5000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>WildGuardLK | IoT Collar Transmitter</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #0b1311;
+        color: #f3f4f6;
+        padding: 1.25rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 1.25rem;
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        margin-bottom: 0.5rem;
+      }
+      h1 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .card {
+        background: #13221e;
+        border: 1px solid rgba(46, 74, 65, 0.7);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .card-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6ee7b7;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+      }
+      .coord-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+      .coord-box {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(46, 74, 65, 0.5);
+        border-radius: 8px;
+        padding: 0.6rem;
+        text-align: center;
+      }
+      .coord-label {
+        font-size: 0.65rem;
+        color: #9ca3af;
+        text-transform: uppercase;
+      }
+      .coord-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #34d399;
+        margin-top: 0.2rem;
+      }
+      select,
+      button {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: none;
+        cursor: pointer;
+        margin-top: 0.5rem;
+      }
+      select {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(46, 74, 65, 0.8);
+        color: #fff;
+      }
+      .btn-toggle {
+        background: #10b981;
+        color: #fff;
+        transition: all 0.2s ease;
+      }
+      .btn-toggle.active {
+        background: #ef4444;
+      }
+      .btn-scenario {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e5e7eb;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-top: 0.4rem;
+        padding: 0.6rem;
+        font-size: 0.8rem;
+      }
+      .btn-scenario:active {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .log-box {
+        background: #070d0b;
+        border: 1px solid rgba(46, 74, 65, 0.5);
+        border-radius: 8px;
+        padding: 0.65rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
+        color: #9ca3af;
+        height: 120px;
+        overflow-y: auto;
+      }
+      .log-entry {
+        margin-bottom: 0.25rem;
+      }
+      .log-entry.breach {
+        color: #f87171;
+        font-weight: 700;
+      }
+      .log-entry.safe {
+        color: #34d399;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="badge">IoT Collar Gateway</div>
+      <h1>Mobile GPS Collar Transmitter</h1>
+      <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.3rem">
+        Turn your phone into a live wildlife GPS tracker
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Assigned Wildlife Asset</div>
+      <select id="collarSelect">
+        <option value="COL-402">Elephant E-402 (Rambo, Northern Sector)</option>
+        <option value="COL-108">Elephant E-108 (Bhanu, Southern Sector)</option>
+        <option value="COL-015">Leopard L-015 (Nataraja, Eastern Sector)</option>
+        <option value="COL-305">Elephant E-305 (Gamunu, Western Sector)</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="card-title">GPS Coordinates</div>
+      <div class="coord-grid">
+        <div class="coord-box">
+          <div class="coord-label">Latitude</div>
+          <div id="latVal" class="coord-val">6.4250° N</div>
+        </div>
+        <div class="coord-box">
+          <div class="coord-label">Longitude</div>
+          <div id="lngVal" class="coord-val">81.3850° E</div>
+        </div>
+      </div>
+      <button id="gpsToggleBtn" class="btn-toggle" onclick="togglePhoneGps()">
+        📡 Start Phone GPS Tracking
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Manual Boundary Breach Triggers</div>
+      <p style="font-size: 0.7rem; color: #9ca3af; margin-bottom: 0.4rem">
+        Simulate elephant movement near Yala boundary geofences directly from your phone:
+      </p>
+      <button
+        class="btn-scenario"
+        style="border-left: 3px solid #ef4444"
+        onclick="sendCoordinate(6.4245, 81.3852, 'Breached Northern Farmland (Zone 4)')"
+      >
+        🚨 Trigger Critical Breach (Zone 4 Boundary)
+      </button>
+      <button
+        class="btn-scenario"
+        style="border-left: 3px solid #f59e0b"
+        onclick="sendCoordinate(6.434, 81.385, 'Approaching Boundary (within 300m)')"
+      >
+        ⚠️ Trigger Approaching Warning (300m Buffer)
+      </button>
+      <button
+        class="btn-scenario"
+        style="border-left: 3px solid #10b981"
+        onclick="sendCoordinate(6.32, 81.35, 'Inside Protected Safe Park Core')"
+      >
+        🟢 Transmit Safe Coordinate (Silent Log)
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Transmission Log</div>
+      <div id="logBox" class="log-box">
+        <div class="log-entry">Waiting for tracking to start...</div>
+      </div>
+    </div>
+
+    <script>
+      let watchId = null;
+      let autoInterval = null;
+      let currentLat = 6.4245;
+      let currentLng = 81.3852;
+
+      function log(msg, type = 'info') {
+        const box = document.getElementById('logBox');
+        const time = new Date().toTimeString().split(' ')[0];
+        const div = document.createElement('div');
+        div.className = `log-entry ${type}`;
+        div.innerText = `[${time}] ${msg}`;
+        box.prepend(div);
+      }
+
+      async function sendCoordinate(lat, lng, desc = '') {
+        currentLat = lat;
+        currentLng = lng;
+        document.getElementById('latVal').innerText = `${lat.toFixed(4)}° N`;
+        document.getElementById('lngVal').innerText = `${lng.toFixed(4)}° E`;
+
+        const collarId = document.getElementById('collarSelect').value;
+        try {
+          const res = await fetch('/api/telemetry/reading', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              collarId,
+              latitude: lat,
+              longitude: lng,
+              accuracyMetres: 6,
+            }),
+          });
+          const data = await res.json();
+          if (data.isBreach) {
+            log(`BREACH DETECTED: ${desc || data.alert.zoneName} (${data.alert.alertReference})`, 'breach');
+          } else {
+            log(`SAFE: ${desc || 'Logged silently inside safe zone'}`, 'safe');
+          }
+        } catch (err) {
+          log(`Transmission Failed: Check Wi-Fi connection to laptop`, 'breach');
+        }
+      }
+
+      function togglePhoneGps() {
+        const btn = document.getElementById('gpsToggleBtn');
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          clearInterval(autoInterval);
+          watchId = null;
+          autoInterval = null;
+          btn.innerText = '📡 Start Phone GPS Tracking';
+          btn.className = 'btn-toggle';
+          log('Phone GPS tracking stopped.');
+        } else {
+          if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your phone browser.');
+            return;
+          }
+          btn.innerText = '⏹️ Stop Phone GPS Tracking';
+          btn.className = 'btn-toggle active';
+          log('Reading phone GPS sensor...');
+
+          watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              currentLat = pos.coords.latitude;
+              currentLng = pos.coords.longitude;
+              document.getElementById('latVal').innerText = `${currentLat.toFixed(4)}°`;
+              document.getElementById('lngVal').innerText = `${currentLng.toFixed(4)}°`;
+            },
+            (err) => {
+              log(`GPS Error: ${err.message}`, 'breach');
+            },
+            { enableHighAccuracy: true },
+          );
+
+          // Periodically transmit every 8 seconds (matching IoT periodic telemetry)
+          autoInterval = setInterval(() => {
+            sendCoordinate(currentLat, currentLng, 'Live Phone GPS Transmission');
+          }, 8000);
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -7,7 +7,10 @@ const { MongoIncidentRepository } = require('../repositories/mongo/incident.mong
 const { MongoVerificationRepository } = require('../repositories/mongo/verification.mongo.repository');
 const { MongoNotificationRepository } = require('../repositories/mongo/notification.mongo.repository');
 const { MongoSmsLogRepository } = require('../repositories/mongo/smsLog.mongo.repository');
-const { MongoCollarRepository } = require('../repositories/mongo/collar.mongo.repository');
+const {
+  MongoCollarRepository,
+  MongoAlertDataSource,
+} = require('../repositories/mongo/collar.mongo.repository');
 const { MongoAuthGateway } = require('../repositories/mongo/authGateway.mongo.repository');
 const { MongoAnalyticsRepository } = require('../repositories/mongo/analytics.mongo.repository');
 
@@ -27,10 +30,7 @@ async function createMongoDependencies({ config, logger }) {
   if (config.supabase.url && config.supabase.serviceRoleKey) {
     try {
       supabaseClient = createAdminClient(config);
-      photoStorageRepository = new PhotoStorageRepository(
-        supabaseClient,
-        config.supabase.storageBucket,
-      );
+      photoStorageRepository = new PhotoStorageRepository(supabaseClient, config.supabase.storageBucket);
     } catch (err) {
       logger.warn('Supabase storage client init warning', { message: err.message });
     }
@@ -49,7 +49,7 @@ async function createMongoDependencies({ config, logger }) {
     notificationRepository: new MongoNotificationRepository(),
     smsLogRepository: new MongoSmsLogRepository(),
     collarRepository: new MongoCollarRepository(),
-    analyticsRepository: new MongoAnalyticsRepository(),
+    analyticsRepository: new MongoAnalyticsRepository({ alertDataSource: new MongoAlertDataSource() }),
     photoStorageRepository,
   };
 
