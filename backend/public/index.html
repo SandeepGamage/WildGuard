@@ -797,7 +797,7 @@
     <div id="phoneDispatchModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 380px;">
         <div class="modal-header" style="background: #1f2937;">
-          <span>📱 Responder Phone Push View (Wireframe O4)</span>
+          <span>📱 Responder Mobile Notification</span>
           <button onclick="closePhoneDispatchModal()" style="background:none; border:none; color:#9ca3af; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -828,7 +828,7 @@
     <div id="escalationModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 580px;">
         <div class="modal-header" style="background: #991b1b;">
-          <span>⚠️ Escalation Panel: Manual Responder Assignment (Wireframe O2)</span>
+          <span>⚠️ Escalation Panel: Manual Responder Assignment</span>
           <button onclick="closeEscalationModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -879,7 +879,7 @@
     <div id="cameraTrapModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header" style="background: #1e3a8a;">
-          <span>📷 Camera-Trap AI Image Verification (Wireframe O3)</span>
+          <span>📷 Camera-Trap AI Image Verification</span>
           <button onclick="closeCameraTrapModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -899,7 +899,7 @@
               <div style="width: 65%; height: 100%; background: #f59e0b;"></div>
             </div>
             <p style="font-size: 0.72rem; color: #9ca3af; margin-top: 0.4rem;">
-              *Sub-threshold detection queued for Operations Officer manual verification (UC2c).
+              *Sub-threshold detection queued for Operations Officer manual verification.
             </p>
           </div>
           <div style="margin-bottom: 1rem;">
@@ -929,7 +929,7 @@
     <div id="resolveModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 460px;">
         <div class="modal-header" style="background: #065f46;">
-          <span>✅ Resolve Boundary Alert (Table 18 Step 10)</span>
+          <span>✅ Resolve Boundary Alert</span>
           <button onclick="closeResolveModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -995,13 +995,13 @@
             </div>
 
             <div id="modalSmsBox" class="sms-box" style="display: flex;">
-              <strong>📩 Automated Village Early-Warning Broadcast (UC2e):</strong>
+              <strong>📩 Automated Village Early-Warning Broadcast:</strong>
               <span id="modalSmsContent">WILDGUARD ALERT: Wild animal Elephant EL-07 detected near Palatupana Farmland & Paddy Perimeter. Please stay vigilant.</span>
             </div>
 
             <div id="modalDispatchBox" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.5rem 0; font-size: 0.8rem; color: #93c5fd; display: flex; justify-content: space-between; align-items: center;">
               <span>🚓 Dispatched: <strong id="modalResponderName">R. M. Bandara</strong> (<span id="modalResponderDist">320m</span> away)</span>
-              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="openPhoneDispatchModal()">Open Phone View (O4)</button>
+              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="openPhoneDispatchModal()">Open Phone View</button>
             </div>
 
             <div class="field-row">
@@ -1033,7 +1033,7 @@
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-secondary" onclick="dismissFalseAlarm()">False Alarm</button>
-            <button class="btn btn-warning" onclick="openEscalationModal()">Escalate (O2)</button>
+            <button class="btn btn-warning" onclick="openEscalationModal()">Escalate</button>
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-danger" id="modalDispatchBtn" onclick="confirmDispatchRanger()">Dispatch Nearest</button>
@@ -2227,7 +2227,7 @@
           } catch (e) {}
         }
         updateTimelineUI('ACKNOWLEDGED');
-        alert('Screenshot 3 (O4): Responder R. M. Bandara acknowledged dispatch. Timeline updated to ACKNOWLEDGED.');
+        alert('Responder R. M. Bandara acknowledged dispatch. Status updated to ACKNOWLEDGED.');
         document.getElementById('breachModal').classList.add('active');
       }
 
@@ -2269,7 +2269,7 @@
         }
         document.getElementById('modalResponderName').innerText = responderName;
         updateTimelineUI('DISPATCHED');
-        alert(`Screenshot 4 (O2): Manually assigned responder ${responderName}. Status updated to DISPATCHED.`);
+        alert(`Manually assigned responder ${responderName}. Status updated to DISPATCHED.`);
         document.getElementById('breachModal').classList.add('active');
       }
 
@@ -2303,7 +2303,7 @@
           if (data.data && data.data.alert) lastActiveAlertId = data.data.alert.id;
         } catch (e) {}
         await refreshDashboard();
-        alert(`Screenshot 5 (O3): Operations Officer confirmed ${species} threat. Critical alert raised and dispatched.`);
+        alert(`Confirmed ${species} threat. Critical alert raised and dispatched.`);
         runScenario2DashboardAlert();
       }
 
