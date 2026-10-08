@@ -26,5 +26,12 @@ export const ROUTES = {
     profile: '/profile',
   },
 
+  ranger: {
+    start: '/start-patrol',
+    active: '/active-patrol',
+    logIncident: '/log-incident',
+    summary: '/patrol-summary',
+  },
+
   demo: { smsSimulator: '/sms-simulator' },
 };

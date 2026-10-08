@@ -31,6 +31,9 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
     photoCalls: [],
     reports: [],
     patrolTracks: [],
+    patrolSessions: [],
+    patrolTrackPoints: [],
+    patrolIncidentRows: [],
     patrolIncidents: [],
     collarAlerts: [],
     failAnalyticsQuery: false,
@@ -696,6 +699,32 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
     },
   };
 
+  const patrolRepository = {
+    async findSession(id) {
+      const row = state.patrolSessions.find((s) => s.id === id);
+      return row ? { ranger_id: row.rangerId, sector_id: row.sectorId } : null;
+    },
+    async upsertSession(rangerId, session) {
+      const row = state.patrolSessions.find((s) => s.id === session.id);
+      if (row) Object.assign(row, { status: session.status, endedAt: session.endedAt ?? null });
+      else state.patrolSessions.push({ ...session, rangerId, endedAt: session.endedAt ?? null });
+    },
+    async upsertTrackPoints(rangerId, sessionId, points) {
+      for (const p of points) {
+        if (!state.patrolTrackPoints.some((x) => x.id === p.id)) {
+          state.patrolTrackPoints.push({ ...p, sessionId, rangerId });
+        }
+      }
+    },
+    async upsertIncidents(rangerId, sessionId, sectorId, incidents) {
+      for (const i of incidents) {
+        if (!state.patrolIncidentRows.some((x) => x.id === i.id)) {
+          state.patrolIncidentRows.push({ ...i, sessionId, rangerId, sectorId });
+        }
+      }
+    },
+  };
+
   return {
     state,
     repositories: {
@@ -708,6 +737,7 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
       collarRepository,
       photoStorageRepository,
       analyticsRepository,
+      patrolRepository,
     },
   };
 }

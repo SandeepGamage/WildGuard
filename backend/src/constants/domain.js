@@ -107,6 +107,20 @@ const REPORT_TYPES = Object.freeze({
   HUMAN_WILDLIFE_CONFLICT: 'HUMAN_WILDLIFE_CONFLICT',
 });
 
+/** UC1 – patrol sessions and the incidents a ranger logs in the field. */
+const PATROL_STATUS = Object.freeze({ ACTIVE: 'ACTIVE', COMPLETED: 'COMPLETED' });
+
+const PATROL_INCIDENT_TYPES = Object.freeze({
+  SNARE_POACHING: 'SNARE_POACHING',
+  CARCASS: 'CARCASS',
+  ELEPHANT_SIGHTING: 'ELEPHANT_SIGHTING',
+  ILLEGAL_ACTIVITY: 'ILLEGAL_ACTIVITY',
+  OTHER_ANIMAL: 'OTHER_ANIMAL',
+  OTHER: 'OTHER',
+});
+
+const PATROL_RULES = Object.freeze({ MAX_BATCH: 50, MAX_NOTE_LENGTH: 500 });
+
 const EXPORT_FORMATS = Object.freeze({ PDF: 'PDF', CSV: 'CSV' });
 
 /** Sections a manager can include in an exported report (UC4c, wireframe A2). */
@@ -221,6 +235,9 @@ module.exports = {
   PHOTO_RULES,
   LIMITS,
   REPORT_TYPES,
+  PATROL_STATUS,
+  PATROL_INCIDENT_TYPES,
+  PATROL_RULES,
   EXPORT_FORMATS,
   EXPORT_SECTIONS,
   ANALYTICS_RULES,

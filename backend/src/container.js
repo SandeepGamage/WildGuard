@@ -16,6 +16,7 @@ const { GISMappingService } = require('./services/gisMapping.service');
 const { AnalyticsReportService } = require('./services/analyticsReport.service');
 const { AnalyticsService } = require('./services/analytics.service');
 const { ExportEngine } = require('./services/export/exportEngine');
+const { PatrolService } = require('./services/patrol.service');
 
 /**
  * Wire services to repositories. Nothing here knows about Supabase: the
@@ -43,6 +44,7 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     collarRepository,
     photoStorageRepository,
     analyticsRepository,
+    patrolRepository,
   } = repositories;
 
   const authService = new AuthService({
@@ -104,6 +106,9 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     logger,
   });
 
+  // UC1 – patrol tracking and incident logging.
+  const patrolService = new PatrolService({ patrolRepository, photoService });
+
   // UC4 – conservation analytics and hotspot mapping.
   const analyticsReportService = new AnalyticsReportService({
     analyticsRepository,
@@ -135,6 +140,7 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
     photoService,
     smsService,
     pendingQueue,
+    patrolService,
     analyticsService,
     collarService,
   };

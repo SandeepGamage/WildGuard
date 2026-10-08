@@ -8,6 +8,8 @@ const { createSmsController } = require('../controllers/sms.controller');
 const { createNotificationController } = require('../controllers/notification.controller');
 const { createAnalyticsController } = require('../controllers/analytics.controller');
 const { createCollarController } = require('../controllers/collar.controller');
+const { createPatrolController } = require('../controllers/patrol.controller');
+const { createPatrolRoutes } = require('./patrol.routes');
 const { createAuthRoutes } = require('./auth.routes');
 const { createVillageRoutes } = require('./village.routes');
 const { createIncidentRoutes } = require('./incident.routes');
@@ -40,6 +42,10 @@ function createApiRouter({ services, limiters, config }) {
   router.use(
     '/officer',
     createOfficerRoutes({ controller: createOfficerController(services), authenticate }),
+  );
+  router.use(
+    '/patrols',
+    createPatrolRoutes({ controller: createPatrolController(services), authenticate }),
   );
   router.use(
     '/notifications',

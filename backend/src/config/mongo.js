@@ -13,6 +13,7 @@ const {
 } = require('../repositories/mongo/collar.mongo.repository');
 const { MongoAuthGateway } = require('../repositories/mongo/authGateway.mongo.repository');
 const { MongoAnalyticsRepository } = require('../repositories/mongo/analytics.mongo.repository');
+const { MongoPatrolRepository, MongoPatrolDataSource } = require('../repositories/mongo/patrol.mongo.repository');
 
 /**
  * Creates MongoDB-backed repositories and authentication gateway.
@@ -49,7 +50,11 @@ async function createMongoDependencies({ config, logger }) {
     notificationRepository: new MongoNotificationRepository(),
     smsLogRepository: new MongoSmsLogRepository(),
     collarRepository: new MongoCollarRepository(),
-    analyticsRepository: new MongoAnalyticsRepository({ alertDataSource: new MongoAlertDataSource() }),
+    patrolRepository: new MongoPatrolRepository(),
+    analyticsRepository: new MongoAnalyticsRepository({
+      alertDataSource: new MongoAlertDataSource(),
+      patrolDataSource: new MongoPatrolDataSource(),
+    }),
     photoStorageRepository,
   };
 
