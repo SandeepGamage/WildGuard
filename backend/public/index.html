@@ -1544,11 +1544,27 @@
           }
           prevAlertCount = totalAlerts;
 
+          const hasActiveBreach = (status.activeAlerts && status.activeAlerts.length > 0) || status.hasActiveBreach;
+          const banner = document.getElementById('alarmBanner');
+          if (hasActiveBreach) {
+            banner.classList.add('active');
+          } else {
+            banner.classList.remove('active');
+          }
+
           if (status.acousticAlarmActive && !userSilenced) {
-            document.getElementById('alarmBanner').classList.add('active');
             startAcousticAlarm();
           } else {
-            stopAcousticAlarm();
+            if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
+            if (sirenOscillator) {
+              try {
+                if (sirenGain && audioContext) sirenGain.gain.setValueAtTime(0, audioContext.currentTime);
+                sirenOscillator.stop();
+                sirenOscillator.disconnect();
+              } catch (e) {}
+              sirenOscillator = null;
+              sirenGain = null;
+            }
           }
 
           // Render queue
@@ -1956,6 +1972,7 @@
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') audioContext.resume();
         userSilenced = false;
+        document.getElementById('alarmBanner').classList.add('active');
         startAcousticAlarm();
         const res = await fetch('/api/demo/main-flow-breach', { method: 'POST' });
         const data = await res.json();
