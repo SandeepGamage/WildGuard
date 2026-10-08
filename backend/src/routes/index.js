@@ -7,6 +7,7 @@ const { createOfficerController } = require('../controllers/officer.controller')
 const { createSmsController } = require('../controllers/sms.controller');
 const { createNotificationController } = require('../controllers/notification.controller');
 const { createAnalyticsController } = require('../controllers/analytics.controller');
+const { createCollarController } = require('../controllers/collar.controller');
 const { createPatrolController } = require('../controllers/patrol.controller');
 const { createPatrolRoutes } = require('./patrol.routes');
 const { createAuthRoutes } = require('./auth.routes');
@@ -16,6 +17,7 @@ const { createOfficerRoutes } = require('./officer.routes');
 const { createSmsRoutes } = require('./sms.routes');
 const { createNotificationRoutes } = require('./notification.routes');
 const { createAnalyticsRoutes } = require('./analytics.routes');
+const { createCollarRoutes } = require('./collar.routes');
 const { createAuthenticate } = require('../middleware/auth');
 
 /**
@@ -53,6 +55,7 @@ function createApiRouter({ services, limiters, config }) {
     '/analytics',
     createAnalyticsRoutes({ controller: createAnalyticsController(services), authenticate }),
   );
+  router.use('/collar', createCollarRoutes({ controller: createCollarController(services), authenticate }));
   if (config.smsSimulatorEnabled) {
     router.use('/sms', createSmsRoutes({ controller: createSmsController(services), strictLimiter }));
   }

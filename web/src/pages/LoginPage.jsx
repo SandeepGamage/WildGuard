@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AUTH_STATUS, useAuth } from '../auth/AuthContext';
@@ -13,12 +13,13 @@ const FEATURES = [
   { key: 'trends', Icon: TrendIcon },
 ];
 
-/** Park Manager sign in (email + password; accounts are created by the DWC administrator). */
+/** Sign in: Park Manager (UC4) or Operations Officer (UC2). */
 export default function LoginPage() {
   const { t } = useTranslation();
   const { status, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedRole, setSelectedRole] = useState('PARK_MANAGER');
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -29,6 +30,14 @@ export default function LoginPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (selectedRole === 'OPERATIONS_OFFICER') {
+      if (!account.trim() || !password) {
+        setError('Please enter your Officer Email / ID and Password to sign in.');
+        return;
+      }
+      window.location.href = '/operations.html';
+      return;
+    }
     if (!account.trim() || !password) {
       setError(t('login.required'));
       return;
@@ -44,6 +53,13 @@ export default function LoginPage() {
     }
   };
 
+  const handleRoleChange = (role) => {
+    setSelectedRole(role);
+    setError(null);
+    setAccount('');
+    setPassword('');
+  };
+
   return (
     <main className="login">
       <section className="login-hero">
@@ -55,20 +71,49 @@ export default function LoginPage() {
           <span>{t('common.appName')}</span>
         </div>
         <div className="login-pitch">
-          <p className="login-headline">{t('login.headline')}</p>
-          <p className="login-lead">{t('login.lead')}</p>
+          <p className="login-headline">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Real-time Collar Hazards & Emergency Control.'
+              : t('login.headline')}
+          </p>
+          <p className="login-lead">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Control room monitoring for GPS elephant collar breaches, automated villager warnings, nearest responder dispatch, and camera trap verification.'
+              : t('login.lead')}
+          </p>
           <ul className="login-features">
-            {FEATURES.map(({ key, Icon }) => (
-              <li key={key}>
-                <span className="login-feature-icon">
-                  <Icon />
-                </span>
-                {t(`login.features.${key}`)}
-              </li>
-            ))}
+            {selectedRole === 'OPERATIONS_OFFICER' ? (
+              <>
+                <li>
+                  <span className="login-feature-icon">🚨</span>
+                  Virtual Geofence Boundary Breach Alarm System
+                </li>
+                <li>
+                  <span className="login-feature-icon">📲</span>
+                  Automated Early-Warning SMS to Surrounding Villages
+                </li>
+                <li>
+                  <span className="login-feature-icon">🚓</span>
+                  Nearest Field Responder Auto-Dispatch &amp; Escalation
+                </li>
+              </>
+            ) : (
+              FEATURES.map(({ key, Icon }) => (
+                <li key={key}>
+                  <span className="login-feature-icon">
+                    <Icon />
+                  </span>
+                  {t(`login.features.${key}`)}
+                </li>
+              ))
+            )}
           </ul>
         </div>
-        <p className="login-hero-note">{t('login.restricted')}</p>
+        <p className="login-hero-note">
+          {selectedRole === 'OPERATIONS_OFFICER'
+            ? 'Department of Wildlife Conservation • Control Room Operations Desk'
+            : t('login.restricted')}
+        </p>
       </section>
 
       <section className="login-panel">
@@ -76,17 +121,83 @@ export default function LoginPage() {
           <LanguageSelect />
         </div>
         <form className="login-form" onSubmit={submit} noValidate>
+          {/* Role Switcher Segmented Control */}
+          <div
+            role="tablist"
+            aria-label="Switch Profile"
+            style={{
+              display: 'flex',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '3px',
+              marginBottom: '0.75rem',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <button
+              type="button"
+              role="tab"
+              id="roleBtnManager"
+              aria-selected={selectedRole === 'PARK_MANAGER'}
+              onClick={() => handleRoleChange('PARK_MANAGER')}
+              style={{
+                flex: 1,
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: selectedRole === 'PARK_MANAGER' ? '500' : '400',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedRole === 'PARK_MANAGER' ? '#e9ecef' : 'transparent',
+                color: selectedRole === 'PARK_MANAGER' ? '#1f2937' : '#6b7280',
+                transition: 'all 0.15s ease-in-out',
+                textAlign: 'center',
+              }}
+            >
+              Park Manager
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="roleBtnOperations"
+              aria-selected={selectedRole === 'OPERATIONS_OFFICER'}
+              onClick={() => handleRoleChange('OPERATIONS_OFFICER')}
+              style={{
+                flex: 1,
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: selectedRole === 'OPERATIONS_OFFICER' ? '500' : '400',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: selectedRole === 'OPERATIONS_OFFICER' ? '#e9ecef' : 'transparent',
+                color: selectedRole === 'OPERATIONS_OFFICER' ? '#1f2937' : '#6b7280',
+                transition: 'all 0.15s ease-in-out',
+                textAlign: 'center',
+              }}
+            >
+              Operations Officer
+            </button>
+          </div>
+
           <div className="login-intro">
             <h1>{t('login.title')}</h1>
-            <p className="muted">{t('login.subtitle')}</p>
+            <p className="muted">
+              {selectedRole === 'OPERATIONS_OFFICER'
+                ? 'Sign in to open the Real-time Wildlife Hazard & Collar Alert Operations Console.'
+                : t('login.subtitle')}
+            </p>
           </div>
 
           <label className="field">
-            <span className="field-label">{t('login.account')}</span>
+            <span className="field-label">
+              {selectedRole === 'OPERATIONS_OFFICER' ? 'Officer Email / ID' : t('login.account')}
+            </span>
             <input
               type="email"
               autoComplete="username"
-              placeholder={t('login.accountPlaceholder')}
+              placeholder=""
               value={account}
               onChange={(e) => setAccount(e.target.value)}
               aria-invalid={Boolean(error)}
@@ -97,6 +208,7 @@ export default function LoginPage() {
             <input
               type="password"
               autoComplete="current-password"
+              placeholder=""
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={Boolean(error)}
@@ -110,10 +222,16 @@ export default function LoginPage() {
           ) : null}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-            {busy ? t('common.loading') : t('login.submit')}
+            {busy
+              ? t('common.loading')
+              : selectedRole === 'OPERATIONS_OFFICER' ? 'Open Operations Control Room →' : t('login.submit')}
           </button>
 
-          <p className="login-help muted">{t('login.help')}</p>
+          <p className="login-help muted">
+            {selectedRole === 'OPERATIONS_OFFICER'
+              ? 'Authorized DWC control room operators only.'
+              : t('login.help')}
+          </p>
         </form>
         <p className="login-footer">{t('login.footer')}</p>
       </section>

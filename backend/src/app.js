@@ -1,3 +1,4 @@
+const path = require('node:path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -18,7 +19,7 @@ function createApp({ config, services, logger }) {
   const limiters = createRateLimiters(config.rateLimit);
 
   app.disable('x-powered-by');
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(
     cors({
       origin: (origin, callback) => {
@@ -32,6 +33,15 @@ function createApp({ config, services, logger }) {
   );
   app.use(createRequestContext(logger));
   app.use(express.json({ limit: BODY_LIMIT }));
+  // UC2: Wildlife Collar Boundary Alert Operations Console & Phone GPS Simulation
+  app.use('/collar-console', express.static(path.join(__dirname, '../public')));
+  app.use('/operations', express.static(path.join(__dirname, '../public')));
+
+  // Operations Console compatibility router
+  const { createOperationsCompatRouter } = require('./routes/operationsCompat.routes');
+  app.use('/api', createOperationsCompatRouter({ services }));
+  app.use('/collar.html', (req, res) => res.sendFile(path.join(__dirname, '../public/collar.html')));
+  app.use('/collar_qr.png', (req, res) => res.sendFile(path.join(__dirname, '../public/collar_qr.png')));
   app.use('/api/v1', limiters.general, createApiRouter({ services, limiters, config }));
   app.use(notFoundHandler);
   app.use(createErrorHandler(logger));
