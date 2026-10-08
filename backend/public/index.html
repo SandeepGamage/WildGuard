@@ -1544,11 +1544,27 @@
           }
           prevAlertCount = totalAlerts;
 
+          const hasActiveBreach = (status.activeAlerts && status.activeAlerts.length > 0) || status.hasActiveBreach;
+          const banner = document.getElementById('alarmBanner');
+          if (hasActiveBreach) {
+            banner.classList.add('active');
+          } else {
+            banner.classList.remove('active');
+          }
+
           if (status.acousticAlarmActive && !userSilenced) {
-            document.getElementById('alarmBanner').classList.add('active');
             startAcousticAlarm();
           } else {
-            stopAcousticAlarm();
+            if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
+            if (sirenOscillator) {
+              try {
+                if (sirenGain && audioContext) sirenGain.gain.setValueAtTime(0, audioContext.currentTime);
+                sirenOscillator.stop();
+                sirenOscillator.disconnect();
+              } catch (e) {}
+              sirenOscillator = null;
+              sirenGain = null;
+            }
           }
 
           // Render queue
@@ -1955,11 +1971,15 @@
       async function triggerMainBreach() {
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') audioContext.resume();
-        startAcousticAlarm();
         userSilenced = false;
-        await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        document.getElementById('alarmBanner').classList.add('active');
+        startAcousticAlarm();
+        const res = await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        const data = await res.json();
+        const ref = data.alert ? (data.alert.alert_reference || data.alert.alertReference || data.alert.id) : 'ALT-0001';
+        lastActiveAlertId = ref;
         await refreshDashboard();
-        openAlertModal('ALT-0001');
+        await openAlertModal(ref);
       }
 
       async function triggerSafeTelemetry() {
@@ -2215,6 +2235,51 @@
         if (!lastActiveAlertId) await runScenario1CollarSimulation();
         updateTimelineUI('DISPATCHED');
         document.getElementById('modalDispatchBox').style.display = 'flex';
+        openPhoneDispatchModal();
+      }
+
+      
+      function switchPhoneTab(tab) {
+        const rangerTab = document.getElementById('tabPhoneRanger');
+        const villagerTab = document.getElementById('tabPhoneVillager');
+        const rangerView = document.getElementById('phoneRangerView');
+        const villagerView = document.getElementById('phoneVillagerView');
+        const headerTitle = document.getElementById('phoneModalHeaderTitle');
+
+        if (tab === 'villager') {
+          rangerTab.style.background = 'transparent';
+          rangerTab.style.color = '#9ca3af';
+          rangerTab.style.borderBottom = '2px solid transparent';
+
+          villagerTab.style.background = '#1f2937';
+          villagerTab.style.color = '#10b981';
+          villagerTab.style.borderBottom = '2px solid #10b981';
+
+          rangerView.style.display = 'none';
+          villagerView.style.display = 'block';
+          if (headerTitle) headerTitle.innerText = '📱 Villager Mobile SMS Broadcast';
+        } else {
+          rangerTab.style.background = '#1f2937';
+          rangerTab.style.color = '#3b82f6';
+          rangerTab.style.borderBottom = '2px solid #3b82f6';
+
+          villagerTab.style.background = 'transparent';
+          villagerTab.style.color = '#9ca3af';
+          villagerTab.style.borderBottom = '2px solid transparent';
+
+          rangerView.style.display = 'block';
+          villagerView.style.display = 'none';
+          if (headerTitle) headerTitle.innerText = '📱 Responder Mobile Notification';
+        }
+      }
+
+      function openVillagerSmsModal() {
+        const smsContent = document.getElementById('modalSmsContent');
+        const phoneSms = document.getElementById('phoneVillagerSmsText');
+        if (smsContent && phoneSms) {
+          phoneSms.innerText = smsContent.innerText;
+        }
+        switchPhoneTab('villager');
         openPhoneDispatchModal();
       }
 

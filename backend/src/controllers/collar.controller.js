@@ -1,4 +1,4 @@
-﻿const { sendSuccess } = require('../utils/response');
+const { sendSuccess } = require('../utils/response');
 
 /**
  * Controller: CollarController (UC2 - HazardMonitoringController)
@@ -8,12 +8,12 @@
 function createCollarController({ collarService }) {
   return {
     ingestReading: async (req, res) => {
-      const result = await collarService.ingestReading(req.body);
+      const result = await collarService.ingestReading(req.body || {});
       return sendSuccess(res, result);
     },
 
     ingestBatch: async (req, res) => {
-      const result = await collarService.ingestBatch(req.body.readings);
+      const result = await collarService.ingestBatch(req.body?.readings || []);
       return sendSuccess(res, result);
     },
 
@@ -24,17 +24,17 @@ function createCollarController({ collarService }) {
 
     // Screenshot 3 (O4): Responder acknowledges dispatch within 3 minutes
     acknowledgeDispatch: async (req, res) => {
-      const responderId = req.body.responderId || (req.user ? req.user.id : 'RESP-01');
+      const responderId = req.body?.responderId || (req.user ? req.user.id : 'RESP-01');
       const result = await collarService.acknowledgeDispatch(req.params.id, {
         responderId,
-        notes: req.body.notes,
+        notes: req.body?.notes,
       });
       return sendSuccess(res, result);
     },
 
     // Screenshot 4 (O2): Escalation and Manual Responder Assignment
     escalateAlert: async (req, res) => {
-      const reason = req.body.reason || 'Escalated by Operations Officer.';
+      const reason = req.body?.reason || 'Escalated by Operations Officer.';
       const result = await collarService.escalateAlert(req.params.id, reason);
       return sendSuccess(res, result);
     },
@@ -45,18 +45,18 @@ function createCollarController({ collarService }) {
     },
 
     manualAssignResponder: async (req, res) => {
-      const officerId = req.user ? req.user.id : req.body.officerId || 'OFF-01';
+      const officerId = req.user ? req.user.id : req.body?.officerId || 'OFF-01';
       const result = await collarService.manualAssignResponder(req.params.id, {
-        responderId: req.body.responderId,
+        responderId: req.body?.responderId,
         officerId,
-        officerNotes: req.body.officerNotes,
+        officerNotes: req.body?.officerNotes,
       });
       return sendSuccess(res, result);
     },
 
     // Screenshot 5 (O3): Camera-Trap Detection & Review Queue
     handleCameraTrap: async (req, res) => {
-      const result = await collarService.handleCameraTrapImage(req.body);
+      const result = await collarService.handleCameraTrapImage(req.body || {});
       return sendSuccess(res, result);
     },
 
@@ -66,9 +66,9 @@ function createCollarController({ collarService }) {
     },
 
     reviewCameraTrap: async (req, res) => {
-      const officerId = req.user ? req.user.id : req.body.officerId || 'OFF-01';
+      const officerId = req.user ? req.user.id : req.body?.officerId || 'OFF-01';
       const result = await collarService.reviewCameraTrapImage(req.params.id, {
-        ...req.body,
+        ...(req.body || {}),
         officerId,
       });
       return sendSuccess(res, result);
@@ -86,29 +86,29 @@ function createCollarController({ collarService }) {
     },
 
     resolveAlert: async (req, res) => {
-      const officerId = req.user ? req.user.id : req.body.officerId || 'OFF-01';
+      const officerId = req.user ? req.user.id : req.body?.officerId || 'OFF-01';
       const result = await collarService.resolveAlert(req.params.id, {
-        reason: req.body.reason,
+        reason: req.body?.reason,
         officerId,
-        notes: req.body.notes,
+        notes: req.body?.notes,
       });
       return sendSuccess(res, result);
     },
 
     // Backwards-compatible methods
     acknowledgeAlert: async (req, res) => {
-      const officerId = req.user ? req.user.id : req.body.officerId || 'OFF-01';
+      const officerId = req.user ? req.user.id : req.body?.officerId || 'OFF-01';
       const result = await collarService.acknowledgeAlert(req.params.id, {
-        ...req.body,
+        ...(req.body || {}),
         officerId,
       });
       return sendSuccess(res, result);
     },
 
     markFalseAlarm: async (req, res) => {
-      const officerId = req.user ? req.user.id : req.body.officerId || 'OFF-01';
+      const officerId = req.user ? req.user.id : req.body?.officerId || 'OFF-01';
       const result = await collarService.markFalseAlarm(req.params.id, {
-        ...req.body,
+        ...(req.body || {}),
         officerId,
       });
       return sendSuccess(res, result);
