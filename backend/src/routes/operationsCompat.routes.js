@@ -127,15 +127,46 @@ function createOperationsCompatRouter({ services }) {
     res.json({ message: 'Alarm silenced' });
   });
 
-  // 5. Auth
+  // 5. Auth (Permanent Operations Officer Authentication)
+  const VALID_OFFICER_EMAILS = [
+    'operations@wildguard.lk',
+    'officer@wildguard.lk',
+    'operations.officer@wildlife.gov.lk',
+    'ops@dwc.gov.lk',
+    'off-01',
+    'officer',
+  ];
+  const VALID_OFFICER_PASSWORDS = [
+    'Operations@2026',
+    'password123',
+    'WildGuard@2026',
+  ];
+
   router.post('/auth/login', (req, res) => {
-    const officerId = req.body.officerId || 'OFF-01';
+    const account = (req.body.officerId || req.body.account || req.body.email || '').trim().toLowerCase();
+    const password = (req.body.password || '').trim();
+
+    // Verify against permanent credentials
+    const isAccountValid = VALID_OFFICER_EMAILS.includes(account) || account.startsWith('off-') || account.includes('operations');
+    const isPasswordValid = VALID_OFFICER_PASSWORDS.includes(password);
+
+    if (!isAccountValid || !isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid officer credentials. Please check your email and password.',
+      });
+    }
+
+    const token = 'jwt-session-ops-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
     res.json({
-      token: 'session-' + officerId + '-' + Date.now(),
+      success: true,
+      token,
       officer: {
-        officerId,
+        officerId: 'OFF-01',
+        email: account.includes('@') ? account : 'operations@wildguard.lk',
         name: 'Operations Officer',
         role: 'Lead Operations Officer',
+        department: 'DWC Wildlife Operations Control Room',
       },
     });
   });
