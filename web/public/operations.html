@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WildGuardLK | Wildlife Collar Boundary Alert System</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1377,7 +1377,8 @@
       </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script>if (typeof L === "undefined") { document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>'); }</script>
     <script>
       // Live Clock
       setInterval(() => {
@@ -1389,14 +1390,27 @@
       const map = L.map('map', { zoomControl: false }).setView([6.38, 81.4], 12);
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Satellite Imagery Layer
-      L.tileLayer(
+      // Satellite Imagery Layer with fallback
+      const satLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
           maxZoom: 18,
           attribution: 'Esri Satellite',
         },
       ).addTo(map);
+
+      satLayer.on('tileerror', function() {
+        if (!window._tileFallbackLoaded) {
+          window._tileFallbackLoaded = true;
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '© CARTO'
+          }).addTo(map);
+        }
+      });
+
+      window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
+      window.addEventListener('load', () => { if (map) map.invalidateSize(); });
 
       let currentAlert = null;
       let audioContext = null;
@@ -1916,7 +1930,7 @@
         }
       }
   
-      function silenceAlarm() {
+      async function silenceAlarm() {
         await fetch('/api/dashboard/silence', { method: 'POST' });
         userSilenced = true;
         stopAcousticAlarm();
