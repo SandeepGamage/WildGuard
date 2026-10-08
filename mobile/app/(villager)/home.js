@@ -11,6 +11,7 @@ import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { ErrorState, LoadingState } from '../../src/components/common/StateViews';
 import { PendingReportCard } from '../../src/components/reports/PendingReportCard';
 import { ReportCard } from '../../src/components/reports/ReportCard';
+import { StatusBadge } from '../../src/components/common/StatusBadge';
 import { EMERGENCY_NUMBER } from '../../src/constants/domain';
 import { ROUTES } from '../../src/constants/routes';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -20,10 +21,11 @@ import { reportSync } from '../../src/services/reportSync';
 import { colors, spacing } from '../../src/theme';
 import { friendlyError } from '../../src/utils/errors';
 import { greetingKey } from '../../src/utils/time';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../src/constants/queryKeys';
+import { apiRequest } from '../../src/api/client';
 
-/** Villager home: greeting, "Report now", injury advice and the most recent report. */
+/** Villager home: greeting, "Report now", injury advice, early-warning collar alerts, and recent reports. */
 export default function HomeScreen() {
   const { t } = useTranslation();
   const { profile } = useAuth();
@@ -31,17 +33,36 @@ export default function HomeScreen() {
   const reports = useMyReports();
   const pending = usePendingReports(profile.id);
 
-  const firstName = profile.fullName.split(' ')[0];
+  const activeAlertsQuery = useQuery({
+    queryKey: ['activeCollarAlerts'],
+    queryFn: async () => {
+      try {
+        const data = await apiRequest('/collar/alerts/active', { auth: false });
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 5000,
+  });
+
+  const firstName = profile.fullName ? profile.fullName.split(' ')[0] : 'Villager';
   const latest = reports.data?.[0];
   const waiting = pending.data ?? [];
+  const activeAlert = activeAlertsQuery.data?.[0];
 
   const discard = async (clientRequestId) => {
     await reportSync.discard(clientRequestId);
     queryClient.invalidateQueries({ queryKey: queryKeys.pendingReports(profile.id) });
   };
 
+  const handleRefresh = () => {
+    reports.refetch();
+    activeAlertsQuery.refetch();
+  };
+
   return (
-    <ScreenContainer refresh={{ refreshing: reports.isRefetching, onRefresh: () => reports.refetch() }}>
+    <ScreenContainer refresh={{ refreshing: reports.isRefetching || activeAlertsQuery.isRefetching, onRefresh: handleRefresh }}>
       <View style={styles.header}>
         <View>
           <AppText variant="body" color="textMuted">
@@ -53,6 +74,36 @@ export default function HomeScreen() {
         </View>
         <LanguageSwitcher />
       </View>
+
+      {activeAlert ? (
+        <Card tone="danger" style={styles.alertCard} testID="early-warning-alert-card">
+          <View style={styles.alertHeader}>
+            <View style={styles.alertHeaderTitle}>
+              <TriangleAlert size={22} color={colors.dangerText} />
+              <AppText variant="cardTitle" color="dangerText">
+                🚨 EARLY WARNING BROADCAST
+              </AppText>
+            </View>
+            <StatusBadge label="CRITICAL" tone="danger" uppercase />
+          </View>
+
+          <AppText variant="bodyStrong" style={styles.alertBody}>
+            WILDGUARD ALERT: Wild animal {activeAlert.animal_label || 'Elephant E-402 (Rambo)'} detected near {activeAlert.zone_name || 'Palatupana Farmland & Paddy Perimeter'}. Please stay vigilant and avoid the perimeter.
+          </AppText>
+
+          <View style={styles.alertFooter}>
+            <AppText variant="caption" color="dangerText">
+              📍 Perimeter Breach: {activeAlert.zone_name || 'Palatupana Farmland & Paddy Perimeter'}
+            </AppText>
+            <AppText variant="caption" color="textMuted">
+              📱 Dispatched via GSM SMS to {profile.fullName} ({profile.phoneNumber || '0728412012'})
+            </AppText>
+            <AppText variant="caption" color="textMuted">
+              DWC Operations Command Gateway • Live Early Warning
+            </AppText>
+          </View>
+        </Card>
+      ) : null}
 
       <HeroCard
         title={t('home.heroTitle')}
@@ -118,6 +169,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.xl,
+  },
+  alertCard: {
+    marginBottom: spacing.xl,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+    gap: spacing.sm,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  alertHeaderTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flex: 1,
+  },
+  alertBody: {
+    color: colors.textBody,
+    lineHeight: 20,
+  },
+  alertFooter: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.dangerBorder,
+    paddingTop: spacing.xs,
+    gap: 2,
   },
   injured: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xl },
   injuredText: { flex: 1, gap: spacing.xxs },
