@@ -706,12 +706,15 @@
       <div id="map"></div>
 
       <!-- Floating Scenario Control Panel -->
-      <div class="controls-panel">
-        <div class="controls-title">
-          <span>Interactive Demo Controls (UC4)</span>
+      <div class="controls-panel" id="demoControlsPanel">
+        <div class="controls-title" style="cursor: pointer; user-select: none; margin-bottom: 0.5rem;" onclick="toggleDemoPanel()">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>UC2 Demo Scenarios</span>
+            <span id="demoPanelToggleIcon" style="font-size: 0.75rem; color: #9ca3af; transition: transform 0.2s;">[Hide]</span>
+          </div>
           <span id="gatewayStatusBadge" class="badge badge-safe">Gateway Online</span>
         </div>
-        <div class="btn-group">
+        <div id="demoControlsBody" class="btn-group">
           <button class="btn btn-danger" onclick="triggerMainBreach()">⚡ 1. Main Breach (E-402)</button>
           <button class="btn btn-primary" onclick="triggerSafeTelemetry()">🟢 2. Safe Telemetry (A)</button>
           <button class="btn btn-warning" onclick="triggerSimultaneous()">🚨 3. Multi-Breach (B)</button>
@@ -1816,6 +1819,18 @@
       }
 
       // Scenarios
+      function toggleDemoPanel() {
+        const body = document.getElementById('demoControlsBody');
+        const icon = document.getElementById('demoPanelToggleIcon');
+        if (!body) return;
+        if (body.style.display === 'none') {
+          body.style.display = 'grid';
+          if (icon) icon.innerText = '[Hide]';
+        } else {
+          body.style.display = 'none';
+          if (icon) icon.innerText = '[Show]';
+        }
+      }
       async function triggerMainBreach() {
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') audioContext.resume();
