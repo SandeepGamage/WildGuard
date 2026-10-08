@@ -111,7 +111,7 @@ export default function LoginPage() {
         </div>
         <p className="login-hero-note">
           {selectedRole === 'OPERATIONS_OFFICER'
-            ? 'Department of Wildlife Conservation • Control Room Operator Desk (UC2 - Hanaan / IT23594586)'
+            ? 'Department of Wildlife Conservation • Control Room Operations Desk'
             : t('login.restricted')}
         </p>
       </section>
@@ -185,7 +185,7 @@ export default function LoginPage() {
             <h1>{t('login.title')}</h1>
             <p className="muted">
               {selectedRole === 'OPERATIONS_OFFICER'
-                ? 'Sign in to open the Real-time Wildlife Hazard & Collar Alert Console (UC2 - Hanaan / IT23594586).'
+                ? 'Sign in to open the Real-time Wildlife Hazard & Collar Alert Operations Console.'
                 : t('login.subtitle')}
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function LoginPage() {
             <input
               type="email"
               autoComplete="username"
-              placeholder={selectedRole === 'OPERATIONS_OFFICER' ? 'officer.hanaan@wildlife.gov.lk' : t('login.accountPlaceholder')}
+              placeholder=""
               value={account}
               onChange={(e) => setAccount(e.target.value)}
               aria-invalid={Boolean(error)}
@@ -208,7 +208,7 @@ export default function LoginPage() {
             <input
               type="password"
               autoComplete="current-password"
-              placeholder={selectedRole === 'OPERATIONS_OFFICER' ? '••••••••' : ''}
+              placeholder=""
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={Boolean(error)}
@@ -231,7 +231,7 @@ export default function LoginPage() {
 
           <p className="login-help muted">
             {selectedRole === 'OPERATIONS_OFFICER'
-              ? 'Authorized DWC control room operators only (UC2 - Hanaan / IT23594586).'
+              ? 'Authorized DWC control room operators only.'
               : t('login.help')}
           </p>
         </form>

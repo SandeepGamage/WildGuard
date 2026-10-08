@@ -134,7 +134,7 @@ function createOperationsCompatRouter({ services }) {
       token: 'session-' + officerId + '-' + Date.now(),
       officer: {
         officerId,
-        name: 'Hanaan M F A S',
+        name: 'Operations Officer',
         role: 'Lead Operations Officer',
       },
     });
