@@ -214,7 +214,7 @@ const CollarAlertSchema = new Schema(
     threat_level: { type: String, enum: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], default: 'CRITICAL' },
     status: {
       type: String,
-      enum: ['RAISED', 'ACKNOWLEDGED', 'DISPATCHED', 'ESCALATED', 'RESOLVED', 'FALSE_ALARM'],
+      enum: ['RAISED', 'ACKNOWLEDGED', 'DISPATCHED', 'ESCALATED', 'RESOLVED', 'FALSE_ALARM', 'ACTIVE', 'OPEN', 'VILLAGE_SMS_SENT', 'DELAYED_INCIDENT'],
       default: 'RAISED',
       index: true,
     },

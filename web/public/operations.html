@@ -1955,11 +1955,14 @@
       async function triggerMainBreach() {
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') audioContext.resume();
-        startAcousticAlarm();
         userSilenced = false;
-        await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        startAcousticAlarm();
+        const res = await fetch('/api/demo/main-flow-breach', { method: 'POST' });
+        const data = await res.json();
+        const ref = data.alert ? (data.alert.alert_reference || data.alert.alertReference || data.alert.id) : 'ALT-0001';
+        lastActiveAlertId = ref;
         await refreshDashboard();
-        openAlertModal('ALT-0001');
+        await openAlertModal(ref);
       }
 
       async function triggerSafeTelemetry() {

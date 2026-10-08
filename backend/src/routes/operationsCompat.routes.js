@@ -80,8 +80,8 @@ function createOperationsCompatRouter({ services }) {
     try {
       const active = await collarService.listActiveAlerts();
       res.json({
-        activeCritical: active.filter((a) => (a.severity || '').toUpperCase() === 'CRITICAL').length,
-        activeHigh: active.filter((a) => (a.severity || '').toUpperCase() === 'HIGH').length,
+        activeCritical: active.filter((a) => (a.severity || a.threat_level || '').toUpperCase() === 'CRITICAL').length,
+        activeHigh: active.filter((a) => (a.severity || a.threat_level || '').toUpperCase() === 'HIGH').length,
         delayedIncidents: 0,
         acknowledgedToday: active.filter((a) => a.status === 'RESOLVED').length,
       });
@@ -262,16 +262,21 @@ function createOperationsCompatRouter({ services }) {
 
   // 7. Demo scenarios
   router.post('/demo/main-flow-breach', async (_req, res) => {
-    userSilenced = false;
-    const result = await collarService.ingestReading({
-      collarId: 'COL-402',
-      latitude: 6.2994,
-      longitude: 81.3703,
-      location: { latitude: 6.2994, longitude: 81.3703 },
-      recordedAt: new Date().toISOString(),
-      animalLabel: 'Elephant E-402 (Rambo)',
-    });
-    res.json(result);
+    try {
+      userSilenced = false;
+      const result = await collarService.ingestReading({
+        collarId: 'COL-402',
+        latitude: 6.2994,
+        longitude: 81.3703,
+        location: { latitude: 6.2994, longitude: 81.3703 },
+        recordedAt: new Date().toISOString(),
+        animalLabel: 'Elephant E-402 (Rambo)',
+      });
+      res.json(result);
+    } catch (err) {
+      console.error('*** ERROR IN DEMO MAIN FLOW BREACH ***:', err);
+      res.status(500).json({ error: err.message, stack: err.stack });
+    }
   });
 
   router.post('/demo/safe-zone', async (_req, res) => {
