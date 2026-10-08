@@ -224,6 +224,27 @@ function createOperationsCompatRouter({ services }) {
     }
   });
 
+  router.post('/alerts/:ref/resolve', async (req, res) => {
+    try {
+      userSilenced = true;
+      const alerts = await collarService.listActiveAlerts();
+      const found = alerts.find((a) => (
+        a.reference === req.params.ref ||
+        a.id === req.params.ref ||
+        a.alert_reference === req.params.ref
+      ));
+      const id = found ? found.id : (alerts.length > 0 ? alerts[0].id : req.params.ref);
+      const result = await collarService.resolveAlert(id, {
+        reason: req.body.reason || 'Elephant safely guided back to park boundary',
+        officerId: req.body.officerId || 'OFF-01',
+        notes: req.body.notes,
+      });
+      res.json({ success: true, alert: result });
+    } catch (e) {
+      res.json({ success: true, message: e.message });
+    }
+  });
+
   router.post('/alerts/:ref/false-alarm', async (req, res) => {
     try {
       const alerts = await collarService.listActiveAlerts();

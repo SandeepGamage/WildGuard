@@ -2331,19 +2331,48 @@
         const reason = document.getElementById('resolveReasonInput').value;
         if (!reason) { alert('Resolution reason is mandatory!'); return; }
         closeResolveModal();
+
+        const alertRef = (currentAlert && currentAlert.alert && currentAlert.alert.alertReference) || lastActiveAlertId || 'ALT-0001';
+        try {
+          await fetch(`/api/alerts/${alertRef}/resolve`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({
+              reason,
+              officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
+              notes: document.getElementById('resolveNotesInput').value,
+            }),
+          });
+        } catch (e) {}
+
         if (lastActiveAlertId) {
           try {
             await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/resolve`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reason, officerId: 'OFF-01', notes: document.getElementById('resolveNotesInput').value })
+              body: JSON.stringify({
+                reason,
+                officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
+                notes: document.getElementById('resolveNotesInput').value,
+              }),
             });
           } catch (e) {}
         }
-        updateTimelineUI('RESOLVED');
+
+        try {
+          await fetch('/api/dashboard/silence', { method: 'POST' });
+        } catch (e) {}
+
+        userSilenced = true;
         stopAcousticAlarm();
-        alert(`Screenshot 6: Alert successfully resolved with reason: '${reason}'.`);
-        document.getElementById('breachModal').classList.add('active');
+        document.getElementById('breachModal').classList.remove('active');
+        currentAlert = null;
+        updateTimelineUI('RESOLVED');
+        await refreshDashboard();
+        alert(`Alert successfully resolved: ${reason}`);
       }
 
       // Init
