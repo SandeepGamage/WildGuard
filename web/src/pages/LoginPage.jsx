@@ -224,9 +224,7 @@ export default function LoginPage() {
           <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
             {busy
               ? t('common.loading')
-              : selectedRole === 'OPERATIONS_OFFICER'
-                ? 'Open Operations Control Room (UC2) →'
-                : t('login.submit')}
+              : selectedRole === 'OPERATIONS_OFFICER' ? 'Open Operations Control Room →' : t('login.submit')}
           </button>
 
           <p className="login-help muted">
