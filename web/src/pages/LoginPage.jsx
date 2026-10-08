@@ -31,6 +31,10 @@ export default function LoginPage() {
   const submit = async (event) => {
     event.preventDefault();
     if (selectedRole === 'OPERATIONS_OFFICER') {
+      if (!account.trim() || !password) {
+        setError('Please enter your Officer Email / ID and Password to sign in.');
+        return;
+      }
       window.location.href = '/operations.html';
       return;
     }
@@ -52,13 +56,8 @@ export default function LoginPage() {
   const handleRoleChange = (role) => {
     setSelectedRole(role);
     setError(null);
-    if (role === 'OPERATIONS_OFFICER') {
-      setAccount('officer.hanaan@wildlife.gov.lk');
-      setPassword('password123');
-    } else {
-      setAccount('');
-      setPassword('');
-    }
+    setAccount('');
+    setPassword('');
   };
 
   return (
@@ -198,7 +197,7 @@ export default function LoginPage() {
             <input
               type="email"
               autoComplete="username"
-              placeholder={t('login.accountPlaceholder')}
+              placeholder={selectedRole === 'OPERATIONS_OFFICER' ? 'officer.hanaan@wildlife.gov.lk' : t('login.accountPlaceholder')}
               value={account}
               onChange={(e) => setAccount(e.target.value)}
               aria-invalid={Boolean(error)}
@@ -209,6 +208,7 @@ export default function LoginPage() {
             <input
               type="password"
               autoComplete="current-password"
+              placeholder={selectedRole === 'OPERATIONS_OFFICER' ? '••••••••' : ''}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={Boolean(error)}
