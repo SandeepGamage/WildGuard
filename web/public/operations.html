@@ -2218,6 +2218,51 @@
         openPhoneDispatchModal();
       }
 
+      
+      function switchPhoneTab(tab) {
+        const rangerTab = document.getElementById('tabPhoneRanger');
+        const villagerTab = document.getElementById('tabPhoneVillager');
+        const rangerView = document.getElementById('phoneRangerView');
+        const villagerView = document.getElementById('phoneVillagerView');
+        const headerTitle = document.getElementById('phoneModalHeaderTitle');
+
+        if (tab === 'villager') {
+          rangerTab.style.background = 'transparent';
+          rangerTab.style.color = '#9ca3af';
+          rangerTab.style.borderBottom = '2px solid transparent';
+
+          villagerTab.style.background = '#1f2937';
+          villagerTab.style.color = '#10b981';
+          villagerTab.style.borderBottom = '2px solid #10b981';
+
+          rangerView.style.display = 'none';
+          villagerView.style.display = 'block';
+          if (headerTitle) headerTitle.innerText = '📱 Villager Mobile SMS Broadcast';
+        } else {
+          rangerTab.style.background = '#1f2937';
+          rangerTab.style.color = '#3b82f6';
+          rangerTab.style.borderBottom = '2px solid #3b82f6';
+
+          villagerTab.style.background = 'transparent';
+          villagerTab.style.color = '#9ca3af';
+          villagerTab.style.borderBottom = '2px solid transparent';
+
+          rangerView.style.display = 'block';
+          villagerView.style.display = 'none';
+          if (headerTitle) headerTitle.innerText = '📱 Responder Mobile Notification';
+        }
+      }
+
+      function openVillagerSmsModal() {
+        const smsContent = document.getElementById('modalSmsContent');
+        const phoneSms = document.getElementById('phoneVillagerSmsText');
+        if (smsContent && phoneSms) {
+          phoneSms.innerText = smsContent.innerText;
+        }
+        switchPhoneTab('villager');
+        openPhoneDispatchModal();
+      }
+
       function openPhoneDispatchModal() {
         document.getElementById('phoneDispatchModal').classList.add('active');
         let sec = 180;
