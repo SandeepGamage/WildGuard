@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>WildGuardLK | IoT Collar Transmitter</title>
+    <title>WildGuard | IoT Collar Transmitter</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -15,8 +15,8 @@
         padding: 0;
       }
       body {
-        font-family: 'Inter', sans-serif;
-        background: #0b1311;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #091310;
         color: #f3f4f6;
         padding: 1.25rem;
         min-height: 100vh;
@@ -29,13 +29,13 @@
       }
       .badge {
         display: inline-block;
-        padding: 0.25rem 0.65rem;
+        padding: 0.25rem 0.75rem;
         border-radius: 9999px;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        background: rgba(16, 185, 129, 0.2);
+        background: rgba(16, 185, 129, 0.15);
         color: #34d399;
         border: 1px solid rgba(16, 185, 129, 0.35);
         margin-bottom: 0.5rem;
@@ -43,14 +43,21 @@
       h1 {
         font-size: 1.35rem;
         font-weight: 800;
-        color: #fff;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.3rem;
       }
       .card {
-        background: #13221e;
-        border: 1px solid rgba(46, 74, 65, 0.7);
-        border-radius: 12px;
+        background: #111e1a;
+        border: 1px solid rgba(46, 74, 65, 0.6);
+        border-radius: 14px;
         padding: 1rem;
         margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
       .card-title {
         font-size: 0.75rem;
@@ -59,80 +66,98 @@
         color: #6ee7b7;
         font-weight: 700;
         margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
       .coord-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
+        gap: 0.6rem;
       }
       .coord-box {
         background: rgba(0, 0, 0, 0.35);
         border: 1px solid rgba(46, 74, 65, 0.5);
-        border-radius: 8px;
-        padding: 0.6rem;
+        border-radius: 10px;
+        padding: 0.65rem;
         text-align: center;
       }
       .coord-label {
         font-size: 0.65rem;
         color: #9ca3af;
         text-transform: uppercase;
+        letter-spacing: 0.04em;
       }
       .coord-val {
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.95rem;
         font-weight: 700;
         color: #34d399;
-        margin-top: 0.2rem;
+        margin-top: 0.25rem;
       }
       select,
       button {
         width: 100%;
         padding: 0.75rem;
-        border-radius: 8px;
+        border-radius: 9px;
         font-family: inherit;
         font-weight: 600;
         font-size: 0.85rem;
         border: none;
         cursor: pointer;
-        margin-top: 0.5rem;
-      }
-      select {
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(46, 74, 65, 0.8);
-        color: #fff;
-      }
-      .btn-toggle {
-        background: #10b981;
-        color: #fff;
         transition: all 0.2s ease;
       }
+      select {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(46, 74, 65, 0.8);
+        color: #fff;
+        padding: 0.65rem 0.75rem;
+      }
+      .btn-toggle {
+        background: #059669;
+        color: #fff;
+        margin-top: 0.75rem;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+      }
+      .btn-toggle:hover {
+        background: #10b981;
+      }
       .btn-toggle.active {
-        background: #ef4444;
+        background: #dc2626;
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
       }
       .btn-scenario {
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
         color: #e5e7eb;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        margin-top: 0.4rem;
-        padding: 0.6rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 0.45rem;
+        padding: 0.65rem;
         font-size: 0.8rem;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .btn-scenario:hover {
+        background: rgba(255, 255, 255, 0.08);
       }
       .btn-scenario:active {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.15);
       }
       .log-box {
-        background: #070d0b;
+        background: #060b09;
         border: 1px solid rgba(46, 74, 65, 0.5);
-        border-radius: 8px;
-        padding: 0.65rem;
+        border-radius: 10px;
+        padding: 0.75rem;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         color: #9ca3af;
-        height: 120px;
+        height: 140px;
         overflow-y: auto;
       }
       .log-entry {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
+        line-height: 1.4;
       }
       .log-entry.breach {
         color: #f87171;
@@ -141,24 +166,30 @@
       .log-entry.safe {
         color: #34d399;
       }
+      .log-entry.info {
+        color: #60a5fa;
+      }
     </style>
   </head>
   <body>
     <div class="header">
       <div class="badge">IoT Collar Gateway</div>
       <h1>Mobile GPS Collar Transmitter</h1>
-      <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.3rem">
-        Turn your phone into a live wildlife GPS tracker
+      <p class="subtitle">
+        Turn your phone or tablet into a live wildlife GPS tracker
       </p>
     </div>
 
     <div class="card">
-      <div class="card-title">Assigned Wildlife Asset</div>
+      <div class="card-title">
+        <span>Assigned Wildlife Asset</span>
+        <span style="font-size: 0.68rem; color: #34d399;">● Online</span>
+      </div>
       <select id="collarSelect">
-        <option value="COL-402">Elephant E-402 (Rambo, Northern Sector)</option>
-        <option value="COL-108">Elephant E-108 (Bhanu, Southern Sector)</option>
-        <option value="COL-015">Leopard L-015 (Nataraja, Eastern Sector)</option>
-        <option value="COL-305">Elephant E-305 (Gamunu, Western Sector)</option>
+        <option value="COL-402">Elephant E-402 (Mahsen, Northern Sector)</option>
+        <option value="COL-108">Elephant E-108 (Kadol, Southern Sector)</option>
+        <option value="COL-501">Elephant E-501 (Bhanu, Sanctuary Core)</option>
+        <option value="COL-015">Leopard L-015 (Nataraja, Block 1 Buffer)</option>
       </select>
     </div>
 
@@ -175,49 +206,53 @@
         </div>
       </div>
       <button id="gpsToggleBtn" class="btn-toggle" onclick="togglePhoneGps()">
-        📡 Start Phone GPS Tracking
+        📍 Start Phone GPS Tracking
       </button>
     </div>
 
     <div class="card">
       <div class="card-title">Boundary Breach Triggers</div>
       <p style="font-size: 0.72rem; color: #9ca3af; margin-bottom: 0.6rem; line-height: 1.4">
-        Simulate elephant movement near Yala National Park geofences directly from your phone:
+        Simulate elephant movement near Yala National Park geofences directly from your device:
       </p>
       <button
         class="btn-scenario"
-        style="border-left: 4px solid #ef4444; margin-bottom: 0.5rem;"
+        style="border-left: 4px solid #ef4444;"
         onclick="sendCoordinate(6.2994, 81.3703, 'Breached Palatupana Farmland (Zone 1)')"
       >
-        🚨 Trigger Farmland Breach (Palatupana Zone)
+        <span>🚨</span>
+        <span>Trigger Farmland Breach (Palatupana)</span>
       </button>
       <button
         class="btn-scenario"
-        style="border-left: 4px solid #f97316; margin-bottom: 0.5rem;"
+        style="border-left: 4px solid #f97316;"
         onclick="sendCoordinate(6.2386, 81.3138, 'Breached Kirinda Village (Zone 2)')"
       >
-        🚨 Trigger Village Breach (Kirinda Settlement)
+        <span>🚨</span>
+        <span>Trigger Village Breach (Kirinda)</span>
       </button>
       <button
         class="btn-scenario"
-        style="border-left: 4px solid #f59e0b; margin-bottom: 0.5rem;"
+        style="border-left: 4px solid #f59e0b;"
         onclick="sendCoordinate(6.3300, 81.3850, 'Approaching Boundary (within 300m)')"
       >
-        ⚠️ Trigger Approaching Warning (300m Buffer)
+        <span>⚠️</span>
+        <span>Trigger Approaching Warning (300m Buffer)</span>
       </button>
       <button
         class="btn-scenario"
-        style="border-left: 4px solid #10b981; margin-bottom: 0.5rem;"
+        style="border-left: 4px solid #10b981;"
         onclick="sendCoordinate(6.1500, 81.4500, 'Inside Protected Safe Park Core')"
       >
-        🟢 Transmit Safe Coordinate (Silent Log)
+        <span>🟢</span>
+        <span>Transmit Safe Coordinate (Sanctuary Core)</span>
       </button>
     </div>
 
     <div class="card">
       <div class="card-title">Live GPS Stream Simulation</div>
       <p style="font-size: 0.72rem; color: #9ca3af; margin-bottom: 0.6rem">
-        Stream continuous elephant telemetry toward the agricultural boundary:
+        Stream continuous elephant telemetry toward the agricultural perimeter:
       </p>
       <button id="simToggleBtn" class="btn-toggle" onclick="toggleSimulatedMovement()">
         🐘 Start Live Elephant Movement Stream
@@ -234,23 +269,23 @@
     <script>
       let watchId = null;
       let autoInterval = null;
-      let currentLat = 6.4245;
-      let currentLng = 81.3852;
+      let currentLat = 6.4250;
+      let currentLng = 81.3850;
 
       function log(msg, type = 'info') {
         const box = document.getElementById('logBox');
         const time = new Date().toTimeString().split(' ')[0];
         const div = document.createElement('div');
-        div.className = `log-entry ${type}`;
-        div.innerText = `[${time}] ${msg}`;
+        div.className = 'log-entry ' + type;
+        div.innerText = '[' + time + '] ' + msg;
         box.prepend(div);
       }
 
       async function sendCoordinate(lat, lng, desc = '') {
         currentLat = lat;
         currentLng = lng;
-        document.getElementById('latVal').innerText = `${lat.toFixed(4)}° N`;
-        document.getElementById('lngVal').innerText = `${lng.toFixed(4)}° E`;
+        document.getElementById('latVal').innerText = lat.toFixed(4) + '° N';
+        document.getElementById('lngVal').innerText = lng.toFixed(4) + '° E';
 
         const collarId = document.getElementById('collarSelect').value;
         try {
@@ -266,12 +301,14 @@
           });
           const data = await res.json();
           if (data.isBreach) {
-            log(`BREACH DETECTED: ${desc || data.alert.zoneName} (${data.alert.alertReference})`, 'breach');
+            const ref = data.alert ? (data.alert.alertReference && data.alert.alertReference.length > 15 ? 'ALT-0001' : data.alert.alertReference) : 'ALT-0001';
+            const zone = data.alert ? (data.alert.zoneName || 'Risk Zone') : 'Risk Zone';
+            log('BREACH DETECTED: ' + (desc || zone) + ' [' + ref + ']', 'breach');
           } else {
-            log(`SAFE: ${desc || 'Logged silently inside safe zone'}`, 'safe');
+            log('SAFE: ' + (desc || 'Logged inside sanctuary core'), 'safe');
           }
         } catch (err) {
-          log(`Transmission Failed: Check Wi-Fi connection to laptop`, 'breach');
+          log('Transmission Failed: Check network connection to host', 'breach');
         }
       }
 
@@ -282,38 +319,38 @@
           clearInterval(autoInterval);
           watchId = null;
           autoInterval = null;
-          btn.innerText = '📡 Start Phone GPS Tracking';
+          btn.innerText = '📍 Start Phone GPS Tracking';
           btn.className = 'btn-toggle';
           log('Phone GPS tracking stopped.');
         } else {
           if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your phone browser.');
+            alert('Geolocation is not supported by your browser.');
             return;
           }
           btn.innerText = '⏹️ Stop Phone GPS Tracking';
           btn.className = 'btn-toggle active';
-          log('Reading phone GPS sensor...');
+          log('Connecting to device GPS sensor...');
 
           watchId = navigator.geolocation.watchPosition(
             (pos) => {
               currentLat = pos.coords.latitude;
               currentLng = pos.coords.longitude;
-              document.getElementById('latVal').innerText = `${currentLat.toFixed(4)}°`;
-              document.getElementById('lngVal').innerText = `${currentLng.toFixed(4)}°`;
+              document.getElementById('latVal').innerText = currentLat.toFixed(4) + '° N';
+              document.getElementById('lngVal').innerText = currentLng.toFixed(4) + '° E';
             },
             (err) => {
-              log(`GPS Error: ${err.message}`, 'breach');
+              log('GPS Sensor: ' + err.message, 'breach');
             },
             { enableHighAccuracy: true },
           );
 
-          // Periodically transmit every 8 seconds (matching IoT periodic telemetry)
+          // Transmit every 8 seconds (matching IoT collar telemetry frequency)
           autoInterval = setInterval(() => {
-            sendCoordinate(currentLat, currentLng, 'Live Phone GPS Transmission');
+            sendCoordinate(currentLat, currentLng, 'Live Device GPS Fix');
           }, 8000);
         }
       }
-    
+
       let simInterval = null;
       let simStep = 0;
       const simPath = [
@@ -344,6 +381,6 @@
           }, 4000);
         }
       }
-  </script>
+    </script>
   </body>
 </html>

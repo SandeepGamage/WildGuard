@@ -23,7 +23,7 @@ function createOperationsCompatRouter({ services }) {
         isBreach,
         alert: result.alert
           ? {
-              alertReference: result.alert.reference || result.alert.id,
+              alertReference: result.alert.alert_reference || result.alert.reference || 'ALT-0001',
               zoneName: result.alert.zone_name || result.alert.zoneName || 'Boundary Zone',
             }
           : null,
