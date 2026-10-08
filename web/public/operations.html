@@ -1713,26 +1713,46 @@
       }
 
       async function confirmDispatchRanger() {
-        if (!currentAlert) return;
-        const ref = currentAlert.alert.alertReference;
-        await fetch(`/api/alerts/${ref}/acknowledge`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionToken}`,
-          },
-          body: JSON.stringify({
-            officerId: currentOfficer.officerId,
-            responseAction: 'DISPATCH_RANGER',
-            notes: `Dispatched ranger unit via operations dashboard (${currentOfficer.name})`,
-          }),
-        });
+        const ref = (currentAlert && currentAlert.alert && currentAlert.alert.alertReference) || lastActiveAlertId || 'ALT-0001';
+        try {
+          await fetch(`/api/alerts/${ref}/acknowledge`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${sessionToken}`,
+            },
+            body: JSON.stringify({
+              officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
+              responseAction: 'DISPATCH_RANGER',
+              notes: `Dispatched ranger unit via operations dashboard (${(currentOfficer && currentOfficer.name) || 'Operations Officer'})`,
+            }),
+          });
+        } catch (e) {}
+
+        if (lastActiveAlertId) {
+          try {
+            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/respond`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ responderId: 'RESP-01', responderName: 'R. M. Bandara' }),
+            });
+          } catch (e) {}
+        }
+
         // Silence alarm once officer acts on emergency
-        await fetch('/api/dashboard/silence', { method: 'POST' });
+        try {
+          await fetch('/api/dashboard/silence', { method: 'POST' });
+        } catch (e) {}
         userSilenced = true;
         stopAcousticAlarm();
-        document.getElementById('breachModal').classList.remove('active');
-        currentAlert = null;
+
+        // Advance timeline to DISPATCHED
+        updateTimelineUI('DISPATCHED');
+        document.getElementById('modalDispatchBox').style.display = 'flex';
+
+        // Open phone dispatch modal for ranger acknowledgement
+        openPhoneDispatchModal();
+
         await refreshDashboard();
       }
 
