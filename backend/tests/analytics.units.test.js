@@ -8,12 +8,15 @@ const {
   monthKey,
 } = require('../src/services/analyticsReport.service');
 const { CsvExporter, csvField } = require('../src/services/export/csv.exporter');
-const { PdfExporter } = require('../src/services/export/pdf.exporter');
+const { PdfExporter, mapLayout, niceDistance } = require('../src/services/export/pdf.exporter');
+const { MapTileSource, project, chooseZoom, tileRange } = require('../src/services/export/mapTiles');
+const { loadConfig } = require('../src/config/env');
 const { ExportEngine } = require('../src/services/export/exportEngine');
 const {
   PendingPatrolDataSource,
   PendingAlertDataSource,
 } = require('../src/repositories/sources/pendingDataSources');
+const { toAnalyticsAlert, alertQuery } = require('../src/repositories/sources/collarAlertDataSource');
 const { distanceM, boundingBox } = require('../src/utils/geo');
 const { toReportDocument, toConservationReport } = require('../src/models/conservationReport.model');
 const { EXPORT_SECTIONS } = require('../src/constants/domain');
@@ -221,6 +224,12 @@ describe('report aggregation', () => {
   });
 });
 
+/** 1×1 transparent PNG, standing in for a map tile. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 const sampleReport = () => ({
   id: 'r1',
   parkId: 'yala',
@@ -341,6 +350,102 @@ describe('PDF exporter', () => {
     ]);
     expect(file.content.subarray(0, 5).toString()).toBe('%PDF-');
   });
+
+  it('draws basemap tiles under the hotspot map when a tile source is given', async () => {
+    const getTiles = jest.fn(async (pixelBox, zoom) => {
+      const range = tileRange(pixelBox);
+      const tiles = [];
+      for (let y = range.minY; y <= range.maxY; y += 1) {
+        for (let x = range.minX; x <= range.maxX; x += 1) tiles.push({ x, y, image: TINY_PNG });
+      }
+      expect(zoom).toBeGreaterThan(8);
+      return tiles;
+    });
+    const withTiles = await new PdfExporter({ tileSource: { getTiles } }).export(sampleReport(), [
+      EXPORT_SECTIONS.HOTSPOT_MAP,
+    ]);
+    const without = await new PdfExporter().export(sampleReport(), [EXPORT_SECTIONS.HOTSPOT_MAP]);
+    expect(getTiles).toHaveBeenCalledTimes(1);
+    expect(withTiles.content.toString('latin1')).toContain('/Subtype /Image');
+    expect(without.content.toString('latin1')).not.toContain('/Subtype /Image');
+  });
+
+  it('does not fetch tiles when the hotspot map is not exported', async () => {
+    const getTiles = jest.fn();
+    await new PdfExporter({ tileSource: { getTiles } }).export(sampleReport(), [EXPORT_SECTIONS.KPI_SUMMARY]);
+    expect(getTiles).not.toHaveBeenCalled();
+  });
+
+  it('fits the map frame around the heatmap and park outline', () => {
+    const layout = mapLayout(sampleReport(), 500);
+    expect(layout.frame.minLat).toBeLessThan(6.2);
+    expect(layout.frame.maxLng).toBeGreaterThan(81.4);
+    expect(layout.width).toBeLessThanOrEqual(500.001);
+    expect(layout.height).toBeLessThanOrEqual(330.001);
+    expect(layout.pixelBox.maxX - layout.pixelBox.minX).toBeGreaterThanOrEqual(1000);
+  });
+
+  it('picks a round scale bar distance', () => {
+    expect(niceDistance(2600)).toBe(2000);
+    expect(niceDistance(999)).toBe(500);
+    expect(niceDistance(50)).toBe(100);
+  });
+});
+
+describe('map tiles', () => {
+  const okFetch = () =>
+    jest.fn(async () => ({ ok: true, status: 200, arrayBuffer: async () => TINY_PNG.buffer.slice(0) }));
+
+  it('projects lng/lat to Web Mercator pixels', () => {
+    expect(project(0, 0, 0)).toEqual({ x: 128, y: 128 });
+    const yala = project(81.3, 6.3, 13);
+    expect(Math.floor(yala.x / 256)).toBe(5946);
+    expect(Math.floor(yala.y / 256)).toBe(3952);
+  });
+
+  it('chooses the smallest zoom that is wide enough', () => {
+    const bounds = { minLng: 81.2, maxLng: 81.45, minLat: 6.2, maxLat: 6.4 };
+    const zoom = chooseZoom(bounds, 1000);
+    const width = (z) => project(bounds.maxLng, 0, z).x - project(bounds.minLng, 0, z).x;
+    expect(width(zoom)).toBeGreaterThanOrEqual(1000);
+    expect(width(zoom - 1)).toBeLessThan(1000);
+  });
+
+  it('downloads every covering tile with a User-Agent, then serves repeats from cache', async () => {
+    const fetchImpl = okFetch();
+    const source = new MapTileSource({ urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png', fetchImpl });
+    const box = { minX: 256 * 10 + 5, maxX: 256 * 12, minY: 256 * 3, maxY: 256 * 4 + 1 };
+    const tiles = await source.getTiles(box, 5);
+    expect(tiles.map((t) => `${t.x}/${t.y}`)).toEqual(['10/3', '11/3', '10/4', '11/4']);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://tiles.test/5/10/3.png',
+      expect.objectContaining({ headers: { 'User-Agent': expect.stringContaining('WildGuard') } }),
+    );
+    await source.getTiles(box, 5);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('returns null (plain background) when any tile fails or the area is too large', async () => {
+    const logger = { warn: jest.fn() };
+    const failing = new MapTileSource({
+      urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png',
+      fetchImpl: async () => ({ ok: false, status: 429 }),
+      logger,
+    });
+    expect(await failing.getTiles({ minX: 0, maxX: 256, minY: 0, maxY: 256 }, 3)).toBeNull();
+    expect(logger.warn).toHaveBeenCalled();
+
+    const fetchImpl = okFetch();
+    const huge = new MapTileSource({ urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png', fetchImpl });
+    expect(await huge.getTiles({ minX: 0, maxX: 256 * 20, minY: 0, maxY: 256 * 20 }, 6)).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('is off in tests and defaults to OpenStreetMap elsewhere', () => {
+    expect(loadConfig({ NODE_ENV: 'test' }).mapTileUrl).toBe('');
+    expect(loadConfig({ NODE_ENV: 'production' }).mapTileUrl).toContain('tile.openstreetmap.org');
+    expect(loadConfig({ NODE_ENV: 'development', MAP_TILE_URL: '' }).mapTileUrl).toBe('');
+  });
 });
 
 describe('ExportEngine', () => {
@@ -375,6 +480,38 @@ describe('pending UC1/UC2 data sources', () => {
     expect(await patrol.listTracks({})).toEqual([]);
     expect(await patrol.listIncidents({})).toEqual([]);
     expect(await new PendingAlertDataSource().listAlerts({})).toEqual([]);
+  });
+});
+
+describe('collar alert data source (UC2 → UC4)', () => {
+  const stored = (overrides = {}) => ({
+    raised_at: new Date('2026-08-01T03:00:00Z'),
+    location: { type: 'Point', coordinates: [81.3138, 6.2386] },
+    threat_level: 'HIGH',
+    ...overrides,
+  });
+
+  it('reads the persisted schema fields, with GeoJSON coordinates as [lng, lat]', () => {
+    expect(toAnalyticsAlert(stored())).toEqual({
+      occurredAt: new Date('2026-08-01T03:00:00Z'),
+      latitude: 6.2386,
+      longitude: 81.3138,
+      severity: 'HIGH',
+    });
+  });
+
+  it('skips alerts stored without a usable position', () => {
+    expect(toAnalyticsAlert(stored({ location: { type: 'Point', coordinates: [] } }))).toBeNull();
+    expect(toAnalyticsAlert(stored({ location: undefined }))).toBeNull();
+  });
+
+  it('filters on raised_at with an exclusive end and leaves out false alarms', () => {
+    const dateFrom = new Date('2026-06-01T00:00:00Z');
+    const dateTo = new Date('2026-09-01T00:00:00Z');
+    expect(alertQuery({ dateFrom, dateTo })).toEqual({
+      raised_at: { $gte: dateFrom, $lt: dateTo },
+      status: { $nin: ['FALSE_ALARM'] },
+    });
   });
 });
 

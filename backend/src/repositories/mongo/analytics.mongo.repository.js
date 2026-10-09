@@ -10,7 +10,7 @@ const { PendingPatrolDataSource, PendingAlertDataSource } = require('../sources/
 class MongoAnalyticsRepository {
   /**
    * @param {{ patrolDataSource?: object, alertDataSource?: object }} [deps]
-   *   UC1/UC2 sources. They return empty lists until those use cases are merged.
+   *   UC1/UC2 sources. Without them the empty fallbacks in pendingDataSources.js are used.
    */
   constructor({ patrolDataSource, alertDataSource } = {}) {
     this.patrolDataSource = patrolDataSource ?? new PendingPatrolDataSource();

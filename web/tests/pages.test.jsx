@@ -40,6 +40,12 @@ const download = (filename = 'wildguard-yala.pdf') => ({
 
 const generateButton = () => screen.getByRole('button', { name: 'Generate report' });
 
+/** Step 1: there is no default report type, so pick one before Next. */
+const chooseTypeAndContinue = async (user, type = 'Hotspot map') => {
+  await user.click(await screen.findByRole('radio', { name: type }));
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+};
+
 describe('AnalyticsPage (UC4)', () => {
   beforeEach(() => vi.mocked(saveFile).mockClear());
 
@@ -51,7 +57,7 @@ describe('AnalyticsPage (UC4)', () => {
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
 
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     await user.click(generateButton());
 
     await screen.findByTestId('report');
@@ -75,7 +81,7 @@ describe('AnalyticsPage (UC4)', () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     expect(screen.getByRole('button', { name: '3. Results' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /Export/ })).toBeNull();
     await user.click(generateButton());
@@ -102,7 +108,7 @@ describe('AnalyticsPage (UC4)', () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]) });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     expect(screen.getByRole('button', { name: 'Last 3 months' })).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Last 12 months' }));
@@ -130,7 +136,7 @@ describe('AnalyticsPage (UC4)', () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-10-01' } });
     await user.click(generateButton());
 
@@ -152,7 +158,7 @@ describe('AnalyticsPage (UC4)', () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     fireEvent.change(screen.getByLabelText('To'), { target: { value: '2020-01-01' } });
     await user.click(generateButton());
 
@@ -168,7 +174,7 @@ describe('AnalyticsPage (UC4)', () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     await user.click(generateButton());
 
     const notice = await screen.findByTestId('notice-unavailable');
@@ -184,7 +190,7 @@ describe('AnalyticsPage (UC4)', () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     await user.click(generateButton());
     expect(await screen.findByTestId('notice-unavailable')).toHaveTextContent('Could not reach the server');
   });
@@ -199,7 +205,7 @@ describe('AnalyticsPage (UC4)', () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     await user.click(generateButton());
     await screen.findByTestId('report');
 
@@ -221,13 +227,14 @@ describe('AnalyticsPage (UC4)', () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
     const user = userEvent.setup();
     renderWithProviders(<AnalyticsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Next' }));
+    await chooseTypeAndContinue(user);
     await user.click(generateButton());
     await screen.findByTestId('report');
     await user.click(screen.getByRole('button', { name: 'Export report' }));
-    expect(screen.getByRole('dialog')).toHaveAttribute('open');
+    const exportDialog = screen.getByRole('dialog', { name: 'Export report' });
+    expect(exportDialog).toHaveAttribute('open');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.getByRole('dialog', { hidden: true })).not.toHaveAttribute('open');
+    expect(exportDialog).not.toHaveAttribute('open');
   });
 
   it('opens a saved report with the filters it was built from', async () => {
@@ -239,6 +246,77 @@ describe('AnalyticsPage (UC4)', () => {
     await user.click(screen.getByRole('button', { name: 'Edit criteria' }));
     expect(screen.getByLabelText('From')).toHaveValue('2026-06-01');
     expect(screen.getByLabelText('To')).toHaveValue('2026-08-31');
+  });
+
+  it('has no default report type and keeps Criteria locked until one is chosen', async () => {
+    mockFetch({ 'GET /analytics/parks': ok([PARK]) });
+    const user = userEvent.setup();
+    renderWithProviders(<AnalyticsPage />);
+
+    const radios = await screen.findAllByRole('radio');
+    radios.forEach((radio) => expect(radio).not.toBeChecked());
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '2. Criteria' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '2. Criteria' })).toHaveAttribute(
+      'title',
+      'Choose a report type first',
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'Patrol coverage' }));
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '2. Criteria' }));
+    expect(screen.getByLabelText('From')).toBeInTheDocument();
+  });
+
+  it('starts the journey over from the results after confirming Reset', async () => {
+    mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
+    const user = userEvent.setup();
+    renderWithProviders(<AnalyticsPage />);
+    await chooseTypeAndContinue(user);
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-01-15' } });
+    await user.click(generateButton());
+    await screen.findByTestId('report');
+
+    const actions = screen.getByRole('button', { name: 'Edit criteria' }).parentElement;
+    const reset = within(actions).getByRole('button', { name: 'Reset' });
+    expect(reset.nextElementSibling).toHaveAccessibleName('Edit criteria');
+    expect(reset).toHaveClass('btn btn-secondary');
+
+    // Cancel keeps everything as it was.
+    await user.click(reset);
+    const dialog = screen.getByTestId('confirm-reset');
+    expect(dialog).toHaveAttribute('open');
+    expect(dialog).toHaveTextContent('Start over?');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(dialog).not.toHaveAttribute('open');
+    expect(screen.getByTestId('report')).toBeInTheDocument();
+
+    await user.click(reset);
+    await user.click(within(dialog).getByRole('button', { name: 'Reset and start over' }));
+    expect(screen.queryByTestId('confirm-reset')).toBeNull();
+    expect(screen.queryByTestId('report')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Generate a report');
+    expect(screen.getByRole('button', { current: 'step' })).toHaveAccessibleName('1. Report type');
+    screen.getAllByRole('radio').forEach((radio) => expect(radio).not.toBeChecked());
+    expect(screen.getByRole('button', { name: '2. Criteria' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '3. Results' })).toBeDisabled();
+
+    // Criteria are back to their defaults too.
+    await chooseTypeAndContinue(user);
+    expect(screen.getByLabelText('From')).not.toHaveValue('2026-01-15');
+    expect(screen.getByRole('button', { name: 'Last 3 months' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('leaves a saved report when the journey is reset', async () => {
+    mockFetch({ 'GET /analytics/parks': ok([PARK]), 'GET /analytics/reports/report-1': ok(makeReport()) });
+    const user = userEvent.setup();
+    renderWithProviders(<AnalyticsPage />, { route: '/?reportId=report-1' });
+    await screen.findByTestId('report');
+    await user.click(screen.getByRole('button', { name: 'Reset' }));
+    await user.click(screen.getByRole('button', { name: 'Reset and start over' }));
+    expect(screen.queryByTestId('report')).toBeNull();
+    expect(screen.getByRole('button', { name: '3. Results' })).toBeDisabled();
+    screen.getAllByRole('radio').forEach((radio) => expect(radio).not.toBeChecked());
   });
 
   it('shows loading, then an error with retry for the park list', async () => {
@@ -276,6 +354,129 @@ describe('SavedReportsPage', () => {
     expect(row).toHaveTextContent('2026-06-01 – 2026-08-31');
     expect(row).toHaveTextContent('Hotspot map');
     expect(row).toHaveTextContent('184');
+  });
+
+  it('sorts by a column heading and keeps the order in the URL', async () => {
+    const saved = (id, generatedAt, totalIncidents, reportType) => ({
+      id,
+      generatedAt,
+      totalIncidents,
+      parkName: 'Yala National Park',
+      filter: { dateFrom: '2026-07-01', dateTo: '2026-10-01', reportType },
+    });
+    mockFetch({
+      'GET /analytics/reports': ok([
+        saved('newest', '2026-10-09T06:00:00Z', 9, 'HOTSPOT_MAP'),
+        saved('middle', '2026-10-08T06:00:00Z', 157, 'INCIDENT_SUMMARY'),
+        saved('oldest', '2026-10-01T06:00:00Z', 5, 'HOTSPOT_MAP'),
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />, { route: '/saved?sort=incidents&dir=asc' });
+    const order = () =>
+      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
+
+    await screen.findAllByRole('link', { name: 'Open' });
+    expect(order()).toEqual(['oldest', 'newest', 'middle']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute('aria-sort', 'ascending');
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Incidents/ }));
+    expect(order()).toEqual(['middle', 'newest', 'oldest']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Report type/ }));
+    expect(order()).toEqual(['newest', 'oldest', 'middle']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute('aria-sort', 'none');
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Generated/ }));
+    expect(order()).toEqual(['newest', 'middle', 'oldest']);
+    expect(screen.getByRole('columnheader', { name: /Generated/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+  });
+
+  it('sorts from the Sort menu, in step with the column headings', async () => {
+    const saved = (id, generatedAt, totalIncidents) => ({
+      id,
+      generatedAt,
+      totalIncidents,
+      parkName: 'Yala National Park',
+      filter: { dateFrom: '2026-07-01', dateTo: '2026-10-01', reportType: 'HOTSPOT_MAP' },
+    });
+    mockFetch({
+      'GET /analytics/reports': ok([
+        saved('newest', '2026-10-09T06:00:00Z', 9),
+        saved('middle', '2026-10-08T06:00:00Z', 157),
+        saved('oldest', '2026-10-01T06:00:00Z', 5),
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />, { route: '/saved' });
+    const order = () =>
+      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
+    await screen.findAllByRole('link', { name: 'Open' });
+
+    const sortButton = screen.getByRole('button', { name: 'Sort: Newest first' });
+    expect(sortButton).toHaveAttribute('aria-expanded', 'false');
+    await user.click(sortButton);
+    const menu = screen.getByRole('menu', { name: 'Sort' });
+    const options = within(menu).getAllByRole('menuitemradio');
+    expect(options).toHaveLength(10);
+    expect(within(menu).getByRole('menuitemradio', { name: 'Newest first' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(within(menu).getByRole('menuitemradio', { name: 'Newest first' })).toHaveFocus();
+
+    await user.click(within(menu).getByRole('menuitemradio', { name: 'Most incidents' }));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(order()).toEqual(['middle', 'newest', 'oldest']);
+    expect(screen.getByRole('button', { name: 'Sort: Most incidents' })).toHaveFocus();
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
+    // A column heading updates the Sort button too.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Incidents/ }));
+    expect(order()).toEqual(['oldest', 'newest', 'middle']);
+    expect(screen.getByRole('button', { name: 'Sort: Fewest incidents' })).toBeInTheDocument();
+  });
+
+  it('closes the Sort menu with Escape or a click outside, and moves with the arrow keys', async () => {
+    mockFetch({
+      'GET /analytics/reports': ok([
+        {
+          id: 'report-1',
+          generatedAt: '2026-09-01T04:00:00.000Z',
+          filter: { dateFrom: '2026-06-01', dateTo: '2026-08-31', reportType: 'HOTSPOT_MAP' },
+          parkName: 'Yala National Park',
+          totalIncidents: 184,
+        },
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />);
+    const sortButton = await screen.findByRole('button', { name: 'Sort: Newest first' });
+
+    await user.click(sortButton);
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Oldest first' })).toHaveFocus();
+    await user.keyboard('{ArrowUp}{ArrowUp}');
+    expect(screen.getByRole('menuitemradio', { name: 'Report type (Z–A)' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(sortButton).toHaveFocus();
+    expect(sortButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(sortButton);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    await user.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('shows the empty and error states', async () => {

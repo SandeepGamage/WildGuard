@@ -63,8 +63,9 @@ export function FilterBar({
 
   const submit = (event) => {
     event.preventDefault();
-    if (step === 'type') onNext?.();
-    else onGenerate();
+    if (step === 'type') {
+      if (value.reportType) onNext?.();
+    } else onGenerate();
   };
 
   return (
@@ -226,7 +227,12 @@ export function FilterBar({
             </button>
           ) : null}
           {step === 'type' ? (
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!value.reportType}
+              title={value.reportType ? undefined : t('analytics.steps.needsType')}
+            >
               {t('analytics.filters.next')}
             </button>
           ) : (

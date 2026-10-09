@@ -1114,6 +1114,69 @@ fieldset.card {
 .saved-table tbody tr:hover {
   background: var(--background);
 }
+.sort-menu {
+  position: relative;
+}
+.sort-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(12, 59, 46, 0.14);
+}
+.sort-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  color: var(--text-body);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sort-menu-item:hover,
+.sort-menu-item:focus-visible {
+  background: var(--surface-tint);
+}
+.sort-menu-item.selected {
+  font-weight: 600;
+  color: var(--text);
+}
+.sort-menu-check {
+  display: inline-flex;
+  width: 14px;
+  color: var(--primary);
+}
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.sort-button:hover,
+.sort-button.sorted {
+  color: var(--text);
+}
+.sort-button.sorted {
+  font-weight: 600;
+}
 
 /* ---------- export dialog ---------- */
 .dialog {

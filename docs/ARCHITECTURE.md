@@ -64,7 +64,7 @@ Classes follow the revised design class diagram (Fig 11):
 | `AnalyticsRepository` | `repositories/mongo/analytics.mongo.repository.js` (`queryAnalyticsData`, `saveReport`, `findReport`) |
 | `ConservationReport` | `models/conservationReport.model.js` + the `ConservationReport` collection |
 
-UC1/UC2 data enter through `repositories/sources/pendingDataSources.js` (`PendingPatrolDataSource`, `PendingAlertDataSource`), which return empty lists until those use cases are merged. Swapping them for real sources is the only change UC4 needs: coverage gaps and the patrol KPI then light up. Park outlines live in `constants/parks.js` until a Park collection exists.
+UC1/UC2 data enter through data sources passed to `MongoAnalyticsRepository`. Collar alerts are read by UC4's own `repositories/sources/collarAlertDataSource.js`, which reads the fields the `CollarAlert` schema persists (`raised_at`, `location.coordinates`, `threat_level`), skips alerts without a position and leaves out false alarms. `pendingDataSources.js` keeps empty fallbacks for when no source is passed. Park outlines live in `constants/parks.js` until a Park collection exists.
 
 Web dashboard (`web/`, Vite + React): the Park Manager is a desk role, so UC4's user interface is a separate web app rather than part of the phone app.
 
