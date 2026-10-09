@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WildGuardLK | Wildlife Collar Boundary Alert System</title>
-    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -626,28 +626,13 @@
         text-align: center;
       }
 
-    
-      @keyframes radarPulse {
-        0% { transform: scale(0.6); opacity: 0.9; }
-        60% { transform: scale(1.4); opacity: 0.15; }
-        100% { transform: scale(1.7); opacity: 0; }
-      }
-      .custom-elephant-marker {
-        background: transparent !important;
-        border: none !important;
-      }
-      .custom-ranger-marker {
-        background: transparent !important;
-        border: none !important;
-      }
-  
     </style>
   </head>
   <body>
     <header>
       <div class="brand">
         <div class="brand-logo">WG</div>
-        <div class="brand-title">WildGuard LK · Operations Desk (UC2)</div>
+        <div class="brand-title">WildGuardLK</div>
       </div>
       <nav>
         <button class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</button>
@@ -668,8 +653,8 @@
       <div class="header-right">
         <div id="liveClock" class="live-clock">15:02:00 UTC</div>
         <div class="user-profile">
-          <div class="avatar" id="officerAvatar">O</div>
-          <span id="officerNameDisplay">Operations Officer</span>
+          <div class="avatar" id="officerAvatar">H</div>
+          <span id="officerNameDisplay">Operations Officer (Hanaan M F A S)</span>
           <button
             onclick="logout()"
             title="Log out of monitoring console"
@@ -721,15 +706,12 @@
       <div id="map"></div>
 
       <!-- Floating Scenario Control Panel -->
-      <div class="controls-panel" id="demoControlsPanel">
-        <div class="controls-title" style="cursor: pointer; user-select: none; margin-bottom: 0.5rem;" onclick="toggleDemoPanel()">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span>UC2 Demo Scenarios</span>
-            <span id="demoPanelToggleIcon" style="font-size: 0.75rem; color: #9ca3af; transition: transform 0.2s;">[Hide]</span>
-          </div>
+      <div class="controls-panel">
+        <div class="controls-title">
+          <span>Interactive Demo Controls (UC4)</span>
           <span id="gatewayStatusBadge" class="badge badge-safe">Gateway Online</span>
         </div>
-        <div id="demoControlsBody" class="btn-group">
+        <div class="btn-group">
           <button class="btn btn-danger" onclick="triggerMainBreach()">⚡ 1. Main Breach (E-402)</button>
           <button class="btn btn-primary" onclick="triggerSafeTelemetry()">🟢 2. Safe Telemetry (A)</button>
           <button class="btn btn-warning" onclick="triggerSimultaneous()">🚨 3. Multi-Breach (B)</button>
@@ -797,7 +779,7 @@
     <div id="phoneDispatchModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 380px;">
         <div class="modal-header" style="background: #1f2937;">
-          <span>📱 Responder Mobile Notification</span>
+          <span>📱 Responder Phone Push View (Wireframe O4)</span>
           <button onclick="closePhoneDispatchModal()" style="background:none; border:none; color:#9ca3af; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -828,7 +810,7 @@
     <div id="escalationModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 580px;">
         <div class="modal-header" style="background: #991b1b;">
-          <span>⚠️ Escalation Panel: Manual Responder Assignment</span>
+          <span>⚠️ Escalation Panel: Manual Responder Assignment (Wireframe O2)</span>
           <button onclick="closeEscalationModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -879,7 +861,7 @@
     <div id="cameraTrapModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 520px;">
         <div class="modal-header" style="background: #1e3a8a;">
-          <span>📷 Camera-Trap AI Image Verification</span>
+          <span>📷 Camera-Trap AI Image Verification (Wireframe O3)</span>
           <button onclick="closeCameraTrapModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -899,7 +881,7 @@
               <div style="width: 65%; height: 100%; background: #f59e0b;"></div>
             </div>
             <p style="font-size: 0.72rem; color: #9ca3af; margin-top: 0.4rem;">
-              *Sub-threshold detection queued for Operations Officer manual verification.
+              *Sub-threshold detection queued for Operations Officer manual verification (UC2c).
             </p>
           </div>
           <div style="margin-bottom: 1rem;">
@@ -929,7 +911,7 @@
     <div id="resolveModal" class="modal-overlay">
       <div class="modal-card" style="max-width: 460px;">
         <div class="modal-header" style="background: #065f46;">
-          <span>✅ Resolve Boundary Alert</span>
+          <span>✅ Resolve Boundary Alert (Table 18 Step 10)</span>
           <button onclick="closeResolveModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.2rem; cursor:pointer;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 1.25rem;">
@@ -957,7 +939,6 @@
       <div class="modal-card" style="max-width: 680px;">
         <div class="modal-header">
           <span>🚨 CRITICAL ALERT: Boundary Breach & Nearest-Responder Dispatch</span>
-          <button onclick="closeBreachModal()" style="background:none; border:none; color:#f3f4f6; font-size:1.4rem; cursor:pointer; line-height: 1;">&times;</button>
         </div>
         <div class="modal-body">
           <div class="modal-thumb">
@@ -996,13 +977,13 @@
             </div>
 
             <div id="modalSmsBox" class="sms-box" style="display: flex;">
-              <strong>📩 Automated Village Early-Warning Broadcast:</strong>
+              <strong>📩 Automated Village Early-Warning Broadcast (UC2e):</strong>
               <span id="modalSmsContent">WILDGUARD ALERT: Wild animal Elephant EL-07 detected near Palatupana Farmland & Paddy Perimeter. Please stay vigilant.</span>
             </div>
 
             <div id="modalDispatchBox" style="background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 0.65rem 0.85rem; margin: 0.5rem 0; font-size: 0.8rem; color: #93c5fd; display: flex; justify-content: space-between; align-items: center;">
               <span>🚓 Dispatched: <strong id="modalResponderName">R. M. Bandara</strong> (<span id="modalResponderDist">320m</span> away)</span>
-              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="openPhoneDispatchModal()">Open Phone View</button>
+              <button class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.72rem;" onclick="openPhoneDispatchModal()">Open Phone View (O4)</button>
             </div>
 
             <div class="field-row">
@@ -1034,7 +1015,7 @@
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-secondary" onclick="dismissFalseAlarm()">False Alarm</button>
-            <button class="btn btn-warning" onclick="openEscalationModal()">Escalate</button>
+            <button class="btn btn-warning" onclick="openEscalationModal()">Escalate (O2)</button>
           </div>
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-danger" id="modalDispatchBtn" onclick="confirmDispatchRanger()">Dispatch Nearest</button>
@@ -1350,7 +1331,7 @@
                 id="qrUrlInput"
                 type="text"
                 readonly
-                value="http://10.87.108.139:5000/collar.html"
+                value="http://10.87.108.139:4000/collar.html"
                 style="
                   flex: 1;
                   background: #0b1311;
@@ -1393,8 +1374,7 @@
       </div>
     </div>
 
-    <script src="/vendor/leaflet/leaflet.js"></script>
-    <script>if (typeof L === "undefined") { document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>'); }</script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       // Live Clock
       setInterval(() => {
@@ -1406,27 +1386,14 @@
       const map = L.map('map', { zoomControl: false }).setView([6.38, 81.4], 12);
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Satellite Imagery Layer with fallback
-      const satLayer = L.tileLayer(
+      // Satellite Imagery Layer
+      L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
           maxZoom: 18,
           attribution: 'Esri Satellite',
         },
       ).addTo(map);
-
-      satLayer.on('tileerror', function() {
-        if (!window._tileFallbackLoaded) {
-          window._tileFallbackLoaded = true;
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            attribution: '© CARTO'
-          }).addTo(map);
-        }
-      });
-
-      window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
-      window.addEventListener('load', () => { if (map) map.invalidateSize(); });
 
       let currentAlert = null;
       let audioContext = null;
@@ -1436,17 +1403,6 @@
       let userSilenced = false;
       let prevAlertCount = 0;
       let currentOfficer = {};
-      
-      // Auto-unlock AudioContext on first user click anywhere on page
-      document.addEventListener('click', () => {
-        if (!audioContext) {
-          audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioContext && audioContext.state === 'suspended') {
-          audioContext.resume();
-        }
-      }, { once: false });
-  
       let sessionToken = localStorage.getItem('wildguard_session_token') || '';
 
       // Web Audio Synthesizer for Acoustic Alarm
@@ -1462,7 +1418,7 @@
           sirenOscillator = audioContext.createOscillator();
           sirenGain = audioContext.createGain();
           sirenOscillator.type = 'sawtooth';
-          sirenGain.gain.setValueAtTime(0.20, audioContext.currentTime);
+          sirenGain.gain.setValueAtTime(0.06, audioContext.currentTime);
           sirenOscillator.connect(sirenGain);
           sirenGain.connect(audioContext.destination);
           sirenOscillator.start();
@@ -1545,27 +1501,11 @@
           }
           prevAlertCount = totalAlerts;
 
-          const hasActiveBreach = (status.activeAlerts && status.activeAlerts.length > 0) || status.hasActiveBreach;
-          const banner = document.getElementById('alarmBanner');
-          if (hasActiveBreach) {
-            banner.classList.add('active');
-          } else {
-            banner.classList.remove('active');
-          }
-
           if (status.acousticAlarmActive && !userSilenced) {
+            document.getElementById('alarmBanner').classList.add('active');
             startAcousticAlarm();
           } else {
-            if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
-            if (sirenOscillator) {
-              try {
-                if (sirenGain && audioContext) sirenGain.gain.setValueAtTime(0, audioContext.currentTime);
-                sirenOscillator.stop();
-                sirenOscillator.disconnect();
-              } catch (e) {}
-              sirenOscillator = null;
-              sirenGain = null;
-            }
+            stopAcousticAlarm();
           }
 
           // Render queue
@@ -1578,19 +1518,15 @@
               status.activeAlerts.length + status.delayedIncidents.length;
             let html = '';
             status.activeAlerts.forEach((item) => {
-              const a = item.alert || item;
-              const ref = a.alertReference || a.reference || a.id;
-              const label = a.animalLabel || a.animalName || 'Collared Animal';
-              const zone = a.zoneName || a.zone_name || 'Boundary Zone';
-              const sev = a.severity || 'CRITICAL';
+              const a = item.alert;
               html += `
-              <div class="alert-card critical" onclick="openAlertModal('${ref}')">
+              <div class="alert-card critical" onclick="openAlertModal('${a.alertReference}')">
                 <div class="alert-card-header">
-                  <strong style="color: #ef4444; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 0.05em;">${ref && ref.length > 15 ? ('ALT-' + ref.slice(0, 4).toUpperCase()) : (ref || 'ALT-0001')}</strong>
-                  <span class="badge badge-critical">${sev}</span>
+                  <strong style="color: #ef4444;">${a.alertReference}</strong>
+                  <span class="badge badge-critical">${a.severity}</span>
                 </div>
-                <div style="font-weight: 600; font-size: 0.85rem;">${label}</div>
-                <div style="font-size: 0.75rem; color: #9ca3af;">${zone}</div>
+                <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">${a.zoneName}</div>
                 <div style="font-size: 0.7rem; color: #6ee7b7; margin-top: 0.3rem;">⚡ Click to review & dispatch</div>
               </div>
             `;
@@ -1599,7 +1535,7 @@
               html += `
               <div class="alert-card delayed" onclick="openAlertModal('${a.alertReference}')">
                 <div class="alert-card-header">
-                  <strong style="color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; letter-spacing: 0.05em;">${a.alertReference && a.alertReference.length > 15 ? ('ALT-' + a.alertReference.slice(0, 4).toUpperCase()) : (a.alertReference || 'ALT-0002')}</strong>
+                  <strong style="color: #f59e0b;">${a.alertReference}</strong>
                   <span class="badge badge-delayed">DELAYED</span>
                 </div>
                 <div style="font-weight: 600; font-size: 0.85rem;">${a.animalLabel}</div>
@@ -1627,233 +1563,57 @@
       }
 
       let animalMarkers = {};
-      let rangerMarkers = {};
-
-      function createElephantDivIcon(label, isBreach = false) {
-        const pulseColor = isBreach ? 'rgba(239, 68, 68, 0.45)' : 'rgba(16, 185, 129, 0.45)';
-        const borderColor = isBreach ? '#ef4444' : '#10b981';
-        return L.divIcon({
-          className: 'custom-elephant-marker',
-          html: `
-            <div style="position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-              <div style="
-                position: absolute;
-                width: 46px;
-                height: 46px;
-                border-radius: 50%;
-                background: ${pulseColor};
-                animation: radarPulse 2s infinite ease-out;
-              "></div>
-              <div style="
-                position: relative;
-                width: 34px;
-                height: 34px;
-                border-radius: 50%;
-                background: #0f1715;
-                border: 2.5px solid ${borderColor};
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
-              ">
-                🐘
-              </div>
-              <div style="
-                position: absolute;
-                bottom: -18px;
-                background: rgba(15, 23, 21, 0.9);
-                backdrop-filter: blur(4px);
-                border: 1px solid ${borderColor};
-                border-radius: 4px;
-                padding: 1px 6px;
-                font-size: 10px;
-                font-weight: 700;
-                font-family: 'JetBrains Mono', monospace;
-                color: #f3f4f6;
-                white-space: nowrap;
-                letter-spacing: 0.04em;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-              ">
-                ${label}
-              </div>
-            </div>
-          `,
-          iconSize: [48, 48],
-          iconAnchor: [24, 24],
-          popupAnchor: [0, -24],
-        });
-      }
 
       function updateAnimalMarkers(animals) {
         animals.forEach((animal) => {
           if (animal.lastKnownLocation) {
             const { latitude, longitude } = animal.lastKnownLocation;
-            const collarCode = animal.collarId || 'EL-07';
-            const shortName = animal.name ? animal.name.replace('Collared elephant ', '') : collarCode;
-            const popupHtml = `
-              <div style="font-family: 'Inter', sans-serif; min-width: 175px; padding: 4px;">
-                <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: #10b981; margin-bottom: 4px;">
-                  <span>🐘</span> <span>${animal.name || animal.label || 'Wild Elephant'}</span>
-                </div>
-                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Collar Device: <b style="color: #f3f4f6; font-family: 'JetBrains Mono', monospace;">${collarCode}</b></div>
-                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">Battery: <b style="color: #34d399;">${animal.batteryPercent || 94}%</b></div>
-                <div style="font-size: 11px; color: #9ca3af;">Telemetry: <b style="color: #10b981;">ACTIVE (GPS Fix)</b></div>
-              </div>
-            `;
-
             if (animalMarkers[animal.collarId]) {
               animalMarkers[animal.collarId].setLatLng([latitude, longitude]);
             } else {
-              animalMarkers[animal.collarId] = L.marker([latitude, longitude], {
-                icon: createElephantDivIcon(shortName, false),
-              })
-                .bindPopup(popupHtml)
+              animalMarkers[animal.collarId] = L.marker([latitude, longitude])
+                .bindPopup(`<b>${animal.label}</b><br>Collar: ${animal.collarId}`)
                 .addTo(map);
             }
           }
         });
       }
 
-      function closeBreachModal() {
-        const el = document.getElementById('breachModal');
-        if (el) el.classList.remove('active');
-      }
-
       async function openAlertModal(ref) {
-        try {
-          let data = null;
-          try {
-            const res = await fetch('/api/alerts/' + encodeURIComponent(ref));
-            if (res.ok) data = await res.json();
-          } catch (e) {
-            console.warn('Fetch alert details error', e);
-          }
-
-          if (!data || !data.alert) {
-            try {
-              const res2 = await fetch((typeof UC2_API !== 'undefined' ? UC2_API : '/api/v1/collar') + '/alerts/active');
-              if (res2.ok) {
-                const activeData = await res2.json();
-                const list = activeData.data || activeData;
-                const match = (list || []).find(a => (a.alert_reference === ref || a.reference === ref || a.id === ref));
-                if (match) {
-                  data = {
-                    alert: match,
-                    animal: { label: match.animal_label || match.animalLabel || 'Collared Animal' },
-                    zone: { name: match.zone_name || match.zoneName || 'Palatupana Farmland & Paddy Perimeter', type: 'FARMLAND' },
-                    threatLevel: match.severity || match.threat_level || 'CRITICAL'
-                  };
-                }
-              }
-            } catch (e) {}
-          }
-
-          currentAlert = data || {
-            alert: { alertReference: ref, animalLabel: 'Elephant E-402 (Rambo)', status: 'ACTIVE' },
-            animal: { label: 'Elephant E-402 (Rambo)' },
-            zone: { name: 'Palatupana Farmland & Paddy Perimeter', type: 'FARMLAND' },
-            threatLevel: 'CRITICAL'
-          };
-
-          lastActiveAlertId = (data && data.alert && (data.alert.id || data.alert._id || data.alert.alert_reference || data.alert.alertReference)) || ref;
-
-          const animalLabel = (data && data.animal && data.animal.label) || (data && data.alert && (data.alert.animalLabel || data.alert.animal_label)) || 'Elephant E-402 (Rambo)';
-          const zoneName = (data && data.zone && data.zone.name) || (data && data.alert && (data.alert.zoneName || data.alert.zone_name)) || 'Palatupana Farmland & Paddy Perimeter';
-          const zoneType = (data && data.zone && data.zone.type) || 'FARMLAND';
-          const threat = (data && data.threatLevel) || (data && data.alert && (data.alert.threat_level || data.alert.severity)) || 'CRITICAL';
-
-          let lat = 6.2994;
-          let lng = 81.3703;
-          if (data && data.alert) {
-            const a = data.alert;
-            if (a.location && typeof a.location.latitude === 'number' && !isNaN(a.location.latitude)) {
-              lat = a.location.latitude;
-            } else if (typeof a.latitude === 'number' && !isNaN(a.latitude)) {
-              lat = a.latitude;
-            } else if (a.location && Array.isArray(a.location.coordinates) && a.location.coordinates.length >= 2) {
-              lng = a.location.coordinates[0];
-              lat = a.location.coordinates[1];
-            }
-
-            if (a.location && typeof a.location.longitude === 'number' && !isNaN(a.location.longitude)) {
-              lng = a.location.longitude;
-            } else if (typeof a.longitude === 'number' && !isNaN(a.longitude)) {
-              lng = a.longitude;
-            }
-          }
-
-          const labelEl = document.getElementById('modalAnimalLabel');
-          if (labelEl) labelEl.innerText = animalLabel;
-
-          const zoneEl = document.getElementById('modalZoneName');
-          if (zoneEl) zoneEl.innerText = zoneName;
-
-          const threatEl = document.getElementById('modalThreatLevel');
-          if (threatEl) threatEl.innerText = threat + ' (' + zoneType + ')';
-
-          const coordsEl = document.getElementById('modalCoords');
-          if (coordsEl) coordsEl.innerText = Number(lat).toFixed(4) + '° N, ' + Number(lng).toFixed(4) + '° E';
-
-          const sevBadge = document.getElementById('modalSeverityBadge');
-          if (sevBadge) sevBadge.innerText = threat;
-
-          const statusVal = (data && data.alert && data.alert.status) || 'ACTIVE';
-          if (typeof updateTimelineUI === 'function') updateTimelineUI(statusVal);
-
-          const dispatchBox = document.getElementById('modalDispatchBox');
-          if (dispatchBox) {
-            dispatchBox.style.display = 'flex';
-          }
-
-          document.getElementById('breachModal').classList.add('active');
-        } catch (err) {
-          console.error('Failed to open alert modal:', err);
-          document.getElementById('breachModal').classList.add('active');
-        }
+        const res = await fetch(`/api/alerts/${ref}`);
+        const data = await res.json();
+        currentAlert = data;
+        document.getElementById('modalAnimalLabel').innerText = data.animal
+          ? data.animal.label
+          : data.alert.animalLabel;
+        document.getElementById('modalZoneName').innerText = data.zone.name;
+        document.getElementById('modalThreatLevel').innerText = `${data.threatLevel} (${data.zone.type})`;
+        document.getElementById('modalCoords').innerText =
+          `${data.alert.location.latitude.toFixed(4)}° N, ${data.alert.location.longitude.toFixed(4)}° E`;
+        document.getElementById('breachModal').classList.add('active');
       }
 
       async function confirmDispatchRanger() {
-        const ref = (currentAlert && currentAlert.alert && currentAlert.alert.alertReference) || lastActiveAlertId || 'ALT-0001';
-        try {
-          await fetch(`/api/alerts/${ref}/acknowledge`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({
-              officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
-              responseAction: 'DISPATCH_RANGER',
-              notes: `Dispatched ranger unit via operations dashboard (${(currentOfficer && currentOfficer.name) || 'Operations Officer'})`,
-            }),
-          });
-        } catch (e) {}
-
-        if (lastActiveAlertId) {
-          try {
-            await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/respond`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ responderId: 'RESP-01', responderName: 'R. M. Bandara' }),
-            });
-          } catch (e) {}
-        }
-
+        if (!currentAlert) return;
+        const ref = currentAlert.alert.alertReference;
+        await fetch(`/api/alerts/${ref}/acknowledge`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({
+            officerId: currentOfficer.officerId,
+            responseAction: 'DISPATCH_RANGER',
+            notes: `Dispatched ranger unit via operations dashboard (${currentOfficer.name})`,
+          }),
+        });
         // Silence alarm once officer acts on emergency
-        try {
-          await fetch('/api/dashboard/silence', { method: 'POST' });
-        } catch (e) {}
+        await fetch('/api/dashboard/silence', { method: 'POST' });
         userSilenced = true;
         stopAcousticAlarm();
-
-        // Advance timeline to DISPATCHED
-        updateTimelineUI('DISPATCHED');
-        document.getElementById('modalDispatchBox').style.display = 'flex';
-
-        // Open phone dispatch modal for ranger acknowledgement
-        openPhoneDispatchModal();
-
+        document.getElementById('breachModal').classList.remove('active');
+        currentAlert = null;
         await refreshDashboard();
       }
 
@@ -2016,7 +1776,7 @@
         } else {
           currentOfficer = {
             officerId: 'OFF-01',
-            name: 'Operations Officer',
+            name: 'Hanaan M F A S',
             role: 'Lead Operations Officer',
           };
           localStorage.setItem('wildguard_officer', JSON.stringify(currentOfficer));
@@ -2041,30 +1801,11 @@
       }
 
       // Scenarios
-      function toggleDemoPanel() {
-        const body = document.getElementById('demoControlsBody');
-        const icon = document.getElementById('demoPanelToggleIcon');
-        if (!body) return;
-        if (body.style.display === 'none') {
-          body.style.display = 'grid';
-          if (icon) icon.innerText = '[Hide]';
-        } else {
-          body.style.display = 'none';
-          if (icon) icon.innerText = '[Show]';
-        }
-      }
       async function triggerMainBreach() {
-        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === 'suspended') audioContext.resume();
         userSilenced = false;
-        document.getElementById('alarmBanner').classList.add('active');
-        startAcousticAlarm();
-        const res = await fetch('/api/demo/main-flow-breach', { method: 'POST' });
-        const data = await res.json();
-        const ref = data.alert ? (data.alert.alert_reference || data.alert.alertReference || data.alert.id) : 'ALT-0001';
-        lastActiveAlertId = ref;
+        await fetch('/api/demo/main-flow-breach', { method: 'POST' });
         await refreshDashboard();
-        await openAlertModal(ref);
+        openAlertModal('ALT-0001');
       }
 
       async function triggerSafeTelemetry() {
@@ -2106,42 +1847,6 @@
         await refreshDashboard();
       }
 
-      async 
-      async function triggerAutoDispatch() {
-        if (!currentAlert && status && status.activeAlerts && status.activeAlerts.length > 0) {
-          const first = status.activeAlerts[0];
-          openAlertModal(first.alertReference || first.id);
-        } else if (currentAlert) {
-          confirmDispatchRanger();
-        } else {
-          await triggerMainBreach();
-        }
-      }
-
-      function triggerEscalationPanel() {
-        openEscalationModal('c680a8b1-1aa9-46a2-936e-4032e943d823');
-      }
-
-      function triggerCameraTrapReview() {
-        openCameraTrapModal({
-          trapId: 'CAM-TISSA-04',
-          location: 'Palatupana Farmland & Paddy Perimeter',
-          confidence: 0.74,
-          species: 'Elephas maximus (Asian Elephant)',
-          capturedAt: new Date().toISOString()
-        });
-      }
-
-      async function triggerSignalLost() {
-        try {
-          await fetch('/api/collars/COL-402/signal-lost', { method: 'POST' });
-          await refreshDashboard();
-          openSignalLostModal('COL-402', 'Elephant E-402 (Rambo)', '6.2994° N, 81.3703° E');
-        } catch (e) {
-          console.error(e);
-        }
-      }
-  
       async function silenceAlarm() {
         await fetch('/api/dashboard/silence', { method: 'POST' });
         userSilenced = true;
@@ -2171,20 +1876,18 @@
         const modal = document.getElementById('phoneQrModal');
         if (modal) {
           modal.classList.add('active');
-          updateQrDisplay();
-        }
-      }
-
-      function updateQrDisplay() {
-        const ipInput = document.getElementById('customIpInput');
-        const customIp = ipInput ? ipInput.value.trim() : '';
-        const host = customIp || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? window.location.hostname : '10.87.108.139');
-        const fullUrl = 'http://' + host + ':5000/collar.html';
-        const input = document.getElementById('qrUrlInput');
-        if (input) input.value = fullUrl;
-        const qrImg = document.getElementById('phoneQrImage');
-        if (qrImg) {
-          qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(fullUrl);
+          const host =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+              ? '10.87.108.139'
+              : window.location.hostname;
+          const port = window.location.port ? window.location.port : '4000';
+          const fullUrl = `http://${host}:${port}/collar.html`;
+          const input = document.getElementById('qrUrlInput');
+          if (input) input.value = fullUrl;
+          const qrImg = document.getElementById('phoneQrImage');
+          if (qrImg) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(fullUrl)}`;
+          }
         }
       }
 
@@ -2323,51 +2026,6 @@
         openPhoneDispatchModal();
       }
 
-      
-      function switchPhoneTab(tab) {
-        const rangerTab = document.getElementById('tabPhoneRanger');
-        const villagerTab = document.getElementById('tabPhoneVillager');
-        const rangerView = document.getElementById('phoneRangerView');
-        const villagerView = document.getElementById('phoneVillagerView');
-        const headerTitle = document.getElementById('phoneModalHeaderTitle');
-
-        if (tab === 'villager') {
-          rangerTab.style.background = 'transparent';
-          rangerTab.style.color = '#9ca3af';
-          rangerTab.style.borderBottom = '2px solid transparent';
-
-          villagerTab.style.background = '#1f2937';
-          villagerTab.style.color = '#10b981';
-          villagerTab.style.borderBottom = '2px solid #10b981';
-
-          rangerView.style.display = 'none';
-          villagerView.style.display = 'block';
-          if (headerTitle) headerTitle.innerText = '📱 Villager Mobile SMS Broadcast';
-        } else {
-          rangerTab.style.background = '#1f2937';
-          rangerTab.style.color = '#3b82f6';
-          rangerTab.style.borderBottom = '2px solid #3b82f6';
-
-          villagerTab.style.background = 'transparent';
-          villagerTab.style.color = '#9ca3af';
-          villagerTab.style.borderBottom = '2px solid transparent';
-
-          rangerView.style.display = 'block';
-          villagerView.style.display = 'none';
-          if (headerTitle) headerTitle.innerText = '📱 Responder Mobile Notification';
-        }
-      }
-
-      function openVillagerSmsModal() {
-        const smsContent = document.getElementById('modalSmsContent');
-        const phoneSms = document.getElementById('phoneVillagerSmsText');
-        if (smsContent && phoneSms) {
-          phoneSms.innerText = smsContent.innerText;
-        }
-        switchPhoneTab('villager');
-        openPhoneDispatchModal();
-      }
-
       function openPhoneDispatchModal() {
         document.getElementById('phoneDispatchModal').classList.add('active');
         let sec = 180;
@@ -2397,7 +2055,7 @@
           } catch (e) {}
         }
         updateTimelineUI('ACKNOWLEDGED');
-        alert('Responder R. M. Bandara acknowledged dispatch. Status updated to ACKNOWLEDGED.');
+        alert('Screenshot 3 (O4): Responder R. M. Bandara acknowledged dispatch. Timeline updated to ACKNOWLEDGED.');
         document.getElementById('breachModal').classList.add('active');
       }
 
@@ -2439,7 +2097,7 @@
         }
         document.getElementById('modalResponderName').innerText = responderName;
         updateTimelineUI('DISPATCHED');
-        alert(`Manually assigned responder ${responderName}. Status updated to DISPATCHED.`);
+        alert(`Screenshot 4 (O2): Manually assigned responder ${responderName}. Status updated to DISPATCHED.`);
         document.getElementById('breachModal').classList.add('active');
       }
 
@@ -2473,7 +2131,7 @@
           if (data.data && data.data.alert) lastActiveAlertId = data.data.alert.id;
         } catch (e) {}
         await refreshDashboard();
-        alert(`Confirmed ${species} threat. Critical alert raised and dispatched.`);
+        alert(`Screenshot 5 (O3): Operations Officer confirmed ${species} threat. Critical alert raised and dispatched.`);
         runScenario2DashboardAlert();
       }
 
@@ -2501,115 +2159,59 @@
         const reason = document.getElementById('resolveReasonInput').value;
         if (!reason) { alert('Resolution reason is mandatory!'); return; }
         closeResolveModal();
-
-        const alertRef = (currentAlert && currentAlert.alert && currentAlert.alert.alertReference) || lastActiveAlertId || 'ALT-0001';
-        try {
-          await fetch(`/api/alerts/${alertRef}/resolve`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionToken}`,
-            },
-            body: JSON.stringify({
-              reason,
-              officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
-              notes: document.getElementById('resolveNotesInput').value,
-            }),
-          });
-        } catch (e) {}
-
         if (lastActiveAlertId) {
           try {
             await fetch(`${UC2_API}/alerts/${lastActiveAlertId}/resolve`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                reason,
-                officerId: (currentOfficer && currentOfficer.officerId) || 'OFF-01',
-                notes: document.getElementById('resolveNotesInput').value,
-              }),
+              body: JSON.stringify({ reason, officerId: 'OFF-01', notes: document.getElementById('resolveNotesInput').value })
             });
           } catch (e) {}
         }
-
-        try {
-          await fetch('/api/dashboard/silence', { method: 'POST' });
-        } catch (e) {}
-
-        userSilenced = true;
-        stopAcousticAlarm();
-        document.getElementById('breachModal').classList.remove('active');
-        currentAlert = null;
         updateTimelineUI('RESOLVED');
-        await refreshDashboard();
-        alert(`Alert successfully resolved: ${reason}`);
+        stopAcousticAlarm();
+        alert(`Screenshot 6: Alert successfully resolved with reason: '${reason}'.`);
+        document.getElementById('breachModal').classList.add('active');
       }
 
       // Init
       checkAuthOnLoad();
       loadZones();
-      loadRangers();
-      // Render field rangers on map
-      function loadRangers() {
-        const rangers = [
-          { id: 'RESP-01', name: 'R. M. Bandara', role: 'Field Ranger', lat: 6.241, lng: 81.315 },
-          { id: 'RESP-02', name: 'K. S. Perera', role: 'Field Ranger', lat: 6.302, lng: 81.372 },
-          { id: 'RESP-03', name: 'M. T. Fernando', role: 'CLO', lat: 6.280, lng: 81.290 },
-          { id: 'RESP-04', name: 'D. M. Jayasinghe', role: 'Field Ranger', lat: 6.360, lng: 81.395 }
-        ];
-        rangers.forEach(r => {
-          const rangerIcon = L.divIcon({
-            className: 'custom-ranger-marker',
-            html: `
-              <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                <div style="
-                  width: 28px;
-                  height: 28px;
-                  border-radius: 50%;
-                  background: #1e3a8a;
-                  border: 2px solid #60a5fa;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 14px;
-                  box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-                ">
-                  🚙
-                </div>
-                <div style="
-                  position: absolute;
-                  bottom: -15px;
-                  background: rgba(15, 23, 42, 0.85);
-                  border: 1px solid #60a5fa;
-                  border-radius: 3px;
-                  padding: 1px 4px;
-                  font-size: 9px;
-                  font-weight: 700;
-                  color: #93c5fd;
-                  white-space: nowrap;
-                ">
-                  ${r.name.split(' ').pop()}
-                </div>
-              </div>
-            `,
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -18],
-          });
-          L.marker([r.lat, r.lng], { icon: rangerIcon })
-            .bindPopup(`<b>${r.name}</b><br>Role: ${r.role}<br>Status: Available Patrol Unit`)
-            .addTo(map);
-        });
-      }
-    
-      setTimeout(() => {
-        if (map) {
-          map.invalidateSize();
-          map.setView([6.285, 81.345], 11);
-        }
-      }, 300);
       refreshDashboard();
       setInterval(refreshDashboard, 5000);
+
+      // Automated screenshot & verification modal handler
+      window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const m = params.get('modal');
+        if (m === 'alert') {
+          setTimeout(() => {
+            const smsBox = document.getElementById('modalSmsBox');
+            if (smsBox) smsBox.style.display = 'flex';
+            const dispBox = document.getElementById('modalDispatchBox');
+            if (dispBox) dispBox.style.display = 'flex';
+            updateTimelineUI('VILLAGE_SMS_SENT');
+            const bm = document.getElementById('breachModal');
+            if (bm) bm.classList.add('active');
+          }, 600);
+        } else if (m === 'dispatch') {
+          setTimeout(() => {
+            openPhoneDispatchModal();
+          }, 600);
+        } else if (m === 'escalation') {
+          setTimeout(() => {
+            openEscalationModal();
+          }, 600);
+        } else if (m === 'camera') {
+          setTimeout(() => {
+            runScenario5CameraTrap();
+          }, 600);
+        } else if (m === 'resolve') {
+          setTimeout(() => {
+            openResolveModal();
+          }, 600);
+        }
+      });
     </script>
   </body>
 </html>

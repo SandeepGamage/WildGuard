@@ -127,6 +127,9 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
   const collarService = new CollarService({
     collarRepository,
     notificationService,
+    notificationRepository: repositories.notificationRepository,
+    smsLogRepository: repositories.smsLogRepository,
+    profileRepository: repositories.profileRepository,
     logger,
     clock,
   });
