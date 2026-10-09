@@ -105,3 +105,10 @@ export const ResetIcon = (props) => (
     <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5" />
   </Icon>
 );
+/** Sort indicator: both chevrons when unsorted, one when sorted ascending or descending. */
+export const SortIcon = ({ direction, ...props }) => (
+  <Icon {...props}>
+    {direction !== 'desc' ? <path d="M8 10l4-4 4 4" opacity={direction ? 1 : 0.45} /> : null}
+    {direction !== 'asc' ? <path d="M8 14l4 4 4-4" opacity={direction ? 1 : 0.45} /> : null}
+  </Icon>
+);

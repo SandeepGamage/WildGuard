@@ -356,6 +356,129 @@ describe('SavedReportsPage', () => {
     expect(row).toHaveTextContent('184');
   });
 
+  it('sorts by a column heading and keeps the order in the URL', async () => {
+    const saved = (id, generatedAt, totalIncidents, reportType) => ({
+      id,
+      generatedAt,
+      totalIncidents,
+      parkName: 'Yala National Park',
+      filter: { dateFrom: '2026-07-01', dateTo: '2026-10-01', reportType },
+    });
+    mockFetch({
+      'GET /analytics/reports': ok([
+        saved('newest', '2026-10-09T06:00:00Z', 9, 'HOTSPOT_MAP'),
+        saved('middle', '2026-10-08T06:00:00Z', 157, 'INCIDENT_SUMMARY'),
+        saved('oldest', '2026-10-01T06:00:00Z', 5, 'HOTSPOT_MAP'),
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />, { route: '/saved?sort=incidents&dir=asc' });
+    const order = () =>
+      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
+
+    await screen.findAllByRole('link', { name: 'Open' });
+    expect(order()).toEqual(['oldest', 'newest', 'middle']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute('aria-sort', 'ascending');
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Incidents/ }));
+    expect(order()).toEqual(['middle', 'newest', 'oldest']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Report type/ }));
+    expect(order()).toEqual(['newest', 'oldest', 'middle']);
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute('aria-sort', 'none');
+
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Generated/ }));
+    expect(order()).toEqual(['newest', 'middle', 'oldest']);
+    expect(screen.getByRole('columnheader', { name: /Generated/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+  });
+
+  it('sorts from the Sort menu, in step with the column headings', async () => {
+    const saved = (id, generatedAt, totalIncidents) => ({
+      id,
+      generatedAt,
+      totalIncidents,
+      parkName: 'Yala National Park',
+      filter: { dateFrom: '2026-07-01', dateTo: '2026-10-01', reportType: 'HOTSPOT_MAP' },
+    });
+    mockFetch({
+      'GET /analytics/reports': ok([
+        saved('newest', '2026-10-09T06:00:00Z', 9),
+        saved('middle', '2026-10-08T06:00:00Z', 157),
+        saved('oldest', '2026-10-01T06:00:00Z', 5),
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />, { route: '/saved' });
+    const order = () =>
+      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
+    await screen.findAllByRole('link', { name: 'Open' });
+
+    const sortButton = screen.getByRole('button', { name: 'Sort: Newest first' });
+    expect(sortButton).toHaveAttribute('aria-expanded', 'false');
+    await user.click(sortButton);
+    const menu = screen.getByRole('menu', { name: 'Sort' });
+    const options = within(menu).getAllByRole('menuitemradio');
+    expect(options).toHaveLength(10);
+    expect(within(menu).getByRole('menuitemradio', { name: 'Newest first' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(within(menu).getByRole('menuitemradio', { name: 'Newest first' })).toHaveFocus();
+
+    await user.click(within(menu).getByRole('menuitemradio', { name: 'Most incidents' }));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(order()).toEqual(['middle', 'newest', 'oldest']);
+    expect(screen.getByRole('button', { name: 'Sort: Most incidents' })).toHaveFocus();
+    expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+
+    // A column heading updates the Sort button too.
+    await user.click(within(screen.getByRole('table')).getByRole('button', { name: /Incidents/ }));
+    expect(order()).toEqual(['oldest', 'newest', 'middle']);
+    expect(screen.getByRole('button', { name: 'Sort: Fewest incidents' })).toBeInTheDocument();
+  });
+
+  it('closes the Sort menu with Escape or a click outside, and moves with the arrow keys', async () => {
+    mockFetch({
+      'GET /analytics/reports': ok([
+        {
+          id: 'report-1',
+          generatedAt: '2026-09-01T04:00:00.000Z',
+          filter: { dateFrom: '2026-06-01', dateTo: '2026-08-31', reportType: 'HOTSPOT_MAP' },
+          parkName: 'Yala National Park',
+          totalIncidents: 184,
+        },
+      ]),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />);
+    const sortButton = await screen.findByRole('button', { name: 'Sort: Newest first' });
+
+    await user.click(sortButton);
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Oldest first' })).toHaveFocus();
+    await user.keyboard('{ArrowUp}{ArrowUp}');
+    expect(screen.getByRole('menuitemradio', { name: 'Report type (Z–A)' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(sortButton).toHaveFocus();
+    expect(sortButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(sortButton);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    await user.click(screen.getByRole('heading', { level: 1 }));
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
   it('shows the empty and error states', async () => {
     mockFetch({ 'GET /analytics/reports': ok([]) });
     const { unmount } = renderWithProviders(<SavedReportsPage />);

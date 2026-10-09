@@ -6,6 +6,9 @@ import { clearToken, getToken, setToken, TOKEN_STORAGE_KEY } from '../src/api/to
 import i18n, { LANGUAGE_STORAGE_KEY, setLanguage } from '../src/i18n';
 import {
   cellBounds,
+  DEFAULT_SAVED_SORT,
+  nextSort,
+  sortSavedReports,
   defaultFilters,
   fieldErrors,
   formatChange,
@@ -89,6 +92,54 @@ describe('analytics helpers', () => {
       [6.2, 81.2],
       [6.4, 81.4],
     ]);
+  });
+});
+
+describe('saved report sorting', () => {
+  const saved = (id, overrides) => ({
+    id,
+    generatedAt: '2026-10-01T00:00:00Z',
+    parkName: 'Yala National Park',
+    totalIncidents: 10,
+    filter: { dateFrom: '2026-07-01', dateTo: '2026-10-01', reportType: 'HOTSPOT_MAP' },
+    ...overrides,
+  });
+  const items = [
+    saved('a', { generatedAt: '2026-10-01T00:00:00Z', totalIncidents: 5 }),
+    saved('b', { generatedAt: '2026-10-03T00:00:00Z', totalIncidents: 157 }),
+    saved('c', {
+      generatedAt: '2026-10-02T00:00:00Z',
+      totalIncidents: 9,
+      filter: { dateFrom: '2025-10-06', dateTo: '2026-10-06', reportType: 'INCIDENT_SUMMARY' },
+    }),
+  ];
+  const ids = (list) => list.map((item) => item.id);
+
+  it('defaults to newest first and never mutates the input', () => {
+    expect(ids(sortSavedReports(items, DEFAULT_SAVED_SORT))).toEqual(['b', 'c', 'a']);
+    expect(ids(items)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('sorts by incidents, period and report label in either direction', () => {
+    expect(ids(sortSavedReports(items, { key: 'incidents', direction: 'desc' }))).toEqual(['b', 'c', 'a']);
+    expect(ids(sortSavedReports(items, { key: 'incidents', direction: 'asc' }))).toEqual(['a', 'c', 'b']);
+    expect(ids(sortSavedReports(items, { key: 'period', direction: 'asc' }))[0]).toBe('c');
+    const labels = { HOTSPOT_MAP: 'Hotspot map', INCIDENT_SUMMARY: 'Incident summary' };
+    expect(ids(sortSavedReports(items, { key: 'type', direction: 'desc' }, (type) => labels[type]))).toEqual([
+      'c',
+      'b',
+      'a',
+    ]);
+  });
+
+  it('breaks ties with the newest report first', () => {
+    expect(ids(sortSavedReports(items, { key: 'park', direction: 'asc' }))).toEqual(['b', 'c', 'a']);
+  });
+
+  it('flips the sorted column and starts other columns in their natural order', () => {
+    expect(nextSort(DEFAULT_SAVED_SORT, 'generated')).toEqual({ key: 'generated', direction: 'asc' });
+    expect(nextSort(DEFAULT_SAVED_SORT, 'park')).toEqual({ key: 'park', direction: 'asc' });
+    expect(nextSort(DEFAULT_SAVED_SORT, 'incidents')).toEqual({ key: 'incidents', direction: 'desc' });
   });
 });
 

@@ -144,12 +144,29 @@
     },
     "saved": {
       "title": "Saved reports",
-      "subtitle": "Reports you generated, newest first.",
+      "subtitle": "Reports you generated. Use Sort or select a column heading.",
       "empty": "No saved reports yet. Generate a report to see it here.",
       "incidents": "{{count}} incidents",
       "open": "Open",
       "period": "Period",
-      "generated": "Generated"
+      "generated": "Generated",
+      "sortBy": "Sort by {{column}}",
+      "sort": {
+        "button": "Sort",
+        "current": "Sort: {{option}}",
+        "options": {
+          "generated_desc": "Newest first",
+          "generated_asc": "Oldest first",
+          "incidents_desc": "Most incidents",
+          "incidents_asc": "Fewest incidents",
+          "period_desc": "Latest period",
+          "period_asc": "Earliest period",
+          "park_asc": "Park (A–Z)",
+          "park_desc": "Park (Z–A)",
+          "type_asc": "Report type (A–Z)",
+          "type_desc": "Report type (Z–A)"
+        }
+      }
     },
     "period": {
       "label": "Period",
