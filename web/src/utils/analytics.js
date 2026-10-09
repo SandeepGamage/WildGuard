@@ -1,4 +1,4 @@
-import { ANALYTICS_RULES, INCIDENT_TYPES, REPORT_TYPES } from '../constants';
+import { ANALYTICS_RULES, INCIDENT_TYPES } from '../constants';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -14,14 +14,14 @@ export function monthsBefore(isoDate, months) {
   return toIsoDate(target);
 }
 
-/** Starting filters: the last three months, every incident type. */
+/** Starting filters: the last three months, every incident type. The manager picks the report type. */
 export function defaultFilters(parkId = '', today = new Date()) {
   const dateTo = toIsoDate(today);
   return {
     dateFrom: monthsBefore(dateTo, ANALYTICS_RULES.DEFAULT_RANGE_MONTHS),
     dateTo,
     parkId,
-    reportType: REPORT_TYPES.HOTSPOT_MAP,
+    reportType: '',
     incidentTypes: Object.values(INCIDENT_TYPES),
   };
 }

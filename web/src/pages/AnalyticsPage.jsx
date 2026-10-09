@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { ConflictTrendChart } from '../components/ConflictTrendChart';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ConflictTypeBars } from '../components/ConflictTypeBars';
 import { ExportDialog } from '../components/ExportDialog';
 import { FilterBar } from '../components/FilterBar';
@@ -26,7 +27,7 @@ const otherFormat = (format) => (format === EXPORT_FORMATS.PDF ? EXPORT_FORMATS.
  */
 export default function AnalyticsPage() {
   const { t, i18n } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const reportId = searchParams.get('reportId');
 
   const parks = useParks();
@@ -41,20 +42,28 @@ export default function AnalyticsPage() {
   const [dialog, setDialog] = useState({ open: false, format: EXPORT_FORMATS.PDF, key: 0 });
   const [exportFailedFormat, setExportFailedFormat] = useState(null);
   const [exportedFormat, setExportedFormat] = useState(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Opening a saved report shows it with the filters it was built from (adjusted once
   // per report, during render, rather than in an effect).
+  // Reset dismisses the saved report straight away; the URL drops `?reportId=` a moment later.
   const [shownSavedId, setShownSavedId] = useState(null);
-  if (saved.data?.filter && saved.data.id !== shownSavedId) {
-    setShownSavedId(saved.data.id);
-    setFilters((current) => ({ ...current, ...saved.data.filter }));
+  const [dismissedSavedId, setDismissedSavedId] = useState(null);
+  if (!reportId && (shownSavedId || dismissedSavedId)) {
+    setShownSavedId(null);
+    setDismissedSavedId(null);
+  }
+  const savedReport = saved.data && saved.data.id !== dismissedSavedId ? saved.data : null;
+  if (savedReport?.filter && savedReport.id !== shownSavedId) {
+    setShownSavedId(savedReport.id);
+    setFilters((current) => ({ ...current, ...savedReport.filter }));
     setResult(null);
     setEditing(false);
   }
 
   const parkList = parks.data ?? [];
   const effectiveFilters = { ...filters, parkId: filters.parkId || parkList[0]?.id || '' };
-  const report = result ? result.report : (saved.data ?? null);
+  const report = result ? result.report : savedReport;
   const errors = fieldErrors(generate.error);
   const hasFieldErrors = Object.keys(errors).length > 0;
   const showResults = Boolean(report) && !editing && !generate.isPending;
@@ -81,6 +90,22 @@ export default function AnalyticsPage() {
     } else {
       setSetupStep(target);
       setEditing(true);
+    }
+  };
+
+  // Start the journey over: no report type, default criteria, no results, step 1.
+  const startOver = () => {
+    setConfirmReset(false);
+    setFilters(defaultFilters());
+    setResult(null);
+    setEditing(false);
+    setSetupStep(STEPS.TYPE);
+    setExportFailedFormat(null);
+    setExportedFormat(null);
+    generate.reset();
+    if (reportId) {
+      setDismissedSavedId(reportId);
+      setSearchParams({}, { replace: true });
     }
   };
 
@@ -148,6 +173,9 @@ export default function AnalyticsPage() {
               </p>
             </div>
             <div className="page-footer-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirmReset(true)}>
+                {t('analytics.reset.action')}
+              </button>
               <button type="button" className="btn btn-secondary" onClick={() => selectStep(STEPS.CRITERIA)}>
                 {t('analytics.editCriteria')}
               </button>
@@ -164,7 +192,12 @@ export default function AnalyticsPage() {
         )}
       </header>
 
-      <ReportStepper current={step} hasReport={Boolean(report)} onSelect={selectStep} />
+      <ReportStepper
+        current={step}
+        hasType={Boolean(effectiveFilters.reportType)}
+        hasReport={Boolean(report)}
+        onSelect={selectStep}
+      />
 
       {generate.isError && hasFieldErrors ? (
         <ReportNotice tone="danger" title={t('analytics.states.invalid')} testId="notice-invalid" />
@@ -261,6 +294,18 @@ export default function AnalyticsPage() {
             </p>
           </div>
         </>
+      ) : null}
+
+      {showResults ? (
+        <ConfirmDialog
+          open={confirmReset}
+          title={t('analytics.reset.title')}
+          message={t('analytics.reset.message')}
+          confirmLabel={t('analytics.reset.confirm')}
+          onConfirm={startOver}
+          onCancel={() => setConfirmReset(false)}
+          testId="confirm-reset"
+        />
       ) : null}
 
       {report ? (

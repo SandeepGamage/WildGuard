@@ -1,5 +1,7 @@
 const { z } = require('zod');
 
+const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
 const booleanFromString = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 const envSchema = z.object({
@@ -18,6 +20,8 @@ const envSchema = z.object({
   DEMO_USER_PASSWORD: z.string().default(''),
   MONGODB_URI: z.string().default('mongodb://localhost:27017/wildguard'),
   JWT_SECRET: z.string().default('wildguard-lk-secret-jwt-key-32chars-min'),
+  /** Basemap tiles for the UC4 PDF hotspot map ({z}/{x}/{y}). Empty turns the basemap off. */
+  MAP_TILE_URL: z.string().optional(),
 });
 
 /**
@@ -48,6 +52,8 @@ function loadConfig(source = process.env) {
     phoneLoginEmailDomain: env.PHONE_LOGIN_EMAIL_DOMAIN,
     smsSimulatorEnabled: env.SMS_SIMULATOR_ENABLED ?? !isProduction,
     demoUserPassword: env.DEMO_USER_PASSWORD,
+    // Tests never download tiles; elsewhere the same OpenStreetMap tiles as the web dashboard.
+    mapTileUrl: env.MAP_TILE_URL ?? (env.NODE_ENV === 'test' ? '' : OSM_TILE_URL),
   });
 }
 

@@ -8,10 +8,13 @@ const { CsvExporter } = require('./csv.exporter');
  * so a new format is a new exporter, not a change here (open/closed).
  */
 class ExportEngine {
-  /** @param {{ exporters?: Record<string, { export: Function }>, logger: object }} deps */
-  constructor({ exporters, logger }) {
+  /**
+   * @param {{ exporters?: Record<string, { export: Function }>, tileSource?: object | null, logger: object }} deps
+   *   `tileSource` supplies basemap tiles for the PDF hotspot map.
+   */
+  constructor({ exporters, tileSource = null, logger }) {
     this.exporters = exporters ?? {
-      [EXPORT_FORMATS.PDF]: new PdfExporter(),
+      [EXPORT_FORMATS.PDF]: new PdfExporter({ tileSource }),
       [EXPORT_FORMATS.CSV]: new CsvExporter(),
     };
     this.logger = logger;

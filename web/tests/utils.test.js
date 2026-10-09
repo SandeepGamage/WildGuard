@@ -37,7 +37,7 @@ describe('analytics helpers', () => {
       dateFrom: '2026-07-05',
       dateTo: '2026-10-05',
       parkId: 'yala',
-      reportType: 'HOTSPOT_MAP',
+      reportType: '',
       incidentTypes: ALL_TYPES,
     });
     expect(widenFilters({ ...filters, dateFrom: '2026-10-01' }).dateFrom).toBe('2026-07-05');

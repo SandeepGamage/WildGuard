@@ -37,6 +37,12 @@
     "resultsTitle": "{{type}}, {{range}}",
     "breadcrumb": "Breadcrumb",
     "editCriteria": "Edit criteria",
+    "reset": {
+      "action": "Reset",
+      "title": "Start over?",
+      "message": "This clears the report type, criteria and results and takes you back to step 1. Saved reports are not affected.",
+      "confirm": "Reset and start over"
+    },
     "footer": "Generated from {{incidents}} incidents and {{reports}} community reports",
     "signOut": "Sign out",
     "loadingReport": "Building the report…",
@@ -162,7 +168,8 @@
       "type": "Report type",
       "criteria": "Criteria",
       "results": "Results",
-      "needsReport": "Generate a report first"
+      "needsReport": "Generate a report first",
+      "needsType": "Choose a report type first"
     },
     "reportTypeHints": {
       "INCIDENT_SUMMARY": "Counts and changes for every incident type.",

@@ -103,11 +103,28 @@ describe('FilterBar', () => {
     const user = userEvent.setup();
     const onNext = vi.fn();
     const onBack = vi.fn();
-    const { onGenerate } = setup({ step: 'type', onNext, onBack });
+    const { onGenerate } = setup({
+      step: 'type',
+      onNext,
+      onBack,
+      value: { ...defaultFilters('yala'), reportType: 'HOTSPOT_MAP' },
+    });
     expect(screen.queryByLabelText('From')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(onNext).toHaveBeenCalled();
     expect(onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('keeps Next disabled until a report type is chosen', async () => {
+    const user = userEvent.setup();
+    const onNext = vi.fn();
+    const { onChange } = setup({ step: 'type', onNext });
+    const next = screen.getByRole('button', { name: 'Next' });
+    expect(next).toBeDisabled();
+    expect(next).toHaveAttribute('title', 'Choose a report type first');
+    await user.click(screen.getByRole('radio', { name: 'Incident summary' }));
+    expect(onChange.mock.lastCall[0].reportType).toBe('INCIDENT_SUMMARY');
+    expect(onNext).not.toHaveBeenCalled();
   });
 
   it('shows the criteria screen with Back and Generate', async () => {

@@ -83,7 +83,7 @@ All results are limited to the officer's assigned GN divisions; other reports re
 
 ## Park Manager (`PARK_MANAGER`) – UC4 analytics
 
-Only verified, non-duplicate community reports are counted. Patrol tracks, patrol incidents and collar alerts (UC1/UC2) are read through placeholder sources that return no rows until those use cases are merged, so `coverage.available` is `false` for now. Reporter ids and phone numbers never appear in a report or an export.
+Only verified, non-duplicate community reports are counted. Collar alerts (UC2) raised in the period are counted and added to the heatmap; alerts closed as false alarms or stored without a position are left out. Patrol tracks and patrol incidents (UC1) are read through the patrol data source. Reporter ids and phone numbers never appear in a report or an export.
 
 | Method | Path | Notes |
 |---|---|---|
