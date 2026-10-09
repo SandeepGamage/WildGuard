@@ -12,6 +12,7 @@ function toReportDocument(report) {
     heatmap: report.heatmap,
     top_hotspots: report.topHotspots,
     landmarks: report.landmarks,
+    patrol_points: report.patrolPoints ?? [],
     incidents: report.incidents,
   };
 }
@@ -31,6 +32,7 @@ function toConservationReport(doc) {
     heatmap: doc.heatmap ?? null,
     topHotspots: doc.top_hotspots ?? [],
     landmarks: doc.landmarks ?? [],
+    patrolPoints: doc.patrol_points ?? [],
     incidents: doc.incidents ?? [],
   };
 }

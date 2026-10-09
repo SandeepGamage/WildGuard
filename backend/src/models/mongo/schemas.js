@@ -176,6 +176,8 @@ const ConservationReportSchema = new Schema({
   heatmap: { type: Schema.Types.Mixed, default: null },
   top_hotspots: { type: [Schema.Types.Mixed], default: [] },
   landmarks: { type: [Schema.Types.Mixed], default: [] },
+  /** Thinned ranger GPS positions (no ids), for the map's "where rangers have been" layer. */
+  patrol_points: { type: [Schema.Types.Mixed], default: [] },
   incidents: { type: [Schema.Types.Mixed], default: [] },
 });
 

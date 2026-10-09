@@ -1,7 +1,11 @@
 const { CommunityIncident, Sector, Village, ConservationReport } = require('../../models/mongo/schemas');
 const { toConservationReport, toReportDocument } = require('../../models/conservationReport.model');
 const { INCIDENT_STATUS } = require('../../constants/domain');
-const { PendingPatrolDataSource, PendingAlertDataSource } = require('../sources/pendingDataSources');
+const {
+  PendingPatrolDataSource,
+  PendingAlertDataSource,
+  PendingTrackPointSource,
+} = require('../sources/pendingDataSources');
 
 /**
  * Read model for UC4 (AnalyticsRepository in Fig 11). It only ever returns
@@ -9,12 +13,13 @@ const { PendingPatrolDataSource, PendingAlertDataSource } = require('../sources/
  */
 class MongoAnalyticsRepository {
   /**
-   * @param {{ patrolDataSource?: object, alertDataSource?: object }} [deps]
+   * @param {{ patrolDataSource?: object, alertDataSource?: object, trackPointSource?: object }} [deps]
    *   UC1/UC2 sources. Without them the empty fallbacks in pendingDataSources.js are used.
    */
-  constructor({ patrolDataSource, alertDataSource } = {}) {
+  constructor({ patrolDataSource, alertDataSource, trackPointSource } = {}) {
     this.patrolDataSource = patrolDataSource ?? new PendingPatrolDataSource();
     this.alertDataSource = alertDataSource ?? new PendingAlertDataSource();
+    this.trackPointSource = trackPointSource ?? new PendingTrackPointSource();
   }
 
   async listSectors(parkName) {
@@ -23,8 +28,8 @@ class MongoAnalyticsRepository {
   }
 
   /**
-   * @param {{ dateFrom: Date, dateTo: Date, previousFrom: Date, incidentTypes: string[], sectorIds: string[] }} filter
-   *   `dateTo` is exclusive.
+   * @param {{ dateFrom: Date, dateTo: Date, previousFrom: Date, incidentTypes: string[], sectorIds: string[],
+   *   bounds?: object }} filter `dateTo` is exclusive; `bounds` is the park's bounding box.
    */
   async queryAnalyticsData(filter) {
     const inPark = { sector_id: { $in: filter.sectorIds } };
@@ -36,24 +41,39 @@ class MongoAnalyticsRepository {
       incident_type: { $in: filter.incidentTypes },
     };
 
-    const [docs, received, previousPeriodCount, villages, patrolTracks, patrolIncidents, collarAlerts] =
-      await Promise.all([
-        CommunityIncident.find({ ...verifiedRoots, ...inRange })
-          .select(
-            'id tracking_code incident_type source urgency occurred_at latitude longitude village_id sector_id',
-          )
-          .sort({ occurred_at: 1 })
-          .lean(),
-        CommunityIncident.countDocuments({ ...inPark, ...inRange }),
-        CommunityIncident.countDocuments({
-          ...verifiedRoots,
-          occurred_at: { $gte: filter.previousFrom, $lt: filter.dateFrom },
-        }),
-        Village.find({ sector_id: { $in: filter.sectorIds }, is_active: true }).lean(),
-        this.patrolDataSource.listTracks(filter),
-        this.patrolDataSource.listIncidents(filter),
-        this.alertDataSource.listAlerts(filter),
-      ]);
+    const [
+      docs,
+      received,
+      previousPeriodCount,
+      villages,
+      patrolTracks,
+      collarAlerts,
+      patrolTrackPoints,
+      patrolIncidents,
+      previousPatrolIncidents,
+    ] = await Promise.all([
+      CommunityIncident.find({ ...verifiedRoots, ...inRange })
+        .select(
+          'id tracking_code incident_type source urgency occurred_at latitude longitude village_id sector_id',
+        )
+        .sort({ occurred_at: 1 })
+        .lean(),
+      CommunityIncident.countDocuments({ ...inPark, ...inRange }),
+      CommunityIncident.countDocuments({
+        ...verifiedRoots,
+        occurred_at: { $gte: filter.previousFrom, $lt: filter.dateFrom },
+      }),
+      Village.find({ sector_id: { $in: filter.sectorIds }, is_active: true }).lean(),
+      this.patrolDataSource.listTracks(filter),
+      this.alertDataSource.listAlerts(filter),
+      this.trackPointSource.listPoints(filter),
+      this.patrolDataSource.listIncidents(filter),
+      this.patrolDataSource.listIncidents({
+        ...filter,
+        dateFrom: filter.previousFrom,
+        dateTo: filter.dateFrom,
+      }),
+    ]);
 
     const villageNames = new Map(villages.map((v) => [v.id, v.name_en]));
     return {
@@ -80,8 +100,10 @@ class MongoAnalyticsRepository {
         longitude: v.longitude,
       })),
       patrolTracks,
-      patrolIncidents,
       collarAlerts,
+      patrolTrackPoints,
+      patrolIncidents,
+      previousPatrolIncidents,
     };
   }
 

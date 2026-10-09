@@ -83,7 +83,7 @@ All results are limited to the officer's assigned GN divisions; other reports re
 
 ## Park Manager (`PARK_MANAGER`) – UC4 analytics
 
-Only verified, non-duplicate community reports are counted. Collar alerts (UC2) raised in the period are counted and added to the heatmap; alerts closed as false alarms or stored without a position are left out. Patrol tracks and patrol incidents (UC1) are read through the patrol data source. Reporter ids and phone numbers never appear in a report or an export.
+Only verified, non-duplicate community reports are counted. Collar alerts (UC2) raised in the period are counted and added to the heatmap; alerts closed as false alarms or stored without a position are left out. Incidents rangers log on patrol (UC1) are counted with the community reports and follow the same incident-type filter; the ranger-only types are `CARCASS`, `ELEPHANT_SIGHTING`, `ILLEGAL_ACTIVITY` and `OTHER`. Finished patrols give patrol coverage. Ranger GPS points recorded inside the park during the period are returned as `patrolPoints` (positions only, thinned to one per ~25 m, at most 2000) for the map's "where rangers have been" layer. Reporter ids and phone numbers never appear in a report or an export.
 
 | Method | Path | Notes |
 |---|---|---|

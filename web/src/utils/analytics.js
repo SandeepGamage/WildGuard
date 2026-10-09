@@ -1,4 +1,4 @@
-import { ANALYTICS_RULES, INCIDENT_TYPES } from '../constants';
+import { ANALYTICS_RULES, REPORT_INCIDENT_TYPES } from '../constants';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -22,7 +22,7 @@ export function defaultFilters(parkId = '', today = new Date()) {
     dateTo,
     parkId,
     reportType: '',
-    incidentTypes: Object.values(INCIDENT_TYPES),
+    incidentTypes: [...REPORT_INCIDENT_TYPES],
   };
 }
 

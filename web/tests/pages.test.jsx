@@ -74,7 +74,7 @@ describe('AnalyticsPage (UC4)', () => {
 
     const body = JSON.parse(fetch.mock.calls.find(([, o]) => o?.method === 'POST')[1].body);
     expect(body).toMatchObject({ parkId: 'yala', reportType: 'HOTSPOT_MAP' });
-    expect(body.incidentTypes).toHaveLength(6);
+    expect(body.incidentTypes).toHaveLength(10);
   });
 
   it('moves between set-up and results with the stepper', async () => {
@@ -218,9 +218,38 @@ describe('AnalyticsPage (UC4)', () => {
     exportOk = true;
     await user.click(within(failed).getByRole('button', { name: 'Export as CSV' }));
     await user.click(screen.getByRole('button', { name: 'Export CSV' }));
-    expect(await screen.findByTestId('notice-exported')).toHaveTextContent('CSV file downloaded.');
+    await waitFor(() =>
+      expect(saveFile).toHaveBeenCalledWith(expect.objectContaining({ filename: 'wildguard-yala.csv' })),
+    );
     expect(screen.queryByTestId('notice-export-failed')).toBeNull();
-    expect(saveFile).toHaveBeenCalledWith(expect.objectContaining({ filename: 'wildguard-yala.csv' }));
+    // A successful download shows no extra message.
+    expect(screen.queryByText(/file downloaded/)).toBeNull();
+  });
+
+  it('shows a different layout and export defaults for each report type', async () => {
+    mockFetch({
+      'GET /analytics/parks': ok([PARK]),
+      'POST /analytics/reports': (url, options) =>
+        ok(
+          makeReport({ filter: { ...makeReport().filter, reportType: JSON.parse(options.body).reportType } }),
+          201,
+        ),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<AnalyticsPage />);
+    await chooseTypeAndContinue(user, 'Patrol coverage');
+    await user.click(generateButton());
+    await screen.findByTestId('report');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Patrol coverage, 1 Jun – 31 Aug 2026',
+    );
+    expect(screen.getByTestId('coverage-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('incidents-by-type')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Export report' }));
+    const dialog = screen.getByRole('dialog', { name: 'Export report' });
+    expect(within(dialog).getByRole('checkbox', { name: 'Coverage gaps' })).toBeChecked();
+    expect(within(dialog).getByRole('checkbox', { name: 'Hotspot map' })).not.toBeChecked();
   });
 
   it('closes the export dialog with Cancel', async () => {
@@ -335,25 +364,89 @@ describe('AnalyticsPage (UC4)', () => {
 });
 
 describe('SavedReportsPage', () => {
-  it('lists saved reports with a link back to the dashboard', async () => {
-    mockFetch({
-      'GET /analytics/reports': ok([
-        {
-          id: 'report-1',
-          generatedAt: '2026-09-01T04:00:00.000Z',
-          filter: { dateFrom: '2026-06-01', dateTo: '2026-08-31', reportType: 'HOTSPOT_MAP' },
-          parkName: 'Yala National Park',
-          totalIncidents: 184,
-        },
-      ]),
-    });
+  const SAVED_ROW = {
+    id: 'report-1',
+    generatedAt: '2026-09-01T04:00:00.000Z',
+    filter: { dateFrom: '2026-06-01', dateTo: '2026-08-31', reportType: 'HOTSPOT_MAP' },
+    parkName: 'Yala National Park',
+    totalIncidents: 184,
+  };
+
+  it('lists saved reports with an Open button', async () => {
+    mockFetch({ 'GET /analytics/reports': ok([SAVED_ROW]) });
     renderWithProviders(<SavedReportsPage />);
-    const link = await screen.findByRole('link', { name: 'Open' });
-    expect(link).toHaveAttribute('href', '/?reportId=report-1');
-    const row = link.closest('tr');
+    const open = await screen.findByRole('button', { name: 'Open' });
+    const row = open.closest('tr');
     expect(row).toHaveTextContent('2026-06-01 – 2026-08-31');
     expect(row).toHaveTextContent('Hotspot map');
     expect(row).toHaveTextContent('184');
+    expect(screen.getByTestId('report-dialog')).not.toHaveAttribute('open');
+  });
+
+  it('opens a saved report in a pop-up with its results, exports it and closes', async () => {
+    const report = makeReport({ filter: { ...makeReport().filter, reportType: 'PATROL_COVERAGE' } });
+    const fetch = mockFetch({
+      'GET /analytics/reports': ok([{ ...SAVED_ROW, filter: report.filter }]),
+      'GET /analytics/reports/report-1': ok(report),
+      'GET /analytics/reports/report-1/export': download('wildguard-yala.pdf'),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Open' }));
+
+    const dialog = screen.getByTestId('report-dialog');
+    expect(dialog).toHaveAttribute('open');
+    expect(await within(dialog).findByTestId('report')).toHaveAttribute(
+      'data-report-type',
+      'PATROL_COVERAGE',
+    );
+    expect(
+      within(dialog).getByRole('heading', { level: 2, name: 'Patrol coverage, 1 Jun – 31 Aug 2026' }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByTestId('report-dialog-meta')).toHaveTextContent(
+      'Yala National Park · 2026-06-01 – 2026-08-31',
+    );
+    expect(within(dialog).getByTestId('coverage-panel')).toBeInTheDocument();
+
+    // Export opens the export dialog on top, with the report type's sections ticked.
+    await user.click(within(dialog).getByRole('button', { name: 'Export report' }));
+    const exportDialog = screen.getByRole('dialog', { name: 'Export report' });
+    expect(within(exportDialog).getByRole('checkbox', { name: 'Coverage gaps' })).toBeChecked();
+    expect(within(exportDialog).getByRole('checkbox', { name: 'Hotspot map' })).not.toBeChecked();
+    await user.click(within(exportDialog).getByRole('button', { name: 'Export PDF' }));
+    await waitFor(() =>
+      expect(saveFile).toHaveBeenCalledWith(expect.objectContaining({ filename: 'wildguard-yala.pdf' })),
+    );
+    expect(fetch.mock.calls.at(-1)[0]).toMatch(
+      /report-1\/export\?format=PDF&sections=KPI_SUMMARY,COVERAGE_GAPS/,
+    );
+    expect(exportDialog).not.toHaveAttribute('open');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(dialog).not.toHaveAttribute('open');
+    expect(within(dialog).queryByTestId('report')).toBeNull();
+  });
+
+  it('shows an error with retry when a saved report cannot be loaded, and an export failure', async () => {
+    let attempt = 0;
+    mockFetch({
+      'GET /analytics/reports': ok([SAVED_ROW]),
+      'GET /analytics/reports/report-1': () =>
+        ++attempt === 1 ? fail(503, 'DATA_SOURCE_UNAVAILABLE') : ok(makeReport()),
+      'GET /analytics/reports/report-1/export': fail(500, 'EXPORT_FAILED'),
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SavedReportsPage />);
+    await user.click(await screen.findByRole('button', { name: 'Open' }));
+    const dialog = screen.getByTestId('report-dialog');
+    const notice = await within(dialog).findByTestId('notice-report-error');
+    await user.click(within(notice).getByRole('button', { name: 'Try again' }));
+    await within(dialog).findByTestId('report');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Export report' }));
+    await user.click(screen.getByRole('button', { name: 'Export PDF' }));
+    const failed = await within(dialog).findByTestId('notice-export-failed');
+    expect(failed).toHaveTextContent('Export as CSV');
   });
 
   it('sorts by a column heading and keeps the order in the URL', async () => {
@@ -374,9 +467,9 @@ describe('SavedReportsPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<SavedReportsPage />, { route: '/saved?sort=incidents&dir=asc' });
     const order = () =>
-      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
+      screen.getAllByRole('button', { name: 'Open' }).map((button) => button.getAttribute('data-report-id'));
 
-    await screen.findAllByRole('link', { name: 'Open' });
+    await screen.findAllByRole('button', { name: 'Open' });
     expect(order()).toEqual(['oldest', 'newest', 'middle']);
     expect(screen.getByRole('columnheader', { name: /Incidents/ })).toHaveAttribute('aria-sort', 'ascending');
 
@@ -417,8 +510,8 @@ describe('SavedReportsPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<SavedReportsPage />, { route: '/saved' });
     const order = () =>
-      screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href').split('=')[1]);
-    await screen.findAllByRole('link', { name: 'Open' });
+      screen.getAllByRole('button', { name: 'Open' }).map((button) => button.getAttribute('data-report-id'));
+    await screen.findAllByRole('button', { name: 'Open' });
 
     const sortButton = screen.getByRole('button', { name: 'Sort: Newest first' });
     expect(sortButton).toHaveAttribute('aria-expanded', 'false');

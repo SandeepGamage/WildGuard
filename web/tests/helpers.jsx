@@ -22,6 +22,10 @@ export const ALL_TYPES = [
   'PERSON_INJURED',
   'SNARE_POACHING',
   'OTHER_ANIMAL',
+  'CARCASS',
+  'ELEPHANT_SIGHTING',
+  'ILLEGAL_ACTIVITY',
+  'OTHER',
 ];
 
 export const makeReport = (overrides = {}) => ({
@@ -41,6 +45,20 @@ export const makeReport = (overrides = {}) => ({
     communityReports: { received: 81, verified: 57 },
     conflictEvents: 68,
     injuries: 2,
+    byType: [
+      { type: 'ELEPHANT_NEAR_VILLAGE', count: 29 },
+      { type: 'CROP_DAMAGE', count: 39 },
+      { type: 'SNARE_POACHING', count: 12 },
+    ],
+    bySector: [
+      { sectorId: 's3', name: 'Sector 3', count: 120 },
+      { sectorId: 's4', name: 'Sector 4', count: 64 },
+    ],
+    byMonth: [
+      { month: '2026-06', count: 50 },
+      { month: '2026-07', count: 58 },
+      { month: '2026-08', count: 76 },
+    ],
   },
   trends: {
     months: ['2026-06', '2026-07', '2026-08'],
