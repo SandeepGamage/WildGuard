@@ -222,7 +222,7 @@ describe('POST /analytics/reports – generate', () => {
     ]);
   });
 
-  it('includes UC1/UC2 data once those sources provide it', async () => {
+  it('includes UC1 patrol sessions, patrol incidents and UC2 collar alerts', async () => {
     const { app, state } = createTestApp();
     addIncident(state);
     state.patrolTracks.push({
@@ -231,20 +231,67 @@ describe('POST /analytics/reports – generate', () => {
       endedAt: '2026-08-29T05:00:00Z',
       hours: 4,
     });
-    state.patrolIncidents.push({
-      incidentType: 'SNARE_POACHING',
-      occurredAt: new Date('2026-08-29T03:00:00Z'),
-      sectorId: ID.sector3,
+    const patrolIncident = (incidentType, occurredAt, sectorId = ID.sector3) => ({
+      incidentType,
+      occurredAt: new Date(occurredAt),
+      sectorId,
       ...PALATUPANA,
     });
+    state.patrolIncidents.push(
+      patrolIncident('SNARE_POACHING', '2026-08-29T03:00:00Z'),
+      patrolIncident('CARCASS', '2026-08-29T04:00:00Z'),
+      patrolIncident('SNARE_POACHING', '2026-04-10T04:00:00Z'), // previous period
+    );
     state.collarAlerts.push({ occurredAt: new Date('2026-08-01T03:00:00Z'), ...KIRINDA });
 
+    // CARCASS is not among the chosen types, so only the snare counts.
     const report = (await generate(app, filters())).body.data;
     expect(report.stats).toMatchObject({ totalIncidents: 2, patrolIncidents: 1, collarAlerts: 1 });
+    expect(report.stats.previousPeriodTotal).toBe(1);
+
+    const withCarcass = (await generate(app, filters({ incidentTypes: ['SNARE_POACHING', 'CARCASS'] }))).body
+      .data;
+    expect(withCarcass.stats.byType).toEqual(
+      expect.arrayContaining([
+        { type: 'SNARE_POACHING', count: 1 },
+        { type: 'CARCASS', count: 1 },
+      ]),
+    );
     expect(report.coverage).toMatchObject({ available: true, coveragePercent: 50, patrolHours: 4 });
     expect(report.coverage.unpatrolledSectors).toEqual([
       expect.objectContaining({ name: 'Sector 4', lastPatrolledAt: null }),
     ]);
+  });
+
+  it('adds ranger GPS points inside the park and period to the map, without ids', async () => {
+    const { app, state } = createTestApp();
+    addIncident(state);
+    const point = (id, latitude, longitude, recordedAt) => ({
+      id,
+      sessionId: 'patrol-1',
+      rangerId: 'ranger-1',
+      latitude,
+      longitude,
+      recordedAt,
+    });
+    state.patrolTrackPoints.push(
+      point('p1', 6.3, 81.37, '2026-08-10T03:00:00Z'),
+      point('p2', 6.30001, 81.37001, '2026-08-10T03:00:10Z'), // same 25 m cell as p1
+      point('p3', 6.31, 81.38, '2026-08-10T04:00:00Z'),
+      point('p4', 6.3, 81.37, '2025-01-10T03:00:00Z'), // before the period
+      point('p5', 7.5, 80.5, '2026-08-10T03:00:00Z'), // outside the park
+    );
+
+    const created = (await generate(app, filters())).body.data;
+    expect(created.patrolPoints).toEqual([
+      { latitude: 6.3, longitude: 81.37 },
+      { latitude: 6.31, longitude: 81.38 },
+    ]);
+    // Saved with the report, so a saved report shows them too.
+    const fetched = await request(app)
+      .get(`/api/v1/analytics/reports/${created.id}`)
+      .set(bearer(TOKENS.manager));
+    expect(fetched.body.data.patrolPoints).toHaveLength(2);
   });
 
   it('returns an empty result when nothing matches (alternate flow A2)', async () => {

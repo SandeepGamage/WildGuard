@@ -7,6 +7,11 @@ const TYPE_LABELS = Object.freeze({
   PERSON_INJURED: 'Person injured',
   SNARE_POACHING: 'Snares / suspected poaching',
   OTHER_ANIMAL: 'Other animal',
+  // Ranger patrol types (UC1).
+  CARCASS: 'Carcass (ranger)',
+  ELEPHANT_SIGHTING: 'Elephant sighting (ranger)',
+  ILLEGAL_ACTIVITY: 'Illegal activity (ranger)',
+  OTHER: 'Other ranger finding',
 });
 
 const REPORT_TYPE_LABELS = Object.freeze({

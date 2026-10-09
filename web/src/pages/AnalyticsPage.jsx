@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { ConflictTrendChart } from '../components/ConflictTrendChart';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { ConflictTypeBars } from '../components/ConflictTypeBars';
 import { ExportDialog } from '../components/ExportDialog';
 import { FilterBar } from '../components/FilterBar';
-import { HotspotMap } from '../components/HotspotMap';
-import { KpiTiles } from '../components/KpiTiles';
-import { ReportInsights } from '../components/ReportInsights';
 import { ReportNotice } from '../components/ReportNotice';
+import { ReportResults } from '../components/ReportResults';
 import { ReportStepper, STEPS } from '../components/ReportStepper';
-import { TopHotspotsTable } from '../components/TopHotspotsTable';
-import { EXPORT_FORMATS } from '../constants';
+import { DEFAULT_EXPORT_SECTIONS, EXPORT_FORMATS, EXPORT_SECTIONS_BY_TYPE } from '../constants';
 import { useExportReport, useGenerateReport, useParks, useSavedReport } from '../hooks/useAnalytics';
 import { defaultFilters, fieldErrors, formatDateRange, widenFilters } from '../utils/analytics';
 import { friendlyError } from '../utils/errors';
@@ -41,7 +36,6 @@ export default function AnalyticsPage() {
   const [setupStep, setSetupStep] = useState(STEPS.TYPE);
   const [dialog, setDialog] = useState({ open: false, format: EXPORT_FORMATS.PDF, key: 0 });
   const [exportFailedFormat, setExportFailedFormat] = useState(null);
-  const [exportedFormat, setExportedFormat] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
   // Opening a saved report shows it with the filters it was built from (adjusted once
@@ -71,7 +65,6 @@ export default function AnalyticsPage() {
 
   const run = (values) => {
     setExportFailedFormat(null);
-    setExportedFormat(null);
     generate.mutate(values, {
       onSuccess: (data) => {
         setResult(data.empty ? { empty: true, filter: data.filter, report: null } : { report: data });
@@ -101,7 +94,6 @@ export default function AnalyticsPage() {
     setEditing(false);
     setSetupStep(STEPS.TYPE);
     setExportFailedFormat(null);
-    setExportedFormat(null);
     generate.reset();
     if (reportId) {
       setDismissedSavedId(reportId);
@@ -116,11 +108,9 @@ export default function AnalyticsPage() {
         onSuccess: () => {
           closeExport();
           setExportFailedFormat(null);
-          setExportedFormat(format);
         },
         onError: () => {
           closeExport();
-          setExportedFormat(null);
           setExportFailedFormat(format);
         },
       },
@@ -243,13 +233,6 @@ export default function AnalyticsPage() {
           testId="notice-export-failed"
         />
       ) : null}
-      {showResults && exportedFormat ? (
-        <ReportNotice
-          tone="info"
-          title={t('analytics.states.exported', { format: exportedFormat })}
-          testId="notice-exported"
-        />
-      ) : null}
 
       {generate.isPending || (reportId && saved.isLoading) ? (
         <p className="page-message" role="status">
@@ -273,18 +256,7 @@ export default function AnalyticsPage() {
 
       {showResults ? (
         <>
-          <div className="results" data-testid="report">
-            <div className="results-main">
-              <ConflictTrendChart trends={report.trends} />
-              <ConflictTypeBars trends={report.trends} />
-              <TopHotspotsTable rows={report.topHotspots} totalIncidents={report.stats.totalIncidents} />
-            </div>
-            <div className="results-side">
-              <KpiTiles stats={report.stats} coverage={report.coverage} />
-              <HotspotMap report={report} />
-              <ReportInsights report={report} />
-            </div>
-          </div>
+          <ReportResults report={report} />
           <div className="page-footer">
             <p className="muted">
               {t('analytics.footer', {
@@ -313,6 +285,7 @@ export default function AnalyticsPage() {
           key={dialog.key}
           open={dialog.open}
           initialFormat={dialog.format}
+          defaultSections={EXPORT_SECTIONS_BY_TYPE[report.filter.reportType] ?? DEFAULT_EXPORT_SECTIONS}
           busy={exporter.isPending}
           onCancel={closeExport}
           onExport={runExport}

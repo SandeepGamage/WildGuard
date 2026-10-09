@@ -1,5 +1,5 @@
 const PDFDocument = require('pdfkit');
-const { EXPORT_SECTIONS, ANALYTICS_RULES } = require('../../constants/domain');
+const { EXPORT_SECTIONS, ANALYTICS_RULES, REPORT_TYPES } = require('../../constants/domain');
 const { typeLabel, monthLabel, kpiRows, reportFileName, REPORT_TYPE_LABELS } = require('./reportText');
 const { project, chooseZoom, TILE_SIZE } = require('./mapTiles');
 
@@ -18,6 +18,27 @@ const CELL_PAD_Y = 4;
 const MAP_MAX_HEIGHT = 330;
 const NUMERIC = /^(?:[-+]?\d[\d,.]*%?|-)$/;
 const OSM_ATTRIBUTION = '© OpenStreetMap contributors';
+
+/**
+ * Conflict chart colours, one per conflict type (categorical slots 1–4 of the reference palette;
+ * they pass the colour-blind and normal-vision separation checks in this order).
+ */
+const CONFLICT_TYPE_COLORS = Object.freeze({
+  ELEPHANT_NEAR_VILLAGE: '#2a78d6',
+  CROP_DAMAGE: '#eb6834',
+  PROPERTY_DAMAGE: '#1baf7a',
+  PERSON_INJURED: '#eda100',
+});
+const CONFLICT_CHART_HEIGHT = 150;
+/** Ranger GPS points on the map: the same orange as the web dashboard, apart from the viridis heat colours. */
+const RANGER_POINT_COLOR = '#eb6834';
+
+/** Round axis step (1, 2, 2.5 or 5 × a power of ten) at least as large as `raw`. */
+function niceStep(raw) {
+  if (raw <= 1) return 1;
+  const power = 10 ** Math.floor(Math.log10(raw));
+  return [1, 2, 2.5, 5, 10].map((m) => m * power).find((candidate) => candidate >= raw);
+}
 
 const printableWidth = (doc) => doc.page.width - PAGE_MARGIN * 2;
 const pageBottom = (doc) => doc.page.height - PAGE_MARGIN - FOOTER_HEIGHT;
@@ -307,6 +328,13 @@ class PdfExporter {
     });
     doc.fillOpacity(1);
 
+    // Where rangers have been (UC1 GPS points), as small orange dots.
+    const patrolPoints = report.patrolPoints ?? [];
+    for (const point of patrolPoints) {
+      const pt = toPt(point.longitude, point.latitude);
+      doc.circle(pt.x, pt.y, 1.8).lineWidth(0.5).fillAndStroke(RANGER_POINT_COLOR, '#ffffff');
+    }
+
     const outline = report.park?.boundary ?? [];
     if (outline.length) {
       const first = toPt(outline[0].longitude, outline[0].latitude);
@@ -362,12 +390,15 @@ class PdfExporter {
       .stroke(BRAND)
       .undash();
     doc.fillColor(INK).text('Park boundary', legendX + 20, legendY, { lineBreak: false });
+    if (patrolPoints.length) {
+      legendX += 28 + doc.widthOfString('Park boundary');
+      doc.circle(legendX + 4, legendY + 4, 3).lineWidth(0.6).fillAndStroke(RANGER_POINT_COLOR, '#ffffff');
+      doc.fillColor(INK).text('Ranger GPS points', legendX + 11, legendY, { lineBreak: false });
+    }
     if (!tiles) {
-      doc
-        .fillColor(MUTED)
-        .text('Basemap unavailable; showing the park outline only.', left, legendY + 12, {
-          lineBreak: false,
-        });
+      doc.fillColor(MUTED).text('Basemap unavailable; showing the park outline only.', left, legendY + 12, {
+        lineBreak: false,
+      });
     }
     doc.x = PAGE_MARGIN;
     doc.y = legendY + (tiles ? 14 : 26);
@@ -441,18 +472,94 @@ class PdfExporter {
   }
 
   #trends(doc, report) {
-    this.#heading(doc, 'Human-wildlife conflict by month');
     const { months, series, totals } = report.trends;
+    const withChart =
+      report.filter.reportType === REPORT_TYPES.HUMAN_WILDLIFE_CONFLICT && totals.some((total) => total > 0);
+    this.#heading(doc, 'Human-wildlife conflict by month', withChart ? CONFLICT_CHART_HEIGHT + 80 : 90);
     if (!months.length) {
       this.#note(doc, 'No months in this period.');
       return;
     }
+    if (withChart) this.#conflictChart(doc, report.trends);
     this.#table(
       doc,
       ['Month', ...series.map((s) => typeLabel(s.type)), 'Total'],
       months.map((month, i) => [monthLabel(month), ...series.map((s) => s.counts[i]), totals[i]]),
       [0.16, ...series.map(() => 0.7 / series.length), 0.14],
     );
+  }
+
+  /**
+   * Stacked columns: one per month, split by conflict type, with the month's total above it.
+   * Colours follow the type (validated categorical palette); a legend names every type and the
+   * table below gives the exact numbers, so colour never carries meaning alone.
+   */
+  #conflictChart(doc, { months, series, totals }) {
+    const axisWidth = 26;
+    const left = PAGE_MARGIN + axisWidth;
+    const plotWidth = printableWidth(doc) - axisWidth;
+
+    // Legend first, one swatch per type.
+    let legendX = PAGE_MARGIN;
+    const legendY = doc.y;
+    doc.font('Helvetica').fontSize(8);
+    for (const s of series) {
+      const label = typeLabel(s.type);
+      doc.rect(legendX, legendY + 1, 10, 7).fill(CONFLICT_TYPE_COLORS[s.type] ?? MUTED);
+      doc.fillColor(INK).text(label, legendX + 14, legendY, { lineBreak: false });
+      legendX += 14 + doc.widthOfString(label) + 16;
+    }
+
+    const top = legendY + 26;
+    const baseline = top + CONFLICT_CHART_HEIGHT;
+    const step = niceStep(Math.max(...totals) / 4);
+    const axisMax = step * Math.max(1, Math.ceil(Math.max(...totals) / step));
+    const yOf = (value) => baseline - (value / axisMax) * CONFLICT_CHART_HEIGHT;
+
+    // Recessive grid with values on the left.
+    doc.fontSize(7.5);
+    for (let value = 0; value <= axisMax; value += step) {
+      const y = yOf(value);
+      doc
+        .moveTo(left, y)
+        .lineTo(left + plotWidth, y)
+        .lineWidth(0.5)
+        .stroke(value === 0 ? INK : RULE);
+      doc
+        .fillColor(MUTED)
+        .text(String(value), PAGE_MARGIN, y - 3.5, { width: axisWidth - 6, align: 'right' });
+    }
+
+    const slot = plotWidth / months.length;
+    const barWidth = Math.min(44, slot * 0.56);
+    months.forEach((month, i) => {
+      const x = left + slot * i + (slot - barWidth) / 2;
+      let y = baseline;
+      const joins = [];
+      for (const s of series) {
+        const height = baseline - yOf(s.counts[i] ?? 0);
+        if (height <= 0) continue;
+        y -= height;
+        doc.rect(x, y, barWidth, height).fill(CONFLICT_TYPE_COLORS[s.type] ?? MUTED);
+        joins.push(y);
+      }
+      // A thin white gap between stacked segments keeps neighbouring colours apart.
+      joins.slice(0, -1).forEach((joinY) => doc.rect(x, joinY - 0.75, barWidth, 1.5).fill('#ffffff'));
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .fillColor(INK)
+        .text(String(totals[i] ?? 0), x - 10, y - 11, { width: barWidth + 20, align: 'center' });
+      doc
+        .font('Helvetica')
+        .fontSize(8)
+        .fillColor(MUTED)
+        .text(monthLabel(month), left + slot * i, baseline + 4, { width: slot, align: 'center' });
+    });
+
+    doc.font('Helvetica');
+    doc.x = PAGE_MARGIN;
+    doc.y = baseline + 22;
   }
 
   #incidentList(doc, report) {
@@ -500,4 +607,4 @@ class PdfExporter {
   }
 }
 
-module.exports = { PdfExporter, VIRIDIS, mapLayout, niceDistance };
+module.exports = { PdfExporter, VIRIDIS, mapLayout, niceDistance, niceStep };

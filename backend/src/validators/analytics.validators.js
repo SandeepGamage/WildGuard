@@ -1,6 +1,11 @@
 const { z } = require('zod');
 const { enumOf } = require('./common');
-const { REPORT_TYPES, INCIDENT_TYPES, EXPORT_FORMATS, EXPORT_SECTIONS } = require('../constants/domain');
+const {
+  REPORT_TYPES,
+  ANALYTICS_INCIDENT_TYPES,
+  EXPORT_FORMATS,
+  EXPORT_SECTIONS,
+} = require('../constants/domain');
 
 /** Calendar date as the manager picked it (YYYY-MM-DD, Sri Lanka time). */
 const isoDate = z.string().refine((value) => {
@@ -15,10 +20,11 @@ const reportBody = z.object({
   dateTo: isoDate,
   parkId: z.string().trim().min(1, 'Choose a park.').max(40),
   reportType: enumOf(REPORT_TYPES).default(REPORT_TYPES.HOTSPOT_MAP),
+  // Community report types and ranger patrol types (UC1).
   incidentTypes: z
-    .array(enumOf(INCIDENT_TYPES))
+    .array(z.enum(ANALYTICS_INCIDENT_TYPES))
     .min(1, 'Choose at least one incident type.')
-    .default(Object.values(INCIDENT_TYPES)),
+    .default([...ANALYTICS_INCIDENT_TYPES]),
   bandwidthMetres: z.number().int().min(100).max(5000).optional(),
 });
 

@@ -22,4 +22,11 @@ class PendingAlertDataSource {
   }
 }
 
-module.exports = { PendingPatrolDataSource, PendingAlertDataSource };
+class PendingTrackPointSource {
+  /** @returns {Promise<{ latitude: number, longitude: number }[]>} */
+  async listPoints(_filter) {
+    return [];
+  }
+}
+
+module.exports = { PendingPatrolDataSource, PendingAlertDataSource, PendingTrackPointSource };

@@ -679,7 +679,26 @@ function createInMemoryRepositories({ villages, profiles, collars = [], sectors 
           .filter((v) => filter.sectorIds.includes(v.sector_id))
           .map((v) => ({ id: v.id, name: v.name_en, latitude: v.latitude, longitude: v.longitude })),
         patrolTracks: state.patrolTracks,
-        patrolIncidents: state.patrolIncidents,
+        patrolIncidents: state.patrolIncidents.filter(
+          (i) => filter.sectorIds.includes(i.sectorId) && inRange(i.occurredAt, filter.dateFrom, filter.dateTo),
+        ),
+        previousPatrolIncidents: state.patrolIncidents.filter(
+          (i) =>
+            filter.sectorIds.includes(i.sectorId) &&
+            inRange(i.occurredAt, filter.previousFrom, filter.dateFrom),
+        ),
+        patrolTrackPoints: filter.bounds
+          ? state.patrolTrackPoints
+              .filter(
+                (p) =>
+                  inRange(p.recordedAt, filter.dateFrom, filter.dateTo) &&
+                  p.latitude >= filter.bounds.minLat &&
+                  p.latitude <= filter.bounds.maxLat &&
+                  p.longitude >= filter.bounds.minLng &&
+                  p.longitude <= filter.bounds.maxLng,
+              )
+              .map((p) => ({ latitude: p.latitude, longitude: p.longitude }))
+          : [],
         collarAlerts: state.collarAlerts,
       };
     },

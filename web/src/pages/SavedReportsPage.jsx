@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { FolderIcon, SortIcon } from '../components/Icons';
+import { ReportDialog } from '../components/ReportDialog';
 import { ReportNotice } from '../components/ReportNotice';
 import { SortMenu } from '../components/SortMenu';
-import { ROUTES } from '../constants';
 import { useSavedReports } from '../hooks/useAnalytics';
 import {
   DEFAULT_SAVED_SORT,
@@ -42,11 +43,12 @@ function SortableHeader({ column, label, sort, onSort, className }) {
   );
 }
 
-/** Reports this manager generated earlier. Opening one shows it on the dashboard, ready to export again. */
+/** Reports this manager generated earlier. Open shows one in a pop-up with its results, ready to export again. */
 export default function SavedReportsPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const reports = useSavedReports();
+  const [openId, setOpenId] = useState(null);
   const sort = readSort(searchParams);
   const items = sortSavedReports(reports.data ?? [], sort, (type) => t(`analytics.reportTypes.${type}`));
 
@@ -131,15 +133,22 @@ export default function SavedReportsPage() {
                 <td className="num">{item.totalIncidents}</td>
                 <td className="muted">{new Date(item.generatedAt).toLocaleString()}</td>
                 <td>
-                  <Link className="btn btn-secondary btn-small" to={ROUTES.report(item.id)}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    onClick={() => setOpenId(item.id)}
+                    data-report-id={item.id}
+                  >
                     {t('analytics.saved.open')}
-                  </Link>
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : null}
+
+      <ReportDialog reportId={openId} onClose={() => setOpenId(null)} />
     </main>
   );
 }

@@ -1,13 +1,16 @@
 const { randomUUID } = require('node:crypto');
 const { serviceUnavailable } = require('../errors/AppError');
-const { ANALYTICS_RULES, INCIDENT_TYPES } = require('../constants/domain');
-const { distanceM } = require('../utils/geo');
+const { ANALYTICS_INCIDENT_TYPES, ANALYTICS_RULES, INCIDENT_TYPES } = require('../constants/domain');
+const { boundingBox, distanceM } = require('../utils/geo');
 const { DAY_MS, MINUTE_MS } = require('../utils/time');
 
 /** Months are bucketed in Sri Lanka time (UTC+05:30). */
 const LOCAL_OFFSET_MS = 330 * MINUTE_MS;
 /** An incident is named after a village when it lies within this distance. */
 const HOTSPOT_VILLAGE_RADIUS_M = 3000;
+/** Ranger GPS points are thinned to one per grid cell of about this size, and capped. */
+const PATROL_POINT_GRID_M = 25;
+const MAX_PATROL_POINTS = 2000;
 
 const monthKey = (date) => new Date(new Date(date).getTime() + LOCAL_OFFSET_MS).toISOString().slice(0, 7);
 
@@ -37,12 +40,15 @@ const countBy = (items, keyOf) =>
 
 /**
  * Step 16 (Fig 19): totals by type, sector and month, with the previous-period comparison.
+ * Incidents are verified community reports plus the incidents rangers log on patrol (UC1).
+ * `previousPeriodCount` already includes both (see buildReport).
  * @param {object} dataset AnalyticsDataset from the repository.
  * @param {{ id: string, name: string }[]} sectors
  * @param {string[]} months
  */
 function aggregateIncidents(dataset, sectors, months) {
-  const incidents = [...dataset.communityIncidents, ...dataset.patrolIncidents];
+  const patrolIncidents = dataset.patrolIncidents ?? [];
+  const incidents = [...dataset.communityIncidents, ...patrolIncidents];
   const total = incidents.length;
   const previous = dataset.previousPeriodCount;
   const byTypeCounts = countBy(incidents, (i) => i.incidentType);
@@ -52,20 +58,60 @@ function aggregateIncidents(dataset, sectors, months) {
     totalIncidents: total,
     previousPeriodTotal: previous,
     changePercent: previous > 0 ? Math.round(((total - previous) / previous) * 100) : null,
-    byType: Object.values(INCIDENT_TYPES)
-      .map((type) => ({ type, count: byTypeCounts[type] ?? 0 }))
-      .filter((row) => row.count > 0),
+    byType: ANALYTICS_INCIDENT_TYPES.map((type) => ({ type, count: byTypeCounts[type] ?? 0 })).filter(
+      (row) => row.count > 0,
+    ),
     bySector: sectors.map((s) => ({ sectorId: s.id, name: s.name, count: bySectorCounts[s.id] ?? 0 })),
     byMonth: months.map((month) => ({ month, count: byMonthCounts[month] ?? 0 })),
     communityReports: {
       received: dataset.receivedCommunityReports,
       verified: dataset.communityIncidents.length,
     },
-    patrolIncidents: dataset.patrolIncidents.length,
+    patrolIncidents: patrolIncidents.length,
     collarAlerts: dataset.collarAlerts.length,
     conflictEvents: incidents.filter((i) => ANALYTICS_RULES.CONFLICT_TYPES.includes(i.incidentType)).length,
     injuries: byTypeCounts[INCIDENT_TYPES.PERSON_INJURED] ?? 0,
   };
+}
+
+/** Ray casting: is the point inside the polygon (park outline)? */
+function insidePolygon({ latitude, longitude }, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const a = polygon[i];
+    const b = polygon[j];
+    const crosses =
+      a.latitude > latitude !== b.latitude > latitude &&
+      longitude <
+        ((b.longitude - a.longitude) * (latitude - a.latitude)) / (b.latitude - a.latitude) + a.longitude;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Where rangers have been: GPS points inside the park, thinned to one per ~25 m cell so a
+ * long patrol does not flood the map or the saved report. Positions only, no ids.
+ * @param {{ latitude: number, longitude: number }[]} points
+ * @param {{ latitude: number, longitude: number }[]} boundary Park outline (empty = keep all).
+ */
+function thinPatrolPoints(points, boundary = []) {
+  const cellDeg = PATROL_POINT_GRID_M / 111320;
+  const seen = new Set();
+  const kept = [];
+  for (const point of points) {
+    if (!Number.isFinite(point.latitude) || !Number.isFinite(point.longitude)) continue;
+    if (boundary.length >= 3 && !insidePolygon(point, boundary)) continue;
+    const key = `${Math.round(point.latitude / cellDeg)}:${Math.round(point.longitude / cellDeg)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push({
+      latitude: Math.round(point.latitude * 1e5) / 1e5,
+      longitude: Math.round(point.longitude * 1e5) / 1e5,
+    });
+    if (kept.length >= MAX_PATROL_POINTS) break;
+  }
+  return kept;
 }
 
 /**
@@ -194,9 +240,18 @@ class AnalyticsReportService {
       previousFrom: new Date(dateFrom.getTime() - (dateTo.getTime() - dateFrom.getTime())),
       incidentTypes: filter.incidentTypes,
       sectorIds: sectors.map((s) => s.id),
+      bounds: park.boundary?.length ? boundingBox(park.boundary) : null,
     });
 
-    const incidents = [...dataset.communityIncidents, ...dataset.patrolIncidents];
+    // Ranger patrol incidents (UC1) follow the same incident-type filter as community reports.
+    const ofChosenType = (list) => (list ?? []).filter((i) => filter.incidentTypes.includes(i.incidentType));
+    const patrolIncidents = ofChosenType(dataset.patrolIncidents);
+    const counted = {
+      ...dataset,
+      patrolIncidents,
+      previousPeriodCount: dataset.previousPeriodCount + ofChosenType(dataset.previousPatrolIncidents).length,
+    };
+    const incidents = [...dataset.communityIncidents, ...patrolIncidents];
     if (incidents.length === 0 && dataset.collarAlerts.length === 0 && dataset.patrolTracks.length === 0) {
       return { empty: true, filter: filter.label };
     }
@@ -212,11 +267,12 @@ class AnalyticsReportService {
       createdBy,
       generatedAt: this.clock(),
       filter: filter.label,
-      stats: aggregateIncidents(dataset, sectors, months),
+      stats: aggregateIncidents(counted, sectors, months),
       trends: computeConflictTrends(incidents, months),
       coverage: computePatrolCoverage(dataset.patrolTracks, sectors, dateTo),
       heatmap: this.hotspotCalculator.calculateSpatialHotspots(points, filter.bandwidthMetres, park.boundary),
       topHotspots: findTopHotspots(incidents, dataset.villages, sectors),
+      patrolPoints: thinPatrolPoints(dataset.patrolTrackPoints ?? [], park.boundary ?? []),
       // Village names and positions, used as map labels.
       landmarks: dataset.villages.map((v) => ({
         name: v.name,
@@ -255,6 +311,7 @@ class AnalyticsReportService {
 
 module.exports = {
   AnalyticsReportService,
+  thinPatrolPoints,
   aggregateIncidents,
   computeConflictTrends,
   computePatrolCoverage,

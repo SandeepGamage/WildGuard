@@ -23,6 +23,7 @@ function presentReport(report, park) {
     heatmap: report.heatmap,
     topHotspots: report.topHotspots,
     landmarks: report.landmarks ?? [],
+    patrolPoints: report.patrolPoints ?? [],
   };
 }
 

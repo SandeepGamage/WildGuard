@@ -6,9 +6,10 @@ const {
   findTopHotspots,
   monthsBetween,
   monthKey,
+  thinPatrolPoints,
 } = require('../src/services/analyticsReport.service');
 const { CsvExporter, csvField } = require('../src/services/export/csv.exporter');
-const { PdfExporter, mapLayout, niceDistance } = require('../src/services/export/pdf.exporter');
+const { PdfExporter, mapLayout, niceDistance, niceStep } = require('../src/services/export/pdf.exporter');
 const { MapTileSource, project, chooseZoom, tileRange } = require('../src/services/export/mapTiles');
 const { loadConfig } = require('../src/config/env');
 const { ExportEngine } = require('../src/services/export/exportEngine');
@@ -120,29 +121,35 @@ describe('report aggregation', () => {
         incident({ incidentType: 'PERSON_INJURED', occurredAt: new Date('2026-08-02T06:00:00Z') }),
         incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' }),
       ],
-      patrolIncidents: [incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' })],
+      patrolIncidents: [
+        incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' }),
+        incident({ incidentType: 'CARCASS', sectorId: 's4' }),
+      ],
       collarAlerts: [{}],
       receivedCommunityReports: 5,
       previousPeriodCount: 2,
     };
+    // Ranger patrol incidents count with the community reports, ranger-only types included.
     const stats = aggregateIncidents(dataset, SECTORS, ['2026-07', '2026-08']);
-    expect(stats.totalIncidents).toBe(4);
-    expect(stats.changePercent).toBe(100);
+    expect(stats.totalIncidents).toBe(5);
+    expect(stats.changePercent).toBe(150);
     expect(stats.byType).toEqual([
       { type: 'CROP_DAMAGE', count: 1 },
       { type: 'PERSON_INJURED', count: 1 },
       { type: 'SNARE_POACHING', count: 2 },
+      { type: 'CARCASS', count: 1 },
     ]);
     expect(stats.bySector).toEqual([
       { sectorId: 's3', name: 'Sector 3', count: 2 },
-      { sectorId: 's4', name: 'Sector 4', count: 2 },
+      { sectorId: 's4', name: 'Sector 4', count: 3 },
     ]);
     expect(stats.byMonth).toEqual([
-      { month: '2026-07', count: 3 },
+      { month: '2026-07', count: 4 },
       { month: '2026-08', count: 1 },
     ]);
     expect(stats.communityReports).toEqual({ received: 5, verified: 3 });
-    expect(stats).toMatchObject({ patrolIncidents: 1, collarAlerts: 1, conflictEvents: 2, injuries: 1 });
+    // Carcasses and snares are not human–elephant conflict.
+    expect(stats).toMatchObject({ patrolIncidents: 2, collarAlerts: 1, conflictEvents: 2, injuries: 1 });
   });
 
   it('has no change percentage when the previous period was empty', () => {
@@ -390,6 +397,46 @@ describe('PDF exporter', () => {
     expect(niceDistance(999)).toBe(500);
     expect(niceDistance(50)).toBe(100);
   });
+
+  it('adds the conflict chart only to human-wildlife conflict reports', async () => {
+    const trends = {
+      months: ['2026-07', '2026-08', '2026-09'],
+      series: [
+        { type: 'ELEPHANT_NEAR_VILLAGE', counts: [7, 8, 14] },
+        { type: 'CROP_DAMAGE', counts: [10, 16, 17] },
+        { type: 'PROPERTY_DAMAGE', counts: [6, 5, 5] },
+        { type: 'PERSON_INJURED', counts: [1, 0, 3] },
+      ],
+      totals: [24, 29, 39],
+    };
+    const exportAs = async (reportType, reportTrends = trends) => {
+      const base = sampleReport();
+      const report = { ...base, trends: reportTrends, filter: { ...base.filter, reportType } };
+      return (await new PdfExporter().export(report, [EXPORT_SECTIONS.CONFLICT_TRENDS])).content.length;
+    };
+    const conflict = await exportAs('HUMAN_WILDLIFE_CONFLICT');
+    const hotspot = await exportAs('HOTSPOT_MAP');
+    // The chart adds a legend, grid, columns and labels on top of the same table.
+    expect(conflict).toBeGreaterThan(hotspot + 400);
+
+    // No chart when nothing happened (the few bytes left are the different report type in the header).
+    const empty = {
+      ...trends,
+      series: trends.series.map((s) => ({ ...s, counts: [0, 0, 0] })),
+      totals: [0, 0, 0],
+    };
+    const emptyConflict = await exportAs('HUMAN_WILDLIFE_CONFLICT', empty);
+    expect(Math.abs(emptyConflict - (await exportAs('HOTSPOT_MAP', empty)))).toBeLessThan(50);
+  });
+
+  it('picks round axis steps for the conflict chart', () => {
+    expect(niceStep(0.5)).toBe(1);
+    expect(niceStep(9.75)).toBe(10);
+    expect(niceStep(7)).toBe(10);
+    expect(niceStep(12)).toBe(20);
+    expect(niceStep(22)).toBe(25);
+    expect(niceStep(240)).toBe(250);
+  });
 });
 
 describe('map tiles', () => {
@@ -480,6 +527,37 @@ describe('pending UC1/UC2 data sources', () => {
     expect(await patrol.listTracks({})).toEqual([]);
     expect(await patrol.listIncidents({})).toEqual([]);
     expect(await new PendingAlertDataSource().listAlerts({})).toEqual([]);
+  });
+});
+
+describe('ranger GPS points for the map', () => {
+  const PARK = [
+    { latitude: 6.2, longitude: 81.2 },
+    { latitude: 6.4, longitude: 81.2 },
+    { latitude: 6.4, longitude: 81.4 },
+    { latitude: 6.2, longitude: 81.4 },
+  ];
+
+  it('keeps one point per ~25 m cell, inside the park, rounded, with no ids', () => {
+    const points = thinPatrolPoints(
+      [
+        { latitude: 6.3, longitude: 81.3, id: 'a', rangerId: 'r1' },
+        { latitude: 6.30005, longitude: 81.30005 }, // ~8 m away: same cell
+        { latitude: 6.3009, longitude: 81.3 }, // ~100 m away: new cell
+        { latitude: 6.5, longitude: 81.3 }, // outside the park
+        { latitude: Number.NaN, longitude: 81.3 },
+      ],
+      PARK,
+    );
+    expect(points).toEqual([
+      { latitude: 6.3, longitude: 81.3 },
+      { latitude: 6.3009, longitude: 81.3 },
+    ]);
+  });
+
+  it('caps a very long patrol', () => {
+    const many = Array.from({ length: 5000 }, (_, i) => ({ latitude: 6.21 + i * 0.0003, longitude: 81.3 }));
+    expect(thinPatrolPoints(many, []).length).toBe(2000);
   });
 });
 
