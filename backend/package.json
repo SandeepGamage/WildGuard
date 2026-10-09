@@ -1,0 +1,50 @@
+{
+  "name": "wildguard-lk-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/server.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.10.4",
+    "pdfkit": "^0.20.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "jest": "^30.5.2",
+    "prettier": "^3.9.9",
+    "supertest": "^7.3.1"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "seed:demo": "node scripts/seed-demo.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js",
+      "!src/config/supabase.js",
+      "!src/repositories/**"
+    ],
+    "coverageDirectory": "coverage"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

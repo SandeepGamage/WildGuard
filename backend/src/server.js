@@ -1,0 +1,74 @@
+const dns = require('dns');
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch (_) {}
+require('dotenv').config({ quiet: true });
+
+const { loadConfig } = require('./config/env');
+const { createMongoDependencies } = require('./config/mongo');
+const { disconnectMongo } = require('./config/database');
+const { Village } = require('./models/mongo/schemas');
+const { seedReferenceData } = require('../scripts/seed-mongo');
+const { buildServices } = require('./container');
+const { createApp } = require('./app');
+const { createLogger } = require('./utils/logger');
+
+const config = loadConfig();
+const logger = createLogger(config.logLevel);
+
+async function start() {
+  try {
+    const { repositories, authGateway } = await createMongoDependencies({ config, logger });
+
+    // Auto-seed initial reference data and demo accounts if empty
+    try {
+      const { User } = require('./models/mongo/schemas');
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        logger.info('Initializing MongoDB with demo accounts & reference data...');
+        const { seedMongo } = require('../scripts/seed-mongo');
+        await seedMongo(config, logger);
+        logger.info('MongoDB database initialized with demo accounts.');
+      }
+    } catch (seedErr) {
+      logger.warn('Could not verify/seed initial database data', { message: seedErr.message });
+    }
+
+    const services = buildServices({ config, logger, repositories, authGateway });
+    const app = createApp({ config, services, logger });
+
+    const server = app.listen(config.port, '0.0.0.0', () => {
+      logger.info('WildGuard LK API listening with MongoDB data storage', {
+        port: config.port,
+        env: config.nodeEnv,
+        database: 'MongoDB',
+        photoStorage: 'Supabase Storage',
+        smsSimulator: config.smsSimulatorEnabled,
+      });
+    });
+
+    const shutdown = async () => {
+      logger.info('Shutting down API server...');
+      services.pendingQueue.stop();
+      await disconnectMongo();
+      server.close(() => process.exit(0));
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+  } catch (error) {
+    if (
+      error.message?.includes('ECONNREFUSED') ||
+      error.message?.includes('querySrv') ||
+      error.name === 'MongooseServerSelectionError'
+    ) {
+      logger.error('Could not connect to MongoDB database', {
+        message: error.message,
+        hint: 'Please set MONGODB_URI in backend/.env to your MongoDB Atlas connection string (e.g. mongodb+srv://<user>:<password>@cluster.mongodb.net/wildguard).',
+      });
+    } else {
+      logger.error('Failed to start the API', { message: error.message, stack: error.stack });
+    }
+    process.exit(1);
+  }
+}
+
+start();
