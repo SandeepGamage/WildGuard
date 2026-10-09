@@ -94,6 +94,19 @@ class MongoCollarRepository {
   }
 
   async setSignalLost(collarId, isLost = true) {
+    let device = await CollarDevice.findOne({ code: collarId });
+    if (!device) {
+      device = await CollarDevice.create({
+        id: require('node:crypto').randomUUID(),
+        code: collarId,
+        name: 'Collared animal ' + collarId,
+        latitude: 6.3028,
+        longitude: 81.3703,
+        signal_lost: isLost,
+        is_active: true,
+      });
+      return device.toObject();
+    }
     await CollarDevice.updateOne(
       { code: collarId },
       { $set: { signal_lost: isLost } }
@@ -203,6 +216,9 @@ class MongoCollarRepository {
       },
     ];
 
+    const dispatch = alertData.dispatch || null;
+    const villageSms = alertData.villageSms || null;
+
     const doc = await CollarAlert.create({
       id: alertData.id,
       alert_reference: alertData.alertReference,
@@ -210,15 +226,27 @@ class MongoCollarRepository {
       animal_label: alertData.animalLabel,
       latitude: alertData.latitude,
       longitude: alertData.longitude,
+      location: {
+        type: 'Point',
+        coordinates: [alertData.longitude || 0, alertData.latitude || 0],
+      },
       zone_id: alertData.zoneId,
       zone_name: alertData.zoneName,
       severity: alertData.severity,
+      threat_level: alertData.severity || 'CRITICAL',
       proximity: alertData.proximity || 'INSIDE',
       status: alertData.status || ALERT_STATUS.RAISED,
       status_timeline: initialTimeline,
-      dispatch: alertData.dispatch || null,
-      village_sms: alertData.villageSms || null,
+      timeline: initialTimeline,
+      dispatch: dispatch,
+      assigned_responder_id: dispatch ? dispatch.responder_id : null,
+      assigned_responder_name: dispatch ? dispatch.responder_name : null,
+      dispatched_at: dispatch ? dispatch.dispatched_at : null,
+      village_sms: villageSms,
+      village_warning_broadcast: villageSms ? Boolean(villageSms.sent) : false,
+      acoustic_alarm_triggered: true,
       triggered_at: alertData.triggeredAt || new Date(),
+      raised_at: alertData.triggeredAt || new Date(),
     });
     return doc.toObject();
   }
@@ -256,13 +284,20 @@ class MongoCollarRepository {
     };
 
     if (statusData.timelineEntry) {
-      update.$push = { status_timeline: statusData.timelineEntry };
+      update.$push = {
+        status_timeline: statusData.timelineEntry,
+        timeline: statusData.timelineEntry,
+      };
     }
     if (statusData.dispatch) {
       update.$set.dispatch = statusData.dispatch;
+      update.$set.assigned_responder_id = statusData.dispatch.responder_id;
+      update.$set.assigned_responder_name = statusData.dispatch.responder_name;
+      update.$set.dispatched_at = statusData.dispatch.dispatched_at;
     }
     if (statusData.villageSms) {
       update.$set.village_sms = statusData.villageSms;
+      update.$set.village_warning_broadcast = Boolean(statusData.villageSms.sent);
     }
 
     const doc = await CollarAlert.findOneAndUpdate({ id: alertId }, update, { new: true }).lean();
@@ -282,6 +317,7 @@ class MongoCollarRepository {
 
   async recordTelemetryLog(logData) {
     await CollarTelemetryLog.create({
+      id: logData.id || require('node:crypto').randomUUID(),
       collar_id: logData.collarId,
       latitude: logData.latitude,
       longitude: logData.longitude,
@@ -295,9 +331,13 @@ class MongoCollarRepository {
     const doc = await CameraTrapReview.create({
       id: data.id,
       trap_id: data.trapId,
+      camera_id: data.trapId || 'TRAP-01',
+      location_name: data.locationName || 'Yala Buffer Zone',
       image_url: data.imageUrl,
-      ai_species: data.aiSpecies,
-      ai_confidence: data.aiConfidence,
+      ai_species: data.aiSpecies || 'Elephant',
+      detected_species: data.aiSpecies || 'Elephant',
+      ai_confidence: data.aiConfidence !== undefined ? data.aiConfidence : 0.75,
+      confidence_score: data.aiConfidence !== undefined ? data.aiConfidence : 0.75,
       ai_threat: Boolean(data.aiThreat),
       status: data.status || 'PENDING_REVIEW',
       latitude: data.latitude,
@@ -322,7 +362,9 @@ class MongoCollarRepository {
         $set: {
           status: data.status,
           reviewed_by: data.reviewedBy,
+          reviewer_officer_id: data.reviewedBy,
           reviewed_at: data.reviewedAt || new Date(),
+          notes: data.notes || '',
         },
       },
       { new: true },

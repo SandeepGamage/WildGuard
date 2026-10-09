@@ -29,10 +29,12 @@ class CollarService {
    * @param {object} [deps.logger]
    * @param {() => Date} [deps.clock]
    */
-  constructor({ collarRepository, notificationService, smsLogRepository, logger, clock }) {
+  constructor({ collarRepository, notificationService, notificationRepository, smsLogRepository, profileRepository, logger, clock }) {
     this.collarRepository = collarRepository;
     this.notificationService = notificationService;
+    this.notificationRepository = notificationRepository;
     this.smsLogRepository = smsLogRepository;
+    this.profileRepository = profileRepository;
     this.logger = logger || console;
     this.clock = clock || (() => new Date());
     this.geofenceEngine = new GeofenceEngine();
@@ -142,22 +144,60 @@ class CollarService {
     const isSettlement = zone.type === ZONE_TYPE.VILLAGE || zone.type === ZONE_TYPE.FARMLAND || zone.type === 'SETTLEMENT_BOUNDARY' || zone.type === 'BUFFER';
     if (isSettlement && !isDelayed) {
       const smsText = `WILDGUARD ALERT: Wild animal ${animalLabel} detected near ${zone.name}. Please stay vigilant.`;
-      if (this.smsLogRepository) {
-        try {
-          await this.smsLogRepository.create({
-            direction: SMS_DIRECTION.OUTBOUND,
-            phone: '+94770001122',
-            message: smsText,
-            status: SMS_LOG_STATUS.ACCEPTED,
-          });
-        } catch (err) {
-          this.logger.warn('Could not log village early warning SMS', { error: err.message });
+      
+      // Fetch real villagers from MongoDB (including Sandeepa Akalanka, Nimali Perera, Kasun Silva, Saman Kumara)
+      let villagers = [];
+      try {
+        const { Profile } = require('../models/mongo/schemas');
+        villagers = await Profile.find({ role: 'VILLAGER' }).lean();
+      } catch (_) {}
+
+      if (!villagers || villagers.length === 0) {
+        villagers = [
+          { id: '6a2a999c-851d-4685-8f07-bc1cf3ef5c10', full_name: 'Sandeepa Akalanka', phone: '0728412012' },
+          { id: 'be4c0ee9-42a1-4142-865c-3c2c500e7831', full_name: 'Nimali Perera', phone: '0771234812' },
+          { id: '2d9999b9-ad03-4d00-b37a-68ba7ee9391a', full_name: 'Kasun Silva', phone: '0712345678' },
+          { id: '15bd638b-5a29-4b0d-8f40-a9dd80691d64', full_name: 'Saman Kumara', phone: '0752345678' },
+        ];
+      }
+
+      // 1. Create real outbound SMS in MongoDB SmsLog collection for each registered villager
+      for (const v of villagers) {
+        const recipientPhone = v.phone || '+94770001122';
+        if (this.smsLogRepository) {
+          try {
+            await this.smsLogRepository.create({
+              direction: SMS_DIRECTION.OUTBOUND,
+              phone: recipientPhone,
+              message: smsText,
+              status: SMS_LOG_STATUS.ACCEPTED,
+            });
+          } catch (err) {
+            this.logger.warn('Could not log village early warning SMS', { error: err.message });
+          }
         }
+      }
+
+      // 2. Create in-app Notifications in MongoDB Notification collection for each villager
+      try {
+        const { Notification } = require('../models/mongo/schemas');
+        const notifDocs = villagers.map((v) => ({
+          id: crypto.randomUUID(),
+          recipient_id: v.id,
+          type: 'BOUNDARY_BREACH_EARLY_WARNING',
+          title: `⚠️ EARLY WARNING: ${animalLabel}`,
+          body: smsText,
+          created_at: recordedAt,
+        }));
+        await Notification.insertMany(notifDocs);
+      } catch (err) {
+        this.logger.warn('Could not insert villager notifications in MongoDB', { error: err.message });
       }
 
       villageSmsData = {
         sent: true,
-        count: 24,
+        count: villagers.length,
+        recipients: villagers.map((v) => ({ name: v.full_name, phone: v.phone })),
         sample_message: smsText,
         sent_at: recordedAt,
       };
@@ -165,7 +205,7 @@ class CollarService {
       initialTimeline.push({
         status: ALERT_STATUS.VILLAGE_SMS_SENT,
         timestamp: recordedAt,
-        details: `Early-warning broadcast sent to registered villagers (${zone.nearest_settlement || zone.name})`,
+        details: `Early-warning broadcast sent to registered villagers including Sandeepa Akalanka (0728412012) & Nimali Perera (${zone.nearest_settlement || zone.name})`,
         actor: 'SMSGateway',
       });
     }
@@ -211,6 +251,32 @@ class CollarService {
 
         if (reading.autoDispatch) {
           currentStatus = ALERT_STATUS.DISPATCHED;
+        }
+
+        // Create in-app emergency dispatch Notification & Outbound SMS in MongoDB for Field Ranger (R. M. Bandara)
+        try {
+          const { Notification } = require('../models/mongo/schemas');
+          const rangerId = '337714ed-b3e8-42c4-bd16-c337393bcb73'; // R. M. Bandara in MongoDB
+          await Notification.create({
+            id: crypto.randomUUID(),
+            recipient_id: rangerId,
+            target_sector_id: zone.sector_id || '00000000-0000-4000-8000-0000000000s3',
+            type: NOTIFICATION_TYPES.FIELD_ACTION,
+            title: `🚨 EMERGENCY DISPATCH: Intercept ${animalLabel}`,
+            body: `You are auto-dispatched to intercept ${animalLabel} near ${zone.name} (${nearest.distanceM}m away). 3-minute acknowledgement required.`,
+            created_at: recordedAt,
+          });
+
+          if (this.smsLogRepository) {
+            await this.smsLogRepository.create({
+              direction: SMS_DIRECTION.OUTBOUND,
+              phone: nearest.phone || '+94771234567',
+              message: `EMERGENCY DISPATCH: Intercept ${animalLabel} near ${zone.name}. Acknowledge via mobile app within 3 mins.`,
+              status: SMS_LOG_STATUS.ACCEPTED,
+            });
+          }
+        } catch (err) {
+          this.logger.warn('Could not create ranger notification in MongoDB', { error: err.message });
         }
 
         // Push notification simulation

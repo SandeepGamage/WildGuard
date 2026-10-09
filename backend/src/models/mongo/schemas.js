@@ -10,7 +10,7 @@ const UserSchema = new Schema(
     role: {
       type: String,
       required: true,
-      enum: ['VILLAGER', 'COMMUNITY_LIAISON_OFFICER', 'FIELD_RANGER', 'PARK_MANAGER'],
+      enum: ['VILLAGER', 'COMMUNITY_LIAISON_OFFICER', 'FIELD_RANGER', 'PARK_MANAGER', 'OPERATIONS_OFFICER'],
     },
     full_name: { type: String, required: true },
     is_active: { type: Boolean, default: true },
@@ -251,7 +251,7 @@ const CollarAlertSchema = new Schema(
     audit_trail: { type: [Schema.Types.Mixed], default: [] },
     raised_at: { type: Date, default: Date.now, index: true },
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, strict: false }
 );
 
 /**
@@ -260,27 +260,33 @@ const CollarAlertSchema = new Schema(
 const CameraTrapReviewSchema = new Schema(
   {
     id: { type: String, required: true, unique: true },
-    camera_id: { type: String, required: true },
-    location_name: { type: String, required: true },
+    trap_id: { type: String },
+    camera_id: { type: String, default: 'TRAP-01' },
+    location_name: { type: String, default: 'Yala Buffer Zone' },
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
-    image_url: { type: String, required: true },
+    image_url: { type: String, default: '' },
+    ai_species: { type: String, default: 'Elephant' },
     detected_species: { type: String, default: 'Elephant' },
-    confidence_score: { type: Number, required: true },
-    status: { type: String, enum: ['PENDING_REVIEW', 'VERIFIED_THREAT', 'DISMISSED_NOISE'], default: 'PENDING_REVIEW' },
+    ai_confidence: { type: Number, default: 0.75 },
+    confidence_score: { type: Number, default: 0.75 },
+    ai_threat: { type: Boolean, default: true },
+    status: { type: String, default: 'PENDING_REVIEW' },
+    reviewed_by: { type: String, default: null },
     reviewer_officer_id: { type: String, default: null },
     reviewed_at: { type: Date, default: null },
+    notes: { type: String, default: '' },
     alert_generated_id: { type: String, default: null },
     captured_at: { type: Date, default: Date.now },
   },
-  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, strict: false }
 );
 
 /**
  * UC2 CollarTelemetryLog: raw historical GPS tracking logs.
  */
 const CollarTelemetryLogSchema = new Schema({
-  id: { type: String, required: true, unique: true },
+  id: { type: String, default: () => require('node:crypto').randomUUID() },
   collar_id: { type: String, required: true, index: true },
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },

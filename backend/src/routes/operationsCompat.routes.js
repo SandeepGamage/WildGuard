@@ -183,19 +183,40 @@ function createOperationsCompatRouter({ services }) {
   router.get('/alerts/:ref', async (req, res) => {
     try {
       const alerts = await collarService.listActiveAlerts();
-      const found = alerts.find((a) => (a.alert_reference === req.params.ref || a.reference === req.params.ref || a.id === req.params.ref));
+      const found = alerts.find((a) => (
+        a.alert_reference === req.params.ref ||
+        a.reference === req.params.ref ||
+        a.id === req.params.ref ||
+        (a.alert_reference && a.alert_reference.toLowerCase() === req.params.ref.toLowerCase()) ||
+        (a.id && a.id.toLowerCase() === req.params.ref.toLowerCase())
+      ));
       if (!found) return res.status(404).json({ error: 'Alert not found' });
+
+      let lat = 6.2994;
+      let lng = 81.3703;
+      if (found.location && Array.isArray(found.location.coordinates) && found.location.coordinates.length >= 2) {
+        lng = found.location.coordinates[0];
+        lat = found.location.coordinates[1];
+      } else if (found.location && typeof found.location.latitude === 'number' && !isNaN(found.location.latitude)) {
+        lat = found.location.latitude;
+        lng = found.location.longitude;
+      } else if (typeof found.latitude === 'number' && !isNaN(found.latitude)) {
+        lat = found.latitude;
+        lng = found.longitude;
+      }
+
       const alertObj = {
-        alertReference: found.alert_reference || found.reference || 'ALT-0001',
-        alert_reference: found.alert_reference || found.reference || 'ALT-0001',
-        collarId: found.collar_id || found.collarId,
-        animalLabel: found.animal_label || found.animalLabel || 'Collared Animal',
+        id: found.id,
+        alertReference: found.alert_reference || found.reference || req.params.ref,
+        alert_reference: found.alert_reference || found.reference || req.params.ref,
+        collarId: found.collar_id || found.collarId || 'COL-402',
+        animalLabel: found.animal_label || found.animalLabel || 'Elephant E-402 (Rambo)',
         zoneName: found.zone_name || found.zoneName || 'Palatupana Farmland & Paddy Perimeter',
-        status: found.status || 'RAISED',
-        severity: found.severity || 'CRITICAL',
+        status: found.status || 'ACTIVE',
+        severity: found.severity || found.threat_level || 'CRITICAL',
         location: {
-          latitude: (found.location && found.location.coordinates) ? found.location.coordinates[1] : (found.location ? found.location.latitude : 6.2994),
-          longitude: (found.location && found.location.coordinates) ? found.location.coordinates[0] : (found.location ? found.location.longitude : 81.3703),
+          latitude: Number(lat),
+          longitude: Number(lng),
         },
       };
       res.json({
