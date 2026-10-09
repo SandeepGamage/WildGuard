@@ -31,6 +31,7 @@ export const ROUTES = {
     active: '/active-patrol',
     logIncident: '/log-incident',
     summary: '/patrol-summary',
+    history: '/patrol-history',
   },
 
   demo: { smsSimulator: '/sms-simulator' },

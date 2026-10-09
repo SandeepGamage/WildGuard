@@ -146,14 +146,35 @@ export const patrolRepository = {
   },
 
   async getLatestCompletedSession(rangerId) {
+    return (await this.listCompletedSessions(rangerId))[0] ?? null;
+  },
+
+  /** Finished patrols, newest first. */
+  async listCompletedSessions(rangerId) {
     const db = await openDatabase();
-    return toSession(
-      await db.getFirstAsync(
-        'SELECT * FROM patrol_sessions WHERE ranger_id = ? AND status = ? ORDER BY started_at DESC',
-        rangerId,
-        PATROL_STATUS.COMPLETED,
-      ),
+    const rows = await db.getAllAsync(
+      'SELECT * FROM patrol_sessions WHERE ranger_id = ? AND status = ? ORDER BY started_at DESC',
+      rangerId,
+      PATROL_STATUS.COMPLETED,
     );
+    return rows.map(toSession);
+  },
+
+  /** Items of one patrol that the server has not acknowledged yet. */
+  async countPendingForSession(sessionId) {
+    const db = await openDatabase();
+    const row = await db.getFirstAsync(
+      `SELECT
+         (SELECT COUNT(*) FROM patrol_track_points WHERE session_id = ? AND sync_status = ?) +
+         (SELECT COUNT(*) FROM patrol_incidents WHERE session_id = ? AND sync_status = ?) +
+         (SELECT COUNT(*) FROM patrol_sessions WHERE id = ? AND (synced_status IS NULL OR synced_status != status)) AS total`,
+      sessionId,
+      SYNC_STATUS.PENDING,
+      sessionId,
+      SYNC_STATUS.PENDING,
+      sessionId,
+    );
+    return row?.total ?? 0;
   },
 
   async updateSession(id, fields) {

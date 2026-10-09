@@ -1,3 +1,12 @@
+/** "Oct 7, 2026, 6:00 AM" in the phone's locale. */
+export function formatPatrolDate(iso) {
+  const date = new Date(iso);
+  return `${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString(
+    undefined,
+    { hour: '2-digit', minute: '2-digit' },
+  )}`;
+}
+
 /** hh:mm:ss for a duration in milliseconds. */
 export function formatDuration(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));

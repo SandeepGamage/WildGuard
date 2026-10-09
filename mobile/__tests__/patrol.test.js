@@ -151,6 +151,49 @@ describe('patrol engine (UC1a / UC1b)', () => {
   });
 });
 
+describe('patrol history', () => {
+  it('lists only finished patrols, newest first, with per-patrol upload status', async () => {
+    const { engine, repository, advance } = setup();
+    const first = await engine.startPatrol({ rangerId: RANGER, assignment: ASSIGNMENT });
+    await engine.logIncident({ sessionId: first.id, incidentType: 'OTHER', fix: fix() });
+    await engine.endPatrol(first.id);
+    advance(3600000);
+    const second = await engine.startPatrol({ rangerId: RANGER, assignment: ASSIGNMENT });
+    await engine.endPatrol(second.id);
+    advance(3600000);
+    await engine.startPatrol({ rangerId: RANGER, assignment: ASSIGNMENT });
+    await engine.startPatrol({ rangerId: 'other-ranger', assignment: ASSIGNMENT });
+
+    const sync = createPatrolSync({
+      repository,
+      syncPatrol: async (body) => ({
+        trackPointIds: body.trackPoints.map((p) => p.id),
+        incidentIds: body.incidents.map((i) => i.id),
+      }),
+      uploadPhoto: jest.fn(),
+    });
+    await sync.flush(RANGER);
+    await engine.logIncident({ sessionId: (await engine.getActiveSession(RANGER)).id, incidentType: 'OTHER', fix: fix() });
+
+    const history = await engine.listHistory(RANGER);
+
+    expect(history.map((h) => h.session.id)).toEqual([second.id, first.id]);
+    expect(history.every((h) => h.pendingCount === 0)).toBe(true);
+    expect(history[1].incidentCount).toBe(1);
+  });
+
+  it('shows a patrol as waiting while its data is not uploaded', async () => {
+    const { engine } = setup();
+    const session = await engine.startPatrol({ rangerId: RANGER, assignment: ASSIGNMENT });
+    await engine.recordFix(session.id, fix());
+    await engine.endPatrol(session.id);
+
+    const [item] = await engine.listHistory(RANGER);
+
+    expect(item.pendingCount).toBeGreaterThan(0);
+  });
+});
+
 describe('patrol sync (UC1c)', () => {
   async function patrolWithData(count) {
     const ctx = setup();

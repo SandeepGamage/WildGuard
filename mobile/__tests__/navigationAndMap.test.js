@@ -64,6 +64,26 @@ describe('bottom navigation', () => {
     expect(screen.queryByTestId('tab-hidden')).toBeNull();
   });
 
+  it('hides screens that Expo Router converted from href:null into display:none', () => {
+    const navigation = { emit: jest.fn(() => ({ defaultPrevented: false })), navigate: jest.fn() };
+    const converted = Object.fromEntries(
+      Object.entries(descriptors).map(([key, { options }]) => [
+        key,
+        {
+          options: {
+            ...options,
+            href: undefined,
+            tabBarItemStyle: options.href === null ? { display: 'none' } : undefined,
+          },
+        },
+      ]),
+    );
+    renderScreen(<AppTabBar state={{ index: 0, routes }} descriptors={converted} navigation={navigation} />);
+
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.queryByTestId('tab-hidden')).toBeNull();
+  });
+
   it('navigates when another tab is pressed', () => {
     const navigation = { emit: jest.fn(() => ({ defaultPrevented: false })), navigate: jest.fn() };
     renderScreen(

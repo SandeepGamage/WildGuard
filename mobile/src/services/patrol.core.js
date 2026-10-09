@@ -53,6 +53,27 @@ export function createPatrolEngine({ repository, newId, preparePhoto, now = () =
 
     getActiveSession: (rangerId) => repository.getActiveSession(rangerId),
 
+    /** Everything about one finished patrol, for the history detail popup. */
+    async getDetail(sessionId) {
+      const summary = await summarize(sessionId);
+      return {
+        ...summary,
+        incidents: await repository.listIncidents(sessionId),
+        pendingCount: await repository.countPendingForSession(sessionId),
+      };
+    },
+
+    /** Finished patrols, newest first, each with its stats and how many of its items still await upload. */
+    async listHistory(rangerId) {
+      const sessions = await repository.listCompletedSessions(rangerId);
+      const history = [];
+      for (const session of sessions) {
+        const summary = await summarize(session.id);
+        history.push({ ...summary, pendingCount: await repository.countPendingForSession(session.id) });
+      }
+      return history;
+    },
+
     /** Steps 1-2: create an ACTIVE session. Only one may be active on the device. */
     async startPatrol({ rangerId, assignment }) {
       if (await repository.getActiveSession(rangerId)) {
