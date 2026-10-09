@@ -184,6 +184,13 @@ const DEMO_USERS = [
     email: 'manager.wijesinghe@wildguard.example',
     role: 'PARK_MANAGER',
   },
+  {
+    key: 'operationsOfficer',
+    fullName: 'Hanaan M F A S',
+    email: 'operations@wildguard.lk',
+    role: 'OPERATIONS_OFFICER',
+    sectorId: ID.sector3,
+  },
 ];
 
 const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60 * 1000);
