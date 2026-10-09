@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, MapContainer, Polygon, Rectangle, TileLayer, Tooltip } from 'react-leaflet';
-import { ANALYTICS_RULES, HEAT_COLORS } from '../constants';
+import { ANALYTICS_RULES, HEAT_COLORS, RANGER_POINT_COLOR } from '../constants';
 import { cellBounds, formatDensity, pointsBounds } from '../utils/analytics';
 
 const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -9,21 +9,26 @@ const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const PARK_STYLE = { color: '#4c7a5c', weight: 2, fillOpacity: 0.04 };
 const VILLAGE_STYLE = { color: '#ffffff', weight: 1.5, fillColor: '#1f2d27', fillOpacity: 1 };
+const RANGER_POINT_STYLE = { color: '#ffffff', weight: 1, fillColor: RANGER_POINT_COLOR, fillOpacity: 0.95 };
 
 /**
  * Kernel-density hotspot map (wireframe A1, markers 3–4) on OpenStreetMap tiles.
  * Each backend cell is drawn as a rectangle in the viridis colour of its level, and
  * the legend lists the numeric density of each level, so the map is readable without
  * relying on colour. If the tiles cannot load (offline) the park outline, heatmap and
- * village labels still show.
- * @param {{ report: { id: string, park: object, heatmap: object, coverage: object, landmarks?: object[] } }} props
+ * village labels still show. Ranger GPS points (UC1 patrols) show where rangers have been.
+ * @param {{ report: { id: string, park: object, heatmap: object, coverage: object, landmarks?: object[],
+ *   patrolPoints?: Array<{ latitude: number, longitude: number }> } }} props
  */
 export function HotspotMap({ report }) {
   const { t } = useTranslation();
   const { park, heatmap, coverage } = report;
   const landmarks = report.landmarks ?? [];
+  const patrolPoints = report.patrolPoints ?? [];
+  const hasPoints = patrolPoints.length > 0;
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showGaps, setShowGaps] = useState(true);
+  const [showPoints, setShowPoints] = useState(true);
 
   const hasCells = Boolean(heatmap?.cells?.length && heatmap.cellSizeDeg);
   const outline = park.boundary ?? [];
@@ -54,8 +59,17 @@ export function HotspotMap({ report }) {
             />
             {t('analytics.map.coverageGaps')}
           </label>
-          <label className="toggle" aria-disabled="true">
-            <input type="checkbox" checked={false} disabled readOnly />
+          <label
+            className={hasPoints && showPoints ? 'toggle on' : 'toggle'}
+            aria-disabled={!hasPoints}
+            title={hasPoints ? undefined : t('analytics.map.noPatrolPoints')}
+          >
+            <input
+              type="checkbox"
+              checked={hasPoints && showPoints}
+              disabled={!hasPoints}
+              onChange={() => setShowPoints((v) => !v)}
+            />
             {t('analytics.map.patrolTracks')}
           </label>
         </div>
@@ -97,6 +111,16 @@ export function HotspotMap({ report }) {
                   />
                 ))
               : null}
+            {hasPoints && showPoints
+              ? patrolPoints.map((point, index) => (
+                  <CircleMarker
+                    key={index}
+                    center={[point.latitude, point.longitude]}
+                    radius={3}
+                    pathOptions={RANGER_POINT_STYLE}
+                  />
+                ))
+              : null}
             {landmarks.map((place) => (
               <CircleMarker
                 key={place.name}
@@ -123,6 +147,12 @@ export function HotspotMap({ report }) {
               {index === heatmap.classBreaks.length - 1 ? '+' : ''}
             </span>
           ))}
+          {hasPoints && showPoints ? (
+            <span className="legend-item" data-testid="ranger-points-legend">
+              <span className="swatch swatch-dot" style={{ background: RANGER_POINT_COLOR }} />
+              {t('analytics.map.patrolPointsLegend', { count: patrolPoints.length })}
+            </span>
+          ) : null}
           {!coverage.available ? (
             <span className="legend-note">{t('analytics.map.layerUnavailable')}</span>
           ) : null}

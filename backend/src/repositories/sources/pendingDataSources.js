@@ -1,9 +1,7 @@
 /**
- * Placeholders for the UC1 (patrol) and UC2 (collar alert) data that UC4 reads.
- * Those use cases are not merged yet, so both sources return empty lists and
- * the analytics service reports patrol coverage as "not available". When UC1
- * and UC2 land, swap these for sources that read their collections; nothing
- * else in UC4 changes.
+ * Empty fallbacks for the UC1 (patrol) and UC2 (collar alert) data that UC4
+ * reads, used when MongoAnalyticsRepository is built without real sources.
+ * The Mongo wiring passes MongoPatrolDataSource and CollarAlertDataSource.
  */
 class PendingPatrolDataSource {
   /** @returns {Promise<{ sectorId: string, startedAt: Date, endedAt: Date, hours: number }[]>} */
@@ -24,4 +22,11 @@ class PendingAlertDataSource {
   }
 }
 
-module.exports = { PendingPatrolDataSource, PendingAlertDataSource };
+class PendingTrackPointSource {
+  /** @returns {Promise<{ latitude: number, longitude: number }[]>} */
+  async listPoints(_filter) {
+    return [];
+  }
+}
+
+module.exports = { PendingPatrolDataSource, PendingAlertDataSource, PendingTrackPointSource };

@@ -25,6 +25,7 @@
   --radius: 12px;
   --control: 38px;
   --topbar: 64px;
+  --sidebar: 248px;
 
   font-family:
     'Inter',
@@ -144,7 +145,7 @@ select {
 /* ---------- app shell: sidebar + top bar ---------- */
 .shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
   min-height: 100vh;
 }
 .sidebar {
@@ -514,7 +515,6 @@ select {
   gap: 4px;
   padding: 14px 16px;
   border-radius: 10px;
-  border-left: 3px solid;
   font-size: 13px;
 }
 .callout p {
@@ -522,14 +522,12 @@ select {
 }
 .callout-warning {
   background: var(--warning-tint);
-  border-color: var(--level-medium);
 }
 .callout-warning strong {
   color: #8a6127;
 }
 .callout-info {
   background: var(--surface-tint);
-  border-color: var(--secondary);
 }
 .callout-info strong {
   color: var(--primary);
@@ -1020,6 +1018,13 @@ fieldset.card {
 .chart-frame {
   height: 240px;
 }
+.swatch-dot {
+  border-radius: 50%;
+}
+.chart-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
 
 .bar-list {
   list-style: none;
@@ -1114,6 +1119,69 @@ fieldset.card {
 .saved-table tbody tr:hover {
   background: var(--background);
 }
+.sort-menu {
+  position: relative;
+}
+.sort-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px rgba(12, 59, 46, 0.14);
+}
+.sort-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  color: var(--text-body);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sort-menu-item:hover,
+.sort-menu-item:focus-visible {
+  background: var(--surface-tint);
+}
+.sort-menu-item.selected {
+  font-weight: 600;
+  color: var(--text);
+}
+.sort-menu-check {
+  display: inline-flex;
+  width: 14px;
+  color: var(--primary);
+}
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.sort-button:hover,
+.sort-button.sorted {
+  color: var(--text);
+}
+.sort-button.sorted {
+  font-weight: 600;
+}
 
 /* ---------- export dialog ---------- */
 .dialog {
@@ -1173,6 +1241,59 @@ fieldset.card {
   border-radius: var(--radius-sm);
   background: var(--surface-tint);
   font-size: 13px;
+}
+/*
+ * Saved report pop-up: centred in the space beside the sidebar (so the sidebar stays
+ * visible), all four corners rounded. Only the body scrolls, so the scrollbar sits inside
+ * the rounded box and the header with its buttons stays in view.
+ */
+.report-dialog {
+  --report-width: min(1240px, calc(100vw - var(--sidebar) - 32px));
+  width: var(--report-width);
+  max-height: calc(100vh - 32px);
+  margin-left: calc(var(--sidebar) + (100vw - var(--sidebar) - var(--report-width)) / 2);
+  padding: 0;
+  overflow: hidden;
+  background: var(--background);
+}
+.report-dialog:focus {
+  outline: none;
+}
+.report-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.report-dialog-head {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 20px 24px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.report-dialog-head h2 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+.report-dialog-head p {
+  margin: 0;
+}
+.report-dialog-head .btn {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0 20px;
+}
+.report-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 24px 24px;
 }
 .dialog-actions {
   display: flex;
@@ -1387,6 +1508,10 @@ fieldset.card {
 
 /* Small screens: the sidebar becomes a bar of links above the page. */
 @media (max-width: 800px) {
+  /* The sidebar becomes a bar above the page, so nothing sits beside it. */
+  :root {
+    --sidebar: 0px;
+  }
   .shell {
     grid-template-columns: 1fr;
   }

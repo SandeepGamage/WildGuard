@@ -1,31 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_EXPORT_SECTIONS, EXPORT_FORMATS, EXPORT_SECTIONS } from '../constants';
+import { syncDialog } from '../utils/dialog';
 
 const FORMAT_HINT_KEYS = { PDF: 'analytics.export.pdfHint', CSV: 'analytics.export.csvHint' };
 
-/** Open or close a <dialog>, also in environments without showModal (jsdom). */
-function syncDialog(dialog, open) {
-  if (open && !dialog.open) {
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-  } else if (!open && dialog.open) {
-    if (typeof dialog.close === 'function') dialog.close();
-    else dialog.removeAttribute('open');
-  }
-}
-
 /**
  * Export dialog (wireframe A2, UC4c): format, sections and the privacy note.
+ * `defaultSections` are ticked when the dialog opens (the report type's own sections).
  * Uses the native <dialog> element, so Escape closes it and focus stays inside.
- * @param {{ open: boolean, initialFormat?: string, busy?: boolean,
+ * @param {{ open: boolean, initialFormat?: string, defaultSections?: string[], busy?: boolean,
  *   onCancel: () => void, onExport: (choice: { format: string, sections: string[] }) => void }} props
  */
-export function ExportDialog({ open, initialFormat = EXPORT_FORMATS.PDF, busy = false, onCancel, onExport }) {
+export function ExportDialog({
+  open,
+  initialFormat = EXPORT_FORMATS.PDF,
+  defaultSections = DEFAULT_EXPORT_SECTIONS,
+  busy = false,
+  onCancel,
+  onExport,
+}) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const [format, setFormat] = useState(initialFormat);
-  const [sections, setSections] = useState(DEFAULT_EXPORT_SECTIONS);
+  const [sections, setSections] = useState(defaultSections);
 
   useEffect(() => {
     if (ref.current) syncDialog(ref.current, open);

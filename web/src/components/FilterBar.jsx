@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
-import { INCIDENT_TYPES, REPORT_TYPES } from '../constants';
+import { REPORT_INCIDENT_TYPES, REPORT_TYPES } from '../constants';
 import { defaultFilters } from '../utils/analytics';
 import { CalendarIcon, CheckIcon, PinIcon, ResetIcon, SlidersIcon } from './Icons';
 import { PeriodPresets } from './PeriodPresets';
 
-const ALL_TYPES = Object.values(INCIDENT_TYPES);
+// Community report types, then the types rangers log on patrol (UC1).
+const ALL_TYPES = REPORT_INCIDENT_TYPES;
 
 /** Types that matter most for safety get a tinted chip. */
 const TYPE_TONES = { PERSON_INJURED: 'danger', SNARE_POACHING: 'warning' };
@@ -63,8 +64,9 @@ export function FilterBar({
 
   const submit = (event) => {
     event.preventDefault();
-    if (step === 'type') onNext?.();
-    else onGenerate();
+    if (step === 'type') {
+      if (value.reportType) onNext?.();
+    } else onGenerate();
   };
 
   return (
@@ -226,7 +228,12 @@ export function FilterBar({
             </button>
           ) : null}
           {step === 'type' ? (
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!value.reportType}
+              title={value.reportType ? undefined : t('analytics.steps.needsType')}
+            >
               {t('analytics.filters.next')}
             </button>
           ) : (

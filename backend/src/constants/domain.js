@@ -132,6 +132,15 @@ const EXPORT_SECTIONS = Object.freeze({
   INCIDENT_LIST: 'INCIDENT_LIST',
 });
 
+/**
+ * UC4: incident types a report covers and filters on: the community report types, then the
+ * ranger-only patrol types (UC1). Snares and "other animal" exist in both lists, so they appear once.
+ */
+const ANALYTICS_INCIDENT_TYPES = Object.freeze([
+  ...Object.values(INCIDENT_TYPES),
+  ...Object.values(PATROL_INCIDENT_TYPES).filter((type) => !Object.values(INCIDENT_TYPES).includes(type)),
+]);
+
 /** UC4 rules from the revised scenario (section 7.4.5). */
 const ANALYTICS_RULES = Object.freeze({
   MAX_RANGE_YEARS: 3,
@@ -240,5 +249,6 @@ module.exports = {
   PATROL_RULES,
   EXPORT_FORMATS,
   EXPORT_SECTIONS,
+  ANALYTICS_INCIDENT_TYPES,
   ANALYTICS_RULES,
 };

@@ -6,14 +6,18 @@ const {
   findTopHotspots,
   monthsBetween,
   monthKey,
+  thinPatrolPoints,
 } = require('../src/services/analyticsReport.service');
 const { CsvExporter, csvField } = require('../src/services/export/csv.exporter');
-const { PdfExporter } = require('../src/services/export/pdf.exporter');
+const { PdfExporter, mapLayout, niceDistance, niceStep } = require('../src/services/export/pdf.exporter');
+const { MapTileSource, project, chooseZoom, tileRange } = require('../src/services/export/mapTiles');
+const { loadConfig } = require('../src/config/env');
 const { ExportEngine } = require('../src/services/export/exportEngine');
 const {
   PendingPatrolDataSource,
   PendingAlertDataSource,
 } = require('../src/repositories/sources/pendingDataSources');
+const { toAnalyticsAlert, alertQuery } = require('../src/repositories/sources/collarAlertDataSource');
 const { distanceM, boundingBox } = require('../src/utils/geo');
 const { toReportDocument, toConservationReport } = require('../src/models/conservationReport.model');
 const { EXPORT_SECTIONS } = require('../src/constants/domain');
@@ -117,29 +121,35 @@ describe('report aggregation', () => {
         incident({ incidentType: 'PERSON_INJURED', occurredAt: new Date('2026-08-02T06:00:00Z') }),
         incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' }),
       ],
-      patrolIncidents: [incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' })],
+      patrolIncidents: [
+        incident({ incidentType: 'SNARE_POACHING', sectorId: 's4' }),
+        incident({ incidentType: 'CARCASS', sectorId: 's4' }),
+      ],
       collarAlerts: [{}],
       receivedCommunityReports: 5,
       previousPeriodCount: 2,
     };
+    // Ranger patrol incidents count with the community reports, ranger-only types included.
     const stats = aggregateIncidents(dataset, SECTORS, ['2026-07', '2026-08']);
-    expect(stats.totalIncidents).toBe(4);
-    expect(stats.changePercent).toBe(100);
+    expect(stats.totalIncidents).toBe(5);
+    expect(stats.changePercent).toBe(150);
     expect(stats.byType).toEqual([
       { type: 'CROP_DAMAGE', count: 1 },
       { type: 'PERSON_INJURED', count: 1 },
       { type: 'SNARE_POACHING', count: 2 },
+      { type: 'CARCASS', count: 1 },
     ]);
     expect(stats.bySector).toEqual([
       { sectorId: 's3', name: 'Sector 3', count: 2 },
-      { sectorId: 's4', name: 'Sector 4', count: 2 },
+      { sectorId: 's4', name: 'Sector 4', count: 3 },
     ]);
     expect(stats.byMonth).toEqual([
-      { month: '2026-07', count: 3 },
+      { month: '2026-07', count: 4 },
       { month: '2026-08', count: 1 },
     ]);
     expect(stats.communityReports).toEqual({ received: 5, verified: 3 });
-    expect(stats).toMatchObject({ patrolIncidents: 1, collarAlerts: 1, conflictEvents: 2, injuries: 1 });
+    // Carcasses and snares are not human–elephant conflict.
+    expect(stats).toMatchObject({ patrolIncidents: 2, collarAlerts: 1, conflictEvents: 2, injuries: 1 });
   });
 
   it('has no change percentage when the previous period was empty', () => {
@@ -220,6 +230,12 @@ describe('report aggregation', () => {
     ]);
   });
 });
+
+/** 1×1 transparent PNG, standing in for a map tile. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
 
 const sampleReport = () => ({
   id: 'r1',
@@ -341,6 +357,142 @@ describe('PDF exporter', () => {
     ]);
     expect(file.content.subarray(0, 5).toString()).toBe('%PDF-');
   });
+
+  it('draws basemap tiles under the hotspot map when a tile source is given', async () => {
+    const getTiles = jest.fn(async (pixelBox, zoom) => {
+      const range = tileRange(pixelBox);
+      const tiles = [];
+      for (let y = range.minY; y <= range.maxY; y += 1) {
+        for (let x = range.minX; x <= range.maxX; x += 1) tiles.push({ x, y, image: TINY_PNG });
+      }
+      expect(zoom).toBeGreaterThan(8);
+      return tiles;
+    });
+    const withTiles = await new PdfExporter({ tileSource: { getTiles } }).export(sampleReport(), [
+      EXPORT_SECTIONS.HOTSPOT_MAP,
+    ]);
+    const without = await new PdfExporter().export(sampleReport(), [EXPORT_SECTIONS.HOTSPOT_MAP]);
+    expect(getTiles).toHaveBeenCalledTimes(1);
+    expect(withTiles.content.toString('latin1')).toContain('/Subtype /Image');
+    expect(without.content.toString('latin1')).not.toContain('/Subtype /Image');
+  });
+
+  it('does not fetch tiles when the hotspot map is not exported', async () => {
+    const getTiles = jest.fn();
+    await new PdfExporter({ tileSource: { getTiles } }).export(sampleReport(), [EXPORT_SECTIONS.KPI_SUMMARY]);
+    expect(getTiles).not.toHaveBeenCalled();
+  });
+
+  it('fits the map frame around the heatmap and park outline', () => {
+    const layout = mapLayout(sampleReport(), 500);
+    expect(layout.frame.minLat).toBeLessThan(6.2);
+    expect(layout.frame.maxLng).toBeGreaterThan(81.4);
+    expect(layout.width).toBeLessThanOrEqual(500.001);
+    expect(layout.height).toBeLessThanOrEqual(330.001);
+    expect(layout.pixelBox.maxX - layout.pixelBox.minX).toBeGreaterThanOrEqual(1000);
+  });
+
+  it('picks a round scale bar distance', () => {
+    expect(niceDistance(2600)).toBe(2000);
+    expect(niceDistance(999)).toBe(500);
+    expect(niceDistance(50)).toBe(100);
+  });
+
+  it('adds the conflict chart only to human-wildlife conflict reports', async () => {
+    const trends = {
+      months: ['2026-07', '2026-08', '2026-09'],
+      series: [
+        { type: 'ELEPHANT_NEAR_VILLAGE', counts: [7, 8, 14] },
+        { type: 'CROP_DAMAGE', counts: [10, 16, 17] },
+        { type: 'PROPERTY_DAMAGE', counts: [6, 5, 5] },
+        { type: 'PERSON_INJURED', counts: [1, 0, 3] },
+      ],
+      totals: [24, 29, 39],
+    };
+    const exportAs = async (reportType, reportTrends = trends) => {
+      const base = sampleReport();
+      const report = { ...base, trends: reportTrends, filter: { ...base.filter, reportType } };
+      return (await new PdfExporter().export(report, [EXPORT_SECTIONS.CONFLICT_TRENDS])).content.length;
+    };
+    const conflict = await exportAs('HUMAN_WILDLIFE_CONFLICT');
+    const hotspot = await exportAs('HOTSPOT_MAP');
+    // The chart adds a legend, grid, columns and labels on top of the same table.
+    expect(conflict).toBeGreaterThan(hotspot + 400);
+
+    // No chart when nothing happened (the few bytes left are the different report type in the header).
+    const empty = {
+      ...trends,
+      series: trends.series.map((s) => ({ ...s, counts: [0, 0, 0] })),
+      totals: [0, 0, 0],
+    };
+    const emptyConflict = await exportAs('HUMAN_WILDLIFE_CONFLICT', empty);
+    expect(Math.abs(emptyConflict - (await exportAs('HOTSPOT_MAP', empty)))).toBeLessThan(50);
+  });
+
+  it('picks round axis steps for the conflict chart', () => {
+    expect(niceStep(0.5)).toBe(1);
+    expect(niceStep(9.75)).toBe(10);
+    expect(niceStep(7)).toBe(10);
+    expect(niceStep(12)).toBe(20);
+    expect(niceStep(22)).toBe(25);
+    expect(niceStep(240)).toBe(250);
+  });
+});
+
+describe('map tiles', () => {
+  const okFetch = () =>
+    jest.fn(async () => ({ ok: true, status: 200, arrayBuffer: async () => TINY_PNG.buffer.slice(0) }));
+
+  it('projects lng/lat to Web Mercator pixels', () => {
+    expect(project(0, 0, 0)).toEqual({ x: 128, y: 128 });
+    const yala = project(81.3, 6.3, 13);
+    expect(Math.floor(yala.x / 256)).toBe(5946);
+    expect(Math.floor(yala.y / 256)).toBe(3952);
+  });
+
+  it('chooses the smallest zoom that is wide enough', () => {
+    const bounds = { minLng: 81.2, maxLng: 81.45, minLat: 6.2, maxLat: 6.4 };
+    const zoom = chooseZoom(bounds, 1000);
+    const width = (z) => project(bounds.maxLng, 0, z).x - project(bounds.minLng, 0, z).x;
+    expect(width(zoom)).toBeGreaterThanOrEqual(1000);
+    expect(width(zoom - 1)).toBeLessThan(1000);
+  });
+
+  it('downloads every covering tile with a User-Agent, then serves repeats from cache', async () => {
+    const fetchImpl = okFetch();
+    const source = new MapTileSource({ urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png', fetchImpl });
+    const box = { minX: 256 * 10 + 5, maxX: 256 * 12, minY: 256 * 3, maxY: 256 * 4 + 1 };
+    const tiles = await source.getTiles(box, 5);
+    expect(tiles.map((t) => `${t.x}/${t.y}`)).toEqual(['10/3', '11/3', '10/4', '11/4']);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      'https://tiles.test/5/10/3.png',
+      expect.objectContaining({ headers: { 'User-Agent': expect.stringContaining('WildGuard') } }),
+    );
+    await source.getTiles(box, 5);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it('returns null (plain background) when any tile fails or the area is too large', async () => {
+    const logger = { warn: jest.fn() };
+    const failing = new MapTileSource({
+      urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png',
+      fetchImpl: async () => ({ ok: false, status: 429 }),
+      logger,
+    });
+    expect(await failing.getTiles({ minX: 0, maxX: 256, minY: 0, maxY: 256 }, 3)).toBeNull();
+    expect(logger.warn).toHaveBeenCalled();
+
+    const fetchImpl = okFetch();
+    const huge = new MapTileSource({ urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png', fetchImpl });
+    expect(await huge.getTiles({ minX: 0, maxX: 256 * 20, minY: 0, maxY: 256 * 20 }, 6)).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('is off in tests and defaults to OpenStreetMap elsewhere', () => {
+    expect(loadConfig({ NODE_ENV: 'test' }).mapTileUrl).toBe('');
+    expect(loadConfig({ NODE_ENV: 'production' }).mapTileUrl).toContain('tile.openstreetmap.org');
+    expect(loadConfig({ NODE_ENV: 'development', MAP_TILE_URL: '' }).mapTileUrl).toBe('');
+  });
 });
 
 describe('ExportEngine', () => {
@@ -375,6 +527,69 @@ describe('pending UC1/UC2 data sources', () => {
     expect(await patrol.listTracks({})).toEqual([]);
     expect(await patrol.listIncidents({})).toEqual([]);
     expect(await new PendingAlertDataSource().listAlerts({})).toEqual([]);
+  });
+});
+
+describe('ranger GPS points for the map', () => {
+  const PARK = [
+    { latitude: 6.2, longitude: 81.2 },
+    { latitude: 6.4, longitude: 81.2 },
+    { latitude: 6.4, longitude: 81.4 },
+    { latitude: 6.2, longitude: 81.4 },
+  ];
+
+  it('keeps one point per ~25 m cell, inside the park, rounded, with no ids', () => {
+    const points = thinPatrolPoints(
+      [
+        { latitude: 6.3, longitude: 81.3, id: 'a', rangerId: 'r1' },
+        { latitude: 6.30005, longitude: 81.30005 }, // ~8 m away: same cell
+        { latitude: 6.3009, longitude: 81.3 }, // ~100 m away: new cell
+        { latitude: 6.5, longitude: 81.3 }, // outside the park
+        { latitude: Number.NaN, longitude: 81.3 },
+      ],
+      PARK,
+    );
+    expect(points).toEqual([
+      { latitude: 6.3, longitude: 81.3 },
+      { latitude: 6.3009, longitude: 81.3 },
+    ]);
+  });
+
+  it('caps a very long patrol', () => {
+    const many = Array.from({ length: 5000 }, (_, i) => ({ latitude: 6.21 + i * 0.0003, longitude: 81.3 }));
+    expect(thinPatrolPoints(many, []).length).toBe(2000);
+  });
+});
+
+describe('collar alert data source (UC2 → UC4)', () => {
+  const stored = (overrides = {}) => ({
+    raised_at: new Date('2026-08-01T03:00:00Z'),
+    location: { type: 'Point', coordinates: [81.3138, 6.2386] },
+    threat_level: 'HIGH',
+    ...overrides,
+  });
+
+  it('reads the persisted schema fields, with GeoJSON coordinates as [lng, lat]', () => {
+    expect(toAnalyticsAlert(stored())).toEqual({
+      occurredAt: new Date('2026-08-01T03:00:00Z'),
+      latitude: 6.2386,
+      longitude: 81.3138,
+      severity: 'HIGH',
+    });
+  });
+
+  it('skips alerts stored without a usable position', () => {
+    expect(toAnalyticsAlert(stored({ location: { type: 'Point', coordinates: [] } }))).toBeNull();
+    expect(toAnalyticsAlert(stored({ location: undefined }))).toBeNull();
+  });
+
+  it('filters on raised_at with an exclusive end and leaves out false alarms', () => {
+    const dateFrom = new Date('2026-06-01T00:00:00Z');
+    const dateTo = new Date('2026-09-01T00:00:00Z');
+    expect(alertQuery({ dateFrom, dateTo })).toEqual({
+      raised_at: { $gte: dateFrom, $lt: dateTo },
+      status: { $nin: ['FALSE_ALARM'] },
+    });
   });
 });
 

@@ -16,6 +16,7 @@ const { GISMappingService } = require('./services/gisMapping.service');
 const { AnalyticsReportService } = require('./services/analyticsReport.service');
 const { AnalyticsService } = require('./services/analytics.service');
 const { ExportEngine } = require('./services/export/exportEngine');
+const { MapTileSource } = require('./services/export/mapTiles');
 const { PatrolService } = require('./services/patrol.service');
 
 /**
@@ -119,7 +120,10 @@ function buildServices({ config, logger, repositories, authGateway, pushAdapter,
   const analyticsService = new AnalyticsService({
     analyticsRepository,
     analyticsReportService,
-    exportEngine: new ExportEngine({ logger }),
+    exportEngine: new ExportEngine({
+      logger,
+      tileSource: config.mapTileUrl ? new MapTileSource({ urlTemplate: config.mapTileUrl, logger }) : null,
+    }),
     logger,
   });
 

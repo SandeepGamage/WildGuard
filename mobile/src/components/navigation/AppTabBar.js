@@ -4,6 +4,13 @@ import { colors, radius, spacing } from '../../theme';
 import { AppText } from '../common/AppText';
 
 /**
+ * Expo Router turns `href: null` into `tabBarItemStyle: { display: 'none' }` (and drops `href`),
+ * so that is what marks a screen that must not get its own tab.
+ */
+const isHiddenTab = (options) =>
+  options.href === null || StyleSheet.flatten(options.tabBarItemStyle)?.display === 'none';
+
+/**
  * Bottom navigation matching the Figma bar: white surface, icon sitting in a
  * mint pill when active, small semibold label underneath.
  * Used as the `tabBar` of both role-specific Tabs navigators.
@@ -18,7 +25,7 @@ export function AppTabBar({ state, descriptors, navigation }) {
     >
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
-        if (options.href === null) return null;
+        if (isHiddenTab(options)) return null;
 
         const focused = state.index === index;
         const label = options.title ?? route.name;

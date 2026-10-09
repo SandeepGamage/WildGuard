@@ -7,13 +7,12 @@ const { MongoIncidentRepository } = require('../repositories/mongo/incident.mong
 const { MongoVerificationRepository } = require('../repositories/mongo/verification.mongo.repository');
 const { MongoNotificationRepository } = require('../repositories/mongo/notification.mongo.repository');
 const { MongoSmsLogRepository } = require('../repositories/mongo/smsLog.mongo.repository');
-const {
-  MongoCollarRepository,
-  MongoAlertDataSource,
-} = require('../repositories/mongo/collar.mongo.repository');
+const { MongoCollarRepository } = require('../repositories/mongo/collar.mongo.repository');
 const { MongoAuthGateway } = require('../repositories/mongo/authGateway.mongo.repository');
 const { MongoAnalyticsRepository } = require('../repositories/mongo/analytics.mongo.repository');
 const { MongoPatrolRepository, MongoPatrolDataSource } = require('../repositories/mongo/patrol.mongo.repository');
+const { CollarAlertDataSource } = require('../repositories/sources/collarAlertDataSource');
+const { PatrolTrackPointSource } = require('../repositories/sources/patrolTrackPointSource');
 
 /**
  * Creates MongoDB-backed repositories and authentication gateway.
@@ -52,8 +51,9 @@ async function createMongoDependencies({ config, logger }) {
     collarRepository: new MongoCollarRepository(),
     patrolRepository: new MongoPatrolRepository(),
     analyticsRepository: new MongoAnalyticsRepository({
-      alertDataSource: new MongoAlertDataSource(),
+      alertDataSource: new CollarAlertDataSource(),
       patrolDataSource: new MongoPatrolDataSource(),
+      trackPointSource: new PatrolTrackPointSource(),
     }),
     photoStorageRepository,
   };

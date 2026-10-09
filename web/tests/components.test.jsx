@@ -4,6 +4,10 @@ import { cloneElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConflictTrendChart } from '../src/components/ConflictTrendChart';
 import { ConflictTypeBars } from '../src/components/ConflictTypeBars';
+import { CountBars } from '../src/components/CountBars';
+import { CoveragePanel } from '../src/components/CoveragePanel';
+import { IncidentsByMonthChart } from '../src/components/IncidentsByMonthChart';
+import { ReportResults } from '../src/components/ReportResults';
 import { ExportDialog } from '../src/components/ExportDialog';
 import { FilterBar } from '../src/components/FilterBar';
 import { HotspotMap } from '../src/components/HotspotMap';
@@ -103,11 +107,28 @@ describe('FilterBar', () => {
     const user = userEvent.setup();
     const onNext = vi.fn();
     const onBack = vi.fn();
-    const { onGenerate } = setup({ step: 'type', onNext, onBack });
+    const { onGenerate } = setup({
+      step: 'type',
+      onNext,
+      onBack,
+      value: { ...defaultFilters('yala'), reportType: 'HOTSPOT_MAP' },
+    });
     expect(screen.queryByLabelText('From')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(onNext).toHaveBeenCalled();
     expect(onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('keeps Next disabled until a report type is chosen', async () => {
+    const user = userEvent.setup();
+    const onNext = vi.fn();
+    const { onChange } = setup({ step: 'type', onNext });
+    const next = screen.getByRole('button', { name: 'Next' });
+    expect(next).toBeDisabled();
+    expect(next).toHaveAttribute('title', 'Choose a report type first');
+    await user.click(screen.getByRole('radio', { name: 'Incident summary' }));
+    expect(onChange.mock.lastCall[0].reportType).toBe('INCIDENT_SUMMARY');
+    expect(onNext).not.toHaveBeenCalled();
   });
 
   it('shows the criteria screen with Back and Generate', async () => {
@@ -119,6 +140,23 @@ describe('FilterBar', () => {
     expect(onBack).toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Generate report' }));
     expect(onGenerate).toHaveBeenCalled();
+  });
+
+  it('offers the ranger patrol types alongside the community report types', async () => {
+    const user = userEvent.setup();
+    const { onChange } = setup({ step: 'criteria' });
+    expect(screen.getByText('10 of 10 selected')).toBeInTheDocument();
+    for (const name of [
+      'Carcass (ranger)',
+      'Elephant sighting (ranger)',
+      'Illegal activity (ranger)',
+      'Other ranger finding',
+    ]) {
+      expect(screen.getByRole('checkbox', { name })).toBeChecked();
+    }
+    await user.click(screen.getByRole('checkbox', { name: 'Carcass (ranger)' }));
+    expect(onChange.mock.lastCall[0].incidentTypes).not.toContain('CARCASS');
+    expect(onChange.mock.lastCall[0].incidentTypes).toHaveLength(9);
   });
 
   it('resets the criteria to the defaults but keeps the report type', async () => {
@@ -138,7 +176,7 @@ describe('FilterBar', () => {
         step="criteria"
       />,
     );
-    expect(screen.getByText('0 of 6 selected')).toBeInTheDocument();
+    expect(screen.getByText('0 of 10 selected')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Reset' }));
     expect(onChange).toHaveBeenLastCalledWith({ ...defaultFilters('yala'), reportType: 'PATROL_COVERAGE' });
   });
@@ -201,10 +239,28 @@ describe('HotspotMap', () => {
     const user = userEvent.setup();
     render(<HotspotMap report={makeReport()} />);
     expect(screen.getByRole('checkbox', { name: 'Coverage gaps' })).toBeDisabled();
-    expect(screen.getByRole('checkbox', { name: 'Patrol tracks' })).toBeDisabled();
+    const points = screen.getByRole('checkbox', { name: 'Ranger GPS points' });
+    expect(points).toBeDisabled();
+    expect(points.closest('label')).toHaveAttribute('title', 'No ranger GPS points in this period.');
     expect(screen.getByText(/appear when patrol data \(UC1\) is connected/)).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: 'Heatmap' }));
     expect(screen.queryAllByTestId('heat-cell')).toHaveLength(0);
+  });
+
+  it('shows ranger GPS points as dots, with a legend, and can hide them', async () => {
+    const user = userEvent.setup();
+    const patrolPoints = [
+      { latitude: 6.3, longitude: 81.37 },
+      { latitude: 6.31, longitude: 81.38 },
+    ];
+    render(<HotspotMap report={makeReport({ patrolPoints })} />);
+    const villages = 1; // the fixture's one landmark is also a CircleMarker
+    expect(screen.getAllByTestId('village')).toHaveLength(villages + 2);
+    expect(screen.getByTestId('ranger-points-legend')).toHaveTextContent('Ranger GPS points (2)');
+
+    await user.click(screen.getByRole('checkbox', { name: 'Ranger GPS points' }));
+    expect(screen.getAllByTestId('village')).toHaveLength(villages);
+    expect(screen.queryByTestId('ranger-points-legend')).toBeNull();
   });
 
   it('lists coverage gaps when patrol data exists', async () => {
@@ -326,7 +382,161 @@ describe('TopHotspotsTable and ReportNotice', () => {
   });
 });
 
+describe('Per-type report panels', () => {
+  const GAPS = {
+    available: true,
+    coveragePercent: 50,
+    patrolHours: 12.5,
+    unpatrolledSectors: [
+      { name: 'Sector 4', lastPatrolledAt: null, daysSincePatrol: null },
+      { name: 'Sector 5', lastPatrolledAt: '2026-08-01T00:00:00Z', daysSincePatrol: 30 },
+    ],
+  };
+
+  it('CountBars hides empty rows and puts the longest bar first', () => {
+    render(
+      <CountBars
+        title="Incidents by sector"
+        empty="Nothing"
+        rows={[
+          { key: 'a', label: 'Sector 3', count: 5 },
+          { key: 'b', label: 'Sector 4', count: 0 },
+          { key: 'c', label: 'Sector 5', count: 9 },
+        ]}
+      />,
+    );
+    const bars = screen.getAllByTestId('count-bar');
+    expect(bars.map((bar) => bar.textContent)).toEqual(['Sector 59', 'Sector 35']);
+  });
+
+  it('CountBars and the month chart say when there is nothing to show', () => {
+    render(<CountBars title="Incidents by type" empty="No incidents in this period." rows={[]} />);
+    expect(screen.getByText('No incidents in this period.')).toBeInTheDocument();
+  });
+
+  it('IncidentsByMonthChart names the busiest month', () => {
+    render(<IncidentsByMonthChart byMonth={makeReport().stats.byMonth} />);
+    expect(screen.getByRole('img', { name: 'Bar chart of incidents per month.' })).toBeInTheDocument();
+    expect(screen.getByTestId('busiest-month')).toHaveTextContent('Busiest month: Aug (76 incidents)');
+  });
+
+  it('CoveragePanel lists sectors not patrolled, or explains why it cannot', () => {
+    const { unmount } = render(<CoveragePanel coverage={GAPS} />);
+    expect(
+      screen.getByRole('heading', { name: 'Sectors not patrolled for more than 14 days' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('2 sectors')).toBeInTheDocument();
+    const rows = within(screen.getByRole('table')).getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('Sector 4Never–');
+    expect(rows[2]).toHaveTextContent('Sector 52026-08-0130');
+    unmount();
+
+    const { unmount: unmountNoGaps } = render(
+      <CoveragePanel coverage={{ ...GAPS, unpatrolledSectors: [] }} />,
+    );
+    expect(screen.getByText('Every sector was patrolled within the last 14 days.')).toBeInTheDocument();
+    unmountNoGaps();
+
+    render(<CoveragePanel coverage={makeReport().coverage} />);
+    expect(screen.getByText('No patrol data for this period yet.')).toBeInTheDocument();
+  });
+
+  it('KpiTiles shows the tiles a report type asks for, in its order', () => {
+    const report = makeReport();
+    render(
+      <KpiTiles stats={report.stats} coverage={GAPS} tiles={['coverage', 'patrolHours', 'incidents']} />,
+    );
+    expect(screen.getAllByRole('region').map((tile) => tile.getAttribute('data-testid'))).toEqual([
+      'kpi-coverage',
+      'kpi-patrol-hours',
+      'kpi-incidents',
+    ]);
+    expect(screen.getByTestId('kpi-patrol-hours')).toHaveTextContent('12.5in this period');
+  });
+
+  const panels = () => ({
+    map: screen.queryByTestId('leaflet-map') !== null,
+    hotspots: screen.queryByRole('region', { name: 'Top hotspots' }) !== null,
+    byType: screen.queryByTestId('incidents-by-type') !== null,
+    byMonth: screen.queryByTestId('incidents-by-month') !== null,
+    bySector: screen.queryByTestId('incidents-by-sector') !== null,
+    coverage: screen.queryByTestId('coverage-panel') !== null,
+    conflictTrend: screen.queryByRole('region', { name: 'Human–elephant conflict over the period' }) !== null,
+    conflictTypes: screen.queryByRole('region', { name: 'Conflict events by type' }) !== null,
+  });
+  const firstTile = () => screen.getAllByTestId(/^kpi-/)[0].getAttribute('data-testid');
+  const renderType = (reportType, overrides = {}) =>
+    render(
+      <ReportResults report={makeReport({ filter: { ...makeReport().filter, reportType }, ...overrides })} />,
+    );
+
+  it('lays out an incident summary around counts by type, month and sector', () => {
+    renderType('INCIDENT_SUMMARY');
+    expect(panels()).toEqual({
+      map: false,
+      hotspots: false,
+      byType: true,
+      byMonth: true,
+      bySector: true,
+      coverage: false,
+      conflictTrend: false,
+      conflictTypes: false,
+    });
+    expect(within(screen.getByTestId('incidents-by-type')).getAllByTestId('count-bar')[0]).toHaveTextContent(
+      'Crop damage39',
+    );
+    expect(firstTile()).toBe('kpi-incidents');
+  });
+
+  it('lays out a hotspot map report around the map and top hotspots', () => {
+    renderType('HOTSPOT_MAP');
+    expect(panels()).toMatchObject({ map: true, hotspots: true, byType: false, coverage: false });
+    expect(screen.getByTestId('report')).toHaveAttribute('data-report-type', 'HOTSPOT_MAP');
+  });
+
+  it('lays out a patrol coverage report around coverage, with the map for context', () => {
+    renderType('PATROL_COVERAGE', { coverage: GAPS });
+    expect(panels()).toMatchObject({
+      coverage: true,
+      bySector: true,
+      map: true,
+      hotspots: false,
+      byType: false,
+    });
+    expect(firstTile()).toBe('kpi-coverage');
+    expect(screen.getByTestId('kpi-patrol-hours')).toBeInTheDocument();
+  });
+
+  it('lays out a human–wildlife conflict report around conflict over time', () => {
+    renderType('HUMAN_WILDLIFE_CONFLICT');
+    expect(panels()).toMatchObject({
+      conflictTrend: true,
+      conflictTypes: true,
+      hotspots: true,
+      map: false,
+      coverage: false,
+    });
+    expect(firstTile()).toBe('kpi-conflict');
+  });
+});
+
 describe('ExportDialog', () => {
+  it('ticks the sections it is given by default', () => {
+    render(
+      <ExportDialog
+        open
+        defaultSections={['KPI_SUMMARY', 'COVERAGE_GAPS']}
+        onCancel={vi.fn()}
+        onExport={vi.fn()}
+      />,
+    );
+    const ticked = screen
+      .getAllByRole('checkbox')
+      .filter((box) => box.checked)
+      .map((box) => box.closest('label').textContent);
+    expect(ticked).toEqual(['KPI summary', 'Coverage gaps']);
+  });
+
   it('exports with the chosen format and sections, in a fixed order', async () => {
     const user = userEvent.setup();
     const onExport = vi.fn();

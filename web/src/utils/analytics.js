@@ -1,4 +1,4 @@
-import { ANALYTICS_RULES, INCIDENT_TYPES, REPORT_TYPES } from '../constants';
+import { ANALYTICS_RULES, REPORT_INCIDENT_TYPES } from '../constants';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -14,15 +14,15 @@ export function monthsBefore(isoDate, months) {
   return toIsoDate(target);
 }
 
-/** Starting filters: the last three months, every incident type. */
+/** Starting filters: the last three months, every incident type. The manager picks the report type. */
 export function defaultFilters(parkId = '', today = new Date()) {
   const dateTo = toIsoDate(today);
   return {
     dateFrom: monthsBefore(dateTo, ANALYTICS_RULES.DEFAULT_RANGE_MONTHS),
     dateTo,
     parkId,
-    reportType: REPORT_TYPES.HOTSPOT_MAP,
-    incidentTypes: Object.values(INCIDENT_TYPES),
+    reportType: '',
+    incidentTypes: [...REPORT_INCIDENT_TYPES],
   };
 }
 
@@ -117,4 +117,56 @@ export function hotspotLevel(incidents, maxIncidents) {
 export function daysBefore(isoDate, days) {
   const [year, month, day] = isoDate.split('-').map(Number);
   return toIsoDate(new Date(year, month - 1, day - days));
+}
+/** Saved reports open newest first. */
+export const DEFAULT_SAVED_SORT = Object.freeze({ key: 'generated', direction: 'desc' });
+
+const SAVED_SORT_VALUES = {
+  period: (item) => `${item.filter.dateFrom}|${item.filter.dateTo}`,
+  park: (item) => item.parkName ?? '',
+  type: (item, typeLabel) => typeLabel(item.filter.reportType),
+  incidents: (item) => item.totalIncidents ?? 0,
+  generated: (item) => new Date(item.generatedAt).getTime(),
+};
+export const SAVED_SORT_KEYS = Object.freeze(Object.keys(SAVED_SORT_VALUES));
+
+/** Choices in the Sort menu, most useful first. Together they cover every column and direction. */
+export const SAVED_SORT_OPTIONS = Object.freeze(
+  [
+    ['generated', 'desc'],
+    ['generated', 'asc'],
+    ['incidents', 'desc'],
+    ['incidents', 'asc'],
+    ['period', 'desc'],
+    ['period', 'asc'],
+    ['park', 'asc'],
+    ['park', 'desc'],
+    ['type', 'asc'],
+    ['type', 'desc'],
+  ].map(([key, direction]) => Object.freeze({ key, direction, id: `${key}_${direction}` })),
+);
+
+/** Text columns start A–Z; numbers and dates start with the largest / newest. */
+const firstDirection = (key) => (['park', 'type'].includes(key) ? 'asc' : 'desc');
+
+/** Clicking the sorted column flips the direction; another column starts in its natural order. */
+export const nextSort = (current, key) =>
+  current.key === key
+    ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+    : { key, direction: firstDirection(key) };
+
+/**
+ * Saved reports in the chosen order (a new array). Ties fall back to newest first.
+ * @param {(type: string) => string} [typeLabel] Sorts report types by their shown label.
+ */
+export function sortSavedReports(items, { key, direction }, typeLabel = (type) => type) {
+  const value = SAVED_SORT_VALUES[key] ?? SAVED_SORT_VALUES.generated;
+  const factor = direction === 'asc' ? 1 : -1;
+  const newest = SAVED_SORT_VALUES.generated;
+  return [...items].sort((a, b) => {
+    const left = value(a, typeLabel);
+    const right = value(b, typeLabel);
+    const order = typeof left === 'number' ? left - right : String(left).localeCompare(String(right));
+    return order * factor || newest(b) - newest(a);
+  });
 }

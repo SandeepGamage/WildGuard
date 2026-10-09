@@ -4,6 +4,7 @@
     "loading": "Loading…",
     "retry": "Try again",
     "cancel": "Cancel",
+    "close": "Close",
     "language": "Language",
     "somethingWrong": "Something went wrong"
   },
@@ -29,7 +30,11 @@
     "PROPERTY_DAMAGE": "House / property damage",
     "PERSON_INJURED": "Person injured",
     "SNARE_POACHING": "Snare / suspected poaching",
-    "OTHER_ANIMAL": "Other animal"
+    "OTHER_ANIMAL": "Other animal",
+    "CARCASS": "Carcass (ranger)",
+    "ELEPHANT_SIGHTING": "Elephant sighting (ranger)",
+    "ILLEGAL_ACTIVITY": "Illegal activity (ranger)",
+    "OTHER": "Other ranger finding"
   },
   "analytics": {
     "setupTitle": "Generate a report",
@@ -37,6 +42,12 @@
     "resultsTitle": "{{type}}, {{range}}",
     "breadcrumb": "Breadcrumb",
     "editCriteria": "Edit criteria",
+    "reset": {
+      "action": "Reset",
+      "title": "Start over?",
+      "message": "This clears the report type, criteria and results and takes you back to step 1. Saved reports are not affected.",
+      "confirm": "Reset and start over"
+    },
     "footer": "Generated from {{incidents}} incidents and {{reports}} community reports",
     "signOut": "Sign out",
     "loadingReport": "Building the report…",
@@ -75,18 +86,22 @@
       "noPatrolData": "No patrol data yet",
       "patrolPending": "Needs patrol tracking (UC1)",
       "conflict": "Human–elephant conflict",
-      "conflictNote": "events · {{count}} injuries"
+      "conflictNote": "events · {{count}} injuries",
+      "patrolHours": "Patrol hours",
+      "inPeriod": "in this period"
     },
     "map": {
       "title": "Hotspots (kernel density, {{bandwidth}} m bandwidth)",
       "heatmap": "Heatmap",
       "coverageGaps": "Coverage gaps",
-      "patrolTracks": "Patrol tracks",
+      "patrolTracks": "Ranger GPS points",
       "legend": "Incidents per km²",
-      "layerUnavailable": "Coverage gaps and patrol tracks appear when patrol data (UC1) is connected.",
+      "layerUnavailable": "Coverage gaps appear when patrol data (UC1) is connected.",
       "gapList": "Not patrolled for more than {{days}} days: {{sectors}}",
       "noCells": "No hotspots for these filters.",
-      "a11y": "Hotspot map of {{park}}. Highest density {{max}} incidents per km²."
+      "a11y": "Hotspot map of {{park}}. Highest density {{max}} incidents per km².",
+      "noPatrolPoints": "No ranger GPS points in this period.",
+      "patrolPointsLegend": "Ranger GPS points ({{count}})"
     },
     "trends": {
       "title": "Human–elephant conflict over the period",
@@ -116,7 +131,6 @@
       "exportFailed": "Export failed.",
       "exportFailedHint": "Try again or export as {{format}} instead.",
       "exportOther": "Export as {{format}}",
-      "exported": "{{format}} file downloaded.",
       "generatedAt": "Generated {{time}}"
     },
     "export": {
@@ -138,12 +152,29 @@
     },
     "saved": {
       "title": "Saved reports",
-      "subtitle": "Reports you generated, newest first.",
+      "subtitle": "Reports you generated. Use Sort or select a column heading.",
       "empty": "No saved reports yet. Generate a report to see it here.",
       "incidents": "{{count}} incidents",
       "open": "Open",
       "period": "Period",
-      "generated": "Generated"
+      "generated": "Generated",
+      "sortBy": "Sort by {{column}}",
+      "sort": {
+        "button": "Sort",
+        "current": "Sort: {{option}}",
+        "options": {
+          "generated_desc": "Newest first",
+          "generated_asc": "Oldest first",
+          "incidents_desc": "Most incidents",
+          "incidents_asc": "Fewest incidents",
+          "period_desc": "Latest period",
+          "period_asc": "Earliest period",
+          "park_asc": "Park (A–Z)",
+          "park_desc": "Park (Z–A)",
+          "type_asc": "Report type (A–Z)",
+          "type_desc": "Report type (Z–A)"
+        }
+      }
     },
     "period": {
       "label": "Period",
@@ -162,7 +193,8 @@
       "type": "Report type",
       "criteria": "Criteria",
       "results": "Results",
-      "needsReport": "Generate a report first"
+      "needsReport": "Generate a report first",
+      "needsType": "Choose a report type first"
     },
     "reportTypeHints": {
       "INCIDENT_SUMMARY": "Counts and changes for every incident type.",
@@ -184,6 +216,29 @@
       "topHotspot": "{{area}} has the most incidents ({{count}}), mostly {{type}}. Consider extra patrols or early-warning alerts there.",
       "methodTitle": "How these numbers are measured",
       "method": "Hotspots use kernel density with a {{bandwidth}} m bandwidth, so density is incidents per km². Community reports are counted only after a ranger verifies them."
+    },
+    "noIncidents": "No incidents in this period.",
+    "byType": {
+      "title": "Incidents by type"
+    },
+    "bySector": {
+      "title": "Incidents by sector",
+      "aside_one": "{{count}} sector",
+      "aside_other": "{{count}} sectors"
+    },
+    "byMonth": {
+      "title": "Incidents per month",
+      "a11y": "Bar chart of incidents per month.",
+      "busiest": "Busiest month: {{month}} ({{count}} incidents)"
+    },
+    "coverage": {
+      "gapsTitle": "Sectors not patrolled for more than {{days}} days",
+      "sector": "Sector",
+      "lastPatrolled": "Last patrolled",
+      "daysSince": "Days since patrol",
+      "never": "Never",
+      "noGaps": "Every sector was patrolled within the last {{days}} days.",
+      "unavailable": "No patrol data for this period yet."
     }
   },
   "login": {
