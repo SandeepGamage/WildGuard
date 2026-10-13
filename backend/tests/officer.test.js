@@ -24,6 +24,7 @@ const reject = (app, token, id, body) =>
   request(app).post(`/api/v1/officer/incidents/${id}/reject`).set(bearer(token)).send(body);
 
 describe('role and scope authorization', () => {
+  // Test type: Negative + Equivalence classes
   it('blocks villagers and rangers from every officer endpoint', async () => {
     const { app } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -45,12 +46,14 @@ describe('role and scope authorization', () => {
     }
   });
 
+  // Test type: Negative
   it('keeps officers out of the villager reporting endpoints', async () => {
     const { app } = createTestApp();
     const res = await request(app).post('/api/v1/incidents').set(bearer(TOKENS.officer)).send(report());
     expect(res.status).toBe(403);
   });
 
+  // Test type: Negative
   it('does not let a villager verify their own report', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -59,6 +62,7 @@ describe('role and scope authorization', () => {
     expect(state.incidents[0].status).toBe('PENDING');
   });
 
+  // Test type: Negative
   it('forbids an officer from reading or deciding reports outside their divisions', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -77,6 +81,7 @@ describe('role and scope authorization', () => {
     expect(state.records).toHaveLength(0);
   });
 
+  // Test type: Negative + Boundary
   it('shows an out-of-scope officer an empty queue and map', async () => {
     const { app } = createTestApp();
     await submit(app, TOKENS.villagerA, {});
@@ -88,6 +93,7 @@ describe('role and scope authorization', () => {
 });
 
 describe('verification queue', () => {
+  // Test type: Positive
   it('lists urgent reports first and groups duplicates with a count', async () => {
     const { app } = createTestApp();
     const elephant = await submit(app, TOKENS.villagerA, {});
@@ -113,6 +119,7 @@ describe('verification queue', () => {
     }
   });
 
+  // Test type: Positive
   it('flags call-back reports', async () => {
     const { app } = createTestApp();
     await request(app)
@@ -122,6 +129,7 @@ describe('verification queue', () => {
     expect(res.body.data.items[0].callBackRequired).toBe(true);
   });
 
+  // Test type: Positive
   it('opens an incident with reporter, related reports and nearby collar data', async () => {
     const { app } = createTestApp();
     const first = await submit(app, TOKENS.villagerA, {});
@@ -137,6 +145,7 @@ describe('verification queue', () => {
     expect(res.body.data.nearbyCollars[0].distanceM).toBeLessThan(450);
   });
 
+  // Test type: Positive
   it('resolves a duplicate id to its original report', async () => {
     const { app } = createTestApp();
     const first = await submit(app, TOKENS.villagerA, {});
@@ -145,6 +154,7 @@ describe('verification queue', () => {
     expect(res.body.data.id).toBe(first.id);
   });
 
+  // Test type: Positive
   it('shows the villager "Being checked" once an officer starts the review', async () => {
     const { app } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -159,6 +169,7 @@ describe('verification queue', () => {
 });
 
 describe('verifying a report', () => {
+  // Test type: Positive
   it('records the decision, updates grouped duplicates and tells the reporters', async () => {
     const { app, state } = createTestApp();
     const first = await submit(app, TOKENS.villagerA, {});
@@ -196,6 +207,7 @@ describe('verifying a report', () => {
     expect(JSON.stringify(mine.body)).not.toContain('Called the reporter');
   });
 
+  // Test type: Positive
   it('notifies the sector rangers when field action is required and marks the pin amber', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -213,6 +225,7 @@ describe('verifying a report', () => {
     expect(map.body.data[0]).toMatchObject({ markerState: 'ACTION_NEEDED', groupedCount: 1 });
   });
 
+  // Test type: Negative
   it('still saves the decision when the field-team notification fails', async () => {
     const { app, state, repositories } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -226,6 +239,7 @@ describe('verifying a report', () => {
     expect(state.incidents[0].status).toBe('VERIFIED');
   });
 
+  // Test type: Negative
   it('requires a verification method', async () => {
     const { app } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -236,6 +250,7 @@ describe('verifying a report', () => {
     expect(res.status).toBe(400);
   });
 
+  // Test type: Positive + Equivalence classes
   it('simulates an outcome SMS for reporters who used the SMS channel', async () => {
     const { app, state } = createTestApp();
     const sms = await request(app)
@@ -250,6 +265,7 @@ describe('verifying a report', () => {
 });
 
 describe('rejecting a report', () => {
+  // Test type: Negative
   it('requires a reason', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -263,6 +279,7 @@ describe('rejecting a report', () => {
     expect(state.records).toHaveLength(0);
   });
 
+  // Test type: Positive
   it('removes the marker from the live map but keeps the report in history and informs the reporter', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -293,6 +310,7 @@ describe('rejecting a report', () => {
 });
 
 describe('concurrent verification', () => {
+  // Test type: Negative + Determinism
   it('lets exactly one of two simultaneous officers decide the report', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -312,6 +330,7 @@ describe('concurrent verification', () => {
     expect(loser.body.error.details.reviewedByName).toBeTruthy();
   });
 
+  // Test type: Negative
   it('refuses a late rejection and shows who verified the report', async () => {
     const { app, state } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, {});
@@ -326,6 +345,7 @@ describe('concurrent verification', () => {
 });
 
 describe('history and map', () => {
+  // Test type: Positive + Equivalence classes
   it("lists the officer's own decisions and filters by decision", async () => {
     const { app } = createTestApp();
     const a = await submit(app, TOKENS.villagerA, {});
@@ -344,6 +364,7 @@ describe('history and map', () => {
     expect(other.body.data).toEqual([]);
   });
 
+  // Test type: Positive + Equivalence classes
   it('shows unverified, action-needed and verified markers without reporter details', async () => {
     const { app } = createTestApp();
     const a = await submit(app, TOKENS.villagerA, {});
@@ -360,6 +381,7 @@ describe('history and map', () => {
 });
 
 describe('notifications API', () => {
+  // Test type: Positive + Negative
   it("lets the recipient list and mark their notifications as read, but not other people's", async () => {
     const { app } = createTestApp();
     await submit(app, TOKENS.villagerA, { incidentType: 'PERSON_INJURED', villageId: ID.yodakandiya });

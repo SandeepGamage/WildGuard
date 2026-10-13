@@ -52,11 +52,13 @@ async function signIn(user, account = 'manager.wijesinghe@wildguard.example') {
 }
 
 describe('sign in', () => {
+  // Test type: Negative
   it('sends signed-out visitors to the login page', () => {
     renderApp('/');
     expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
   });
 
+  // Test type: Negative
   it('asks for both fields before calling the server', async () => {
     const fetch = mockFetch({});
     const user = userEvent.setup();
@@ -66,6 +68,7 @@ describe('sign in', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  // Test type: Positive
   it('signs a park manager in, stores the token and opens the page they asked for', async () => {
     const fetch = mockFetch({ 'POST /auth/login': ok({ profile: MANAGER, accessToken: 'jwt-1' }) });
     const user = userEvent.setup();
@@ -79,6 +82,7 @@ describe('sign in', () => {
     });
   });
 
+  // Test type: Negative
   it('shows a friendly message for a wrong password', async () => {
     mockFetch({ 'POST /auth/login': fail(401, 'INVALID_CREDENTIALS') });
     const user = userEvent.setup();
@@ -88,6 +92,7 @@ describe('sign in', () => {
     expect(getToken()).toBeNull();
   });
 
+  // Test type: Negative + Equivalence classes
   it('refuses other roles and does not keep their token', async () => {
     mockFetch({ 'POST /auth/login': ok({ profile: VILLAGER, accessToken: 'jwt-v' }) });
     const user = userEvent.setup();
@@ -99,6 +104,7 @@ describe('sign in', () => {
 });
 
 describe('session', () => {
+  // Test type: Positive
   it('restores a saved manager session and signs out from the top bar', async () => {
     setToken('jwt-1');
     mockFetch({ 'GET /auth/me': ok(MANAGER) });
@@ -115,6 +121,7 @@ describe('session', () => {
     expect(getToken()).toBeNull();
   });
 
+  // Test type: Negative + Equivalence classes
   it('drops a saved session that belongs to another role', async () => {
     setToken('jwt-v');
     mockFetch({ 'GET /auth/me': ok(VILLAGER) });
@@ -123,6 +130,7 @@ describe('session', () => {
     expect(getToken()).toBeNull();
   });
 
+  // Test type: Negative
   it('drops an expired session', async () => {
     setToken('old');
     mockFetch({ 'GET /auth/me': fail(401, 'UNAUTHENTICATED') });
@@ -131,6 +139,7 @@ describe('session', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
   });
 
+  // Test type: Positive
   it('redirects a signed-in manager away from the login page', async () => {
     setToken('jwt-1');
     mockFetch({ 'GET /auth/me': ok(MANAGER) });
@@ -138,6 +147,7 @@ describe('session', () => {
     expect(await screen.findByText('dashboard')).toBeInTheDocument();
   });
 
+  // Test type: Positive
   it('switches language from the login page', async () => {
     const user = userEvent.setup();
     renderApp('/login');
@@ -145,6 +155,7 @@ describe('session', () => {
     expect(await screen.findByRole('heading', { name: 'மீண்டும் வருக' })).toBeInTheDocument();
   });
 
+  // Test type: Negative
   it('requires the provider', () => {
     function Orphan() {
       useAuth();

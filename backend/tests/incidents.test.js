@@ -14,6 +14,7 @@ const report = (overrides = {}) => ({
 const submit = (app, token, body) => request(app).post('/api/v1/incidents').set(bearer(token)).send(body);
 
 describe('creating reports', () => {
+  // Test type: Positive
   it('stores a valid app report with a readable tracking code and honest status', async () => {
     const { app, state } = createTestApp();
     const res = await submit(app, TOKENS.villagerA, report());
@@ -26,6 +27,7 @@ describe('creating reports', () => {
     expect(state.incidents[0]).toMatchObject({ source: 'APP', status: 'PENDING', urgency: 'NORMAL' });
   });
 
+  // Test type: Negative + Equivalence classes
   it('derives reporter, status and tracking code on the server', async () => {
     const { app, state } = createTestApp();
     await submit(
@@ -46,6 +48,7 @@ describe('creating reports', () => {
     expect(state.incidents[0].tracking_code).not.toBe('C-9999');
   });
 
+  // Test type: Negative + Equivalence classes
   it.each([
     ['missing category', { incidentType: undefined }],
     ['unknown category', { incidentType: 'DRAGON' }],
@@ -61,6 +64,7 @@ describe('creating reports', () => {
     expect(state.incidents).toHaveLength(0);
   });
 
+  // Test type: Positive
   it('marks an injured-person report URGENT and notifies the liaison officers at once', async () => {
     const { app, state } = createTestApp();
     const res = await submit(
@@ -77,6 +81,7 @@ describe('creating reports', () => {
     expect(state.notifications[0].notification_type).toBe('URGENT_INCIDENT');
   });
 
+  // Test type: Determinism
   it('is idempotent: retrying the same client request id creates one incident', async () => {
     const { app, state } = createTestApp();
     const body = report();
@@ -90,6 +95,7 @@ describe('creating reports', () => {
     expect(state.incidents).toHaveLength(1);
   });
 
+  // Test type: Positive + Boundary
   it('links a second report of the same type within 1 km and 2 hours as a duplicate', async () => {
     const { app, state } = createTestApp();
     const first = await submit(app, TOKENS.villagerA, report());
@@ -103,6 +109,7 @@ describe('creating reports', () => {
     expect(mine.body.data).toHaveLength(1);
   });
 
+  // Test type: Negative + Equivalence classes
   it.each([
     ['a different category', { incidentType: 'CROP_DAMAGE' }],
     ['a village more than 1 km away', { villageId: ID.kirinda }],
@@ -113,6 +120,7 @@ describe('creating reports', () => {
     expect(state.incidents[1].status).toBe('PENDING');
   });
 
+  // Test type: Negative + Boundary
   it('does not treat a report from more than 2 hours earlier as a duplicate', async () => {
     const { app, state } = createTestApp();
     await submit(app, TOKENS.villagerA, report());
@@ -120,6 +128,7 @@ describe('creating reports', () => {
     expect(state.incidents[1].status).toBe('PENDING');
   });
 
+  // Test type: Positive
   it('keeps the time the report was captured offline, not the time it synced', async () => {
     const { app, state } = createTestApp();
     const capturedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -127,6 +136,7 @@ describe('creating reports', () => {
     expect(new Date(state.incidents[0].occurred_at).toISOString()).toBe(capturedAt);
   });
 
+  // Test type: Positive
   it('resolves a GPS fix to the nearest village', async () => {
     const { app, state } = createTestApp();
     const res = await submit(
@@ -138,6 +148,7 @@ describe('creating reports', () => {
     expect(state.incidents[0]).toMatchObject({ village_id: ID.palatupana, call_back_required: false });
   });
 
+  // Test type: Boundary + Negative
   it('falls back to the registered village and flags a call-back when GPS is outside coverage', async () => {
     const { app, state } = createTestApp();
     const res = await submit(
@@ -149,6 +160,7 @@ describe('creating reports', () => {
     expect(state.incidents[0]).toMatchObject({ village_id: ID.palatupana, call_back_required: true });
   });
 
+  // Test type: Negative
   it('rejects an unknown village', async () => {
     const { app } = createTestApp();
     const res = await submit(app, TOKENS.villagerA, report({ villageId: randomUUID() }));
@@ -156,6 +168,7 @@ describe('creating reports', () => {
     expect(res.body.error.code).toBe('VILLAGE_NOT_FOUND');
   });
 
+  // Test type: Negative
   it("refuses a photo reference that points at someone else's folder", async () => {
     const { app } = createTestApp();
     const res = await submit(
@@ -167,6 +180,7 @@ describe('creating reports', () => {
     expect(res.body.error.code).toBe('INVALID_PHOTO_PATH');
   });
 
+  // Test type: Positive
   it("accepts a photo reference inside the reporter's own folder", async () => {
     const { app, state } = createTestApp();
     const photoPath = `${ID.villagerA}/${randomUUID()}.jpg`;
@@ -177,6 +191,7 @@ describe('creating reports', () => {
 });
 
 describe('photo upload tickets', () => {
+  // Test type: Positive
   it("issues a server-chosen path inside the caller's folder", async () => {
     const { app } = createTestApp();
     const res = await request(app)
@@ -188,6 +203,7 @@ describe('photo upload tickets', () => {
     expect(res.body.data.bucket).toBe('incident-photos');
   });
 
+  // Test type: Negative + Boundary
   it.each([
     ['a non-image type', { contentType: 'application/pdf', sizeBytes: 1000 }],
     ['an oversized file', { contentType: 'image/jpeg', sizeBytes: 6 * 1024 * 1024 }],
@@ -202,6 +218,7 @@ describe('photo upload tickets', () => {
 });
 
 describe('villager privacy', () => {
+  // Test type: Positive + Equivalence classes
   it("lists only the caller's own reports", async () => {
     const { app } = createTestApp();
     await submit(app, TOKENS.villagerA, report());
@@ -212,6 +229,7 @@ describe('villager privacy', () => {
     expect(res.body.data[0].incidentType).toBe('ELEPHANT_NEAR_VILLAGE');
   });
 
+  // Test type: Negative
   it("hides another villager's report as not found", async () => {
     const { app } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, report());
@@ -223,6 +241,7 @@ describe('villager privacy', () => {
     expect(res.body.error.code).toBe('REPORT_NOT_FOUND');
   });
 
+  // Test type: Positive
   it('shows the owner their report without officer-only fields', async () => {
     const { app } = createTestApp();
     const created = await submit(app, TOKENS.villagerA, report());
@@ -237,6 +256,7 @@ describe('villager privacy', () => {
     }
   });
 
+  // Test type: Negative
   it('rejects a malformed report id', async () => {
     const { app } = createTestApp();
     const res = await request(app).get('/api/v1/incidents/not-a-uuid').set(bearer(TOKENS.villagerA));

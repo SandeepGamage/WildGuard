@@ -26,6 +26,7 @@ import { ALL_TYPES, fail, jsonResponse, ok } from './helpers';
 const t = i18n.t.bind(i18n);
 
 describe('analytics helpers', () => {
+  // Test type: Boundary
   it('formats and shifts calendar dates', () => {
     expect(toIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
     expect(monthsBefore('2026-08-31', 3)).toBe('2026-05-31');
@@ -34,6 +35,7 @@ describe('analytics helpers', () => {
     expect(monthsBefore('2026-02-15', 3)).toBe('2025-11-15');
   });
 
+  // Test type: Positive
   it('builds default and widened filters', () => {
     const filters = defaultFilters('yala', new Date(2026, 9, 5));
     expect(filters).toEqual({
@@ -47,6 +49,7 @@ describe('analytics helpers', () => {
     expect(defaultFilters().parkId).toBe('');
   });
 
+  // Test type: Equivalence classes + Negative
   it('maps validation issues to fields', () => {
     const error = new ApiError(400, 'VALIDATION_FAILED', 'bad', {
       issues: [
@@ -61,6 +64,7 @@ describe('analytics helpers', () => {
     expect(fieldErrors(null)).toEqual({});
   });
 
+  // Test type: Boundary + Equivalence classes
   it('formats changes, densities and months', () => {
     expect(formatChange(12)).toBe('+12%');
     expect(formatChange(-5)).toBe('−5%');
@@ -74,6 +78,7 @@ describe('analytics helpers', () => {
     expect(monthLabel('2026-06', true)).toBe('Jun 26');
   });
 
+  // Test type: Positive
   it('computes Leaflet bounds for cells and outlines', () => {
     const [[south, west], [north, east]] = cellBounds(
       { latitude: 6.3, longitude: 81.3 },
@@ -115,11 +120,13 @@ describe('saved report sorting', () => {
   ];
   const ids = (list) => list.map((item) => item.id);
 
+  // Test type: Positive
   it('defaults to newest first and never mutates the input', () => {
     expect(ids(sortSavedReports(items, DEFAULT_SAVED_SORT))).toEqual(['b', 'c', 'a']);
     expect(ids(items)).toEqual(['a', 'b', 'c']);
   });
 
+  // Test type: Equivalence classes
   it('sorts by incidents, period and report label in either direction', () => {
     expect(ids(sortSavedReports(items, { key: 'incidents', direction: 'desc' }))).toEqual(['b', 'c', 'a']);
     expect(ids(sortSavedReports(items, { key: 'incidents', direction: 'asc' }))).toEqual(['a', 'c', 'b']);
@@ -132,10 +139,12 @@ describe('saved report sorting', () => {
     ]);
   });
 
+  // Test type: Boundary
   it('breaks ties with the newest report first', () => {
     expect(ids(sortSavedReports(items, { key: 'park', direction: 'asc' }))).toEqual(['b', 'c', 'a']);
   });
 
+  // Test type: Equivalence classes
   it('flips the sorted column and starts other columns in their natural order', () => {
     expect(nextSort(DEFAULT_SAVED_SORT, 'generated')).toEqual({ key: 'generated', direction: 'asc' });
     expect(nextSort(DEFAULT_SAVED_SORT, 'park')).toEqual({ key: 'park', direction: 'asc' });
@@ -144,6 +153,7 @@ describe('saved report sorting', () => {
 });
 
 describe('errors, storage and language', () => {
+  // Test type: Equivalence classes
   it('turns backend codes into friendly messages', () => {
     expect(friendlyError({ code: 'DATA_SOURCE_UNAVAILABLE' }, t)).toBe(t('errors.dataUnavailable'));
     expect(friendlyError({ code: 'INVALID_CREDENTIALS' }, t)).toBe('Wrong email or password.');
@@ -152,6 +162,7 @@ describe('errors, storage and language', () => {
     expect(friendlyError(undefined, t)).toBe(t('errors.generic'));
   });
 
+  // Test type: Positive
   it('stores and clears the token', () => {
     expect(getToken()).toBeNull();
     setToken('abc');
@@ -161,6 +172,7 @@ describe('errors, storage and language', () => {
     expect(getToken()).toBeNull();
   });
 
+  // Test type: Negative
   it('survives blocked storage', () => {
     const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
@@ -179,6 +191,7 @@ describe('errors, storage and language', () => {
     remove.mockRestore();
   });
 
+  // Test type: Positive
   it('switches and remembers the language', async () => {
     await setLanguage('si');
     expect(i18n.language).toBe('si');
@@ -188,6 +201,7 @@ describe('errors, storage and language', () => {
     await setLanguage('en');
   });
 
+  // Test type: Positive
   it('saves a downloaded file through a temporary link', () => {
     vi.useFakeTimers();
     URL.createObjectURL = vi.fn(() => 'blob:report');
@@ -209,6 +223,7 @@ describe('API client', () => {
     vi.restoreAllMocks();
   });
 
+  // Test type: Positive
   it('sends the token and unwraps the envelope', async () => {
     setToken('tok');
     globalThis.fetch = vi.fn().mockResolvedValue(ok({ hello: 'world' }));
@@ -220,6 +235,7 @@ describe('API client', () => {
     expect(JSON.parse(options.body)).toEqual({ a: 1 });
   });
 
+  // Test type: Equivalence classes
   it('omits the token for public calls', async () => {
     setToken('tok');
     globalThis.fetch = vi.fn().mockResolvedValue(ok({}));
@@ -227,6 +243,7 @@ describe('API client', () => {
     expect(globalThis.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 
+  // Test type: Negative
   it('throws ApiError with the backend code and details', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(fail(400, 'VALIDATION_FAILED', { issues: [] }));
     await expect(apiRequest('/x')).rejects.toMatchObject({
@@ -236,6 +253,7 @@ describe('API client', () => {
     });
   });
 
+  // Test type: Negative
   it('handles unreadable bodies and network failures', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -250,6 +268,7 @@ describe('API client', () => {
     await expect(apiRequest('/x')).rejects.toMatchObject({ status: 0, code: 'NETWORK_ERROR' });
   });
 
+  // Test type: Negative + Equivalence classes
   it('signs out on 401 for authenticated calls only', async () => {
     const handler = vi.fn();
     setUnauthorizedHandler(handler);
@@ -260,6 +279,7 @@ describe('API client', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  // Test type: Positive + Negative
   it('downloads a file with its name, or reports the failure', async () => {
     const blob = new Blob(['a,b']);
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -279,6 +299,7 @@ describe('API client', () => {
     await expect(apiDownload('/f')).rejects.toMatchObject({ code: 'EXPORT_FAILED' });
   });
 
+  // Test type: Positive
   it('calls the analytics and auth endpoints', async () => {
     globalThis.fetch = vi.fn().mockImplementation(async () => ok({ ok: true }));
     await getParks();

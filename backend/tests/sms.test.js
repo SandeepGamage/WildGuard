@@ -5,6 +5,7 @@ const { MessageParser } = require('../src/services/sms/messageParser');
 const simulate = (app, body) => request(app).post('/api/v1/sms/simulate').send(body);
 
 describe('SMS simulator', () => {
+  // Test type: Positive
   it('creates a pending report from "ALIYA PALATUPANA" and acknowledges it with a tracking code', async () => {
     const { app, state } = createTestApp();
     const res = await simulate(app, { phone: '0701112233', message: 'ALIYA PALATUPANA' });
@@ -25,6 +26,7 @@ describe('SMS simulator', () => {
     expect(state.smsLogs.map((log) => log.direction)).toEqual(['INBOUND', 'OUTBOUND']);
   });
 
+  // Test type: Positive + Equivalence classes
   it('accepts lower case, extra spaces, a typo in the place name and Sinhala keywords', async () => {
     const { app, state } = createTestApp();
     await simulate(app, { phone: '0701112233', message: '  aliya   palatupana ' });
@@ -36,6 +38,7 @@ describe('SMS simulator', () => {
     expect(state.incidents.filter((row) => row.village_id === ID.kirinda)).toHaveLength(1);
   });
 
+  // Test type: Positive
   it('groups an SMS report with an earlier report of the same herd as a duplicate', async () => {
     const { app, state } = createTestApp();
     await simulate(app, { phone: '0701112233', message: 'ALIYA PALATUPANA' });
@@ -45,6 +48,7 @@ describe('SMS simulator', () => {
     expect(state.incidents[1].status).toBe('DUPLICATE');
   });
 
+  // Test type: Negative
   it('replies with the format and an example in all three languages for an invalid SMS', async () => {
     const { app, state } = createTestApp();
     const res = await simulate(app, { phone: '0701112233', message: 'HELLO THERE' });
@@ -58,6 +62,7 @@ describe('SMS simulator', () => {
     expect(state.incidents).toHaveLength(0);
   });
 
+  // Test type: Negative
   it('flags a call-back and uses the registered village when the place is not recognised', async () => {
     const { app, state } = createTestApp();
     const res = await simulate(app, { phone: '0771234812', message: 'ALIYA SOMEWHERE' });
@@ -73,6 +78,7 @@ describe('SMS simulator', () => {
     });
   });
 
+  // Test type: Negative
   it('creates no incident when the place is unknown and the sender is not registered', async () => {
     const { app, state } = createTestApp();
     const res = await simulate(app, { phone: '0701112233', message: 'ALIYA SOMEWHERE' });
@@ -82,18 +88,21 @@ describe('SMS simulator', () => {
     expect(state.incidents).toHaveLength(0);
   });
 
+  // Test type: Negative
   it('rejects an invalid phone number and an empty message', async () => {
     const { app } = createTestApp();
     expect((await simulate(app, { phone: 'abc', message: 'ALIYA PALATUPANA' })).status).toBe(400);
     expect((await simulate(app, { phone: '0701112233', message: '' })).status).toBe(400);
   });
 
+  // Test type: Negative
   it('is not mounted when the simulator is disabled', async () => {
     const { app } = createTestApp({ smsSimulatorEnabled: false });
     const res = await simulate(app, { phone: '0701112233', message: 'ALIYA PALATUPANA' });
     expect(res.status).toBe(404);
   });
 
+  // Test type: Negative + Determinism
   it('acknowledges and queues the report when the database save fails, then saves it on retry', async () => {
     const { app, state, services } = createTestApp();
     state.failNextInsert = true;
@@ -115,6 +124,7 @@ describe('SMS simulator', () => {
 describe('MessageParser', () => {
   const parser = new MessageParser();
 
+  // Test type: Positive + Equivalence classes
   it('splits keyword and place and reports the keyword language', () => {
     expect(parser.parse('ALIYA PALATUPANA')).toEqual({
       ok: true,
@@ -128,10 +138,12 @@ describe('MessageParser', () => {
     expect(parser.parse('ELEPHANT Kirinda')).toMatchObject({ language: 'en' });
   });
 
+  // Test type: Positive
   it('keeps multi-word place names together', () => {
     expect(parser.parse('ALIYA Tissa Maha Rama').locationText).toBe('Tissa Maha Rama');
   });
 
+  // Test type: Negative + Equivalence classes
   it.each([[''], ['   '], ['HELLO'], [null]])('rejects %p', (message) => {
     expect(parser.parse(message).ok).toBe(false);
   });

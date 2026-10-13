@@ -4,6 +4,7 @@ const { createTestApp, bearer, TOKENS, ID } = require('./helpers/testApp');
 describe('authentication', () => {
   const { app } = createTestApp();
 
+  // Test type: Negative
   it('rejects requests without a token', async () => {
     const res = await request(app).get('/api/v1/auth/me');
     expect(res.status).toBe(401);
@@ -13,17 +14,20 @@ describe('authentication', () => {
     });
   });
 
+  // Test type: Negative
   it('rejects an invalid token', async () => {
     const res = await request(app).get('/api/v1/auth/me').set(bearer('not-a-real-token'));
     expect(res.status).toBe(401);
   });
 
+  // Test type: Negative
   it('rejects a valid Supabase user that has no profile', async () => {
     const res = await request(app).get('/api/v1/auth/me').set(bearer(TOKENS.noProfile));
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('PROFILE_NOT_FOUND');
   });
 
+  // Test type: Positive
   it('returns the role from the database profile', async () => {
     const res = await request(app).get('/api/v1/auth/me').set(bearer(TOKENS.officer));
     expect(res.status).toBe(200);
@@ -36,6 +40,7 @@ describe('authentication', () => {
     ]);
   });
 
+  // Test type: Negative + Equivalence classes
   it('protects every officer, incident and notification route', async () => {
     const routes = [
       ['get', '/api/v1/officer/queue'],
@@ -60,6 +65,7 @@ describe('villager registration', () => {
     consent: true,
   };
 
+  // Test type: Negative + Equivalence classes
   it('creates a VILLAGER account even if the client asks for another role', async () => {
     const { app, authGateway } = createTestApp();
     const res = await request(app)
@@ -72,6 +78,7 @@ describe('villager registration', () => {
     expect(authGateway.created[0].email).toBe('0777654321@phone.wildguard.example');
   });
 
+  // Test type: Negative
   it('refuses a mobile number that is already registered', async () => {
     const { app } = createTestApp();
     const res = await request(app)
@@ -81,6 +88,7 @@ describe('villager registration', () => {
     expect(res.body.error.code).toBe('PHONE_ALREADY_REGISTERED');
   });
 
+  // Test type: Negative + Boundary
   it('requires consent, a valid phone number and an 8+ character password', async () => {
     const { app } = createTestApp();
     const res = await request(app)
@@ -91,6 +99,7 @@ describe('villager registration', () => {
     expect(fields).toEqual(expect.arrayContaining(['body.consent', 'body.phone', 'body.password']));
   });
 
+  // Test type: Negative
   it('does not leak internal details on unexpected failures', async () => {
     const { app, authGateway } = createTestApp();
     authGateway.createUser = async () => {

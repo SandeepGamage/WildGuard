@@ -24,6 +24,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
   const send = (app, token, body) =>
     request(app).post('/api/v1/patrols/sync').set(bearer(token)).send(body);
 
+  // Test type: Positive
   it('stores a batch and acknowledges the exact ids', async () => {
     const { app, state } = createTestApp();
     const body = batch();
@@ -36,6 +37,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect(state.patrolSessions[0].sectorId).toBe(ID.sector3);
   });
 
+  // Test type: Determinism
   it('is idempotent when the same batch is retried', async () => {
     const { app, state } = createTestApp();
     const body = batch();
@@ -49,6 +51,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect(state.patrolIncidentRows).toHaveLength(1);
   });
 
+  // Test type: Positive
   it('completes a session on a later sync', async () => {
     const { app, state } = createTestApp();
     const body = batch();
@@ -65,6 +68,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect(state.patrolSessions[0].status).toBe('COMPLETED');
   });
 
+  // Test type: Negative
   it('rejects a completed session without an end time', async () => {
     const { app } = createTestApp();
     const body = batch();
@@ -75,6 +79,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect(res.status).toBe(400);
   });
 
+  // Test type: Negative + Boundary
   it('rejects more than 50 track points per batch', async () => {
     const { app } = createTestApp();
     const point = { latitude: 6.3, longitude: 81.37, recordedAt: '2026-10-07T06:00:10.000Z' };
@@ -87,6 +92,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect(res.status).toBe(400);
   });
 
+  // Test type: Negative + Equivalence classes
   it('is restricted to field rangers', async () => {
     const { app } = createTestApp();
 
@@ -95,6 +101,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
     expect((await request(app).post('/api/v1/patrols/sync').send(batch())).status).toBe(401);
   });
 
+  // Test type: Negative
   it("refuses a photo outside the ranger's own folder", async () => {
     const { app } = createTestApp();
     const body = batch();
@@ -107,6 +114,7 @@ describe('POST /api/v1/patrols/sync (UC1c)', () => {
 });
 
 describe('POST /api/v1/patrols/photo-upload', () => {
+  // Test type: Positive
   it('issues an upload ticket to a ranger', async () => {
     const { app } = createTestApp();
 

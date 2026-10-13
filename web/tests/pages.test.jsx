@@ -49,6 +49,7 @@ const chooseTypeAndContinue = async (user, type = 'Hotspot map') => {
 describe('AnalyticsPage (UC4)', () => {
   beforeEach(() => vi.mocked(saveFile).mockClear());
 
+  // Test type: Positive
   it('starts idle, generates for the first park and shows the dashboard', async () => {
     const fetch = mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -77,6 +78,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(body.incidentTypes).toHaveLength(10);
   });
 
+  // Test type: Positive
   it('moves between set-up and results with the stepper', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
     const user = userEvent.setup();
@@ -104,6 +106,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByRole('button', { current: 'step' })).toHaveAccessibleName('3. Results');
   });
 
+  // Test type: Positive
   it('sets the dates from the period buttons and clears them after manual edits', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]) });
     const user = userEvent.setup();
@@ -126,6 +129,7 @@ describe('AnalyticsPage (UC4)', () => {
       .forEach((button) => expect(button).toHaveAttribute('aria-pressed', 'false'));
   });
 
+  // Test type: Negative + Boundary
   it('suggests widening the range when nothing matches (A2)', async () => {
     const fetch = mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -149,6 +153,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByLabelText('From')).toHaveValue(widened.dateFrom);
   });
 
+  // Test type: Negative
   it('highlights invalid filters and keeps the values (E1)', async () => {
     mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -167,6 +172,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByLabelText('To')).toHaveValue('2020-01-01');
   });
 
+  // Test type: Negative
   it('offers a retry when the data source is unavailable (E2)', async () => {
     const fetch = mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -183,6 +189,7 @@ describe('AnalyticsPage (UC4)', () => {
     await waitFor(() => expect(fetch.mock.calls.filter(([, o]) => o?.method === 'POST')).toHaveLength(2));
   });
 
+  // Test type: Negative
   it('shows a network message for other failures', async () => {
     mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -195,6 +202,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(await screen.findByTestId('notice-unavailable')).toHaveTextContent('Could not reach the server');
   });
 
+  // Test type: Positive + Negative
   it('exports a file, and offers the other format when export fails (UC4c, E3)', async () => {
     let exportOk = false;
     const fetch = mockFetch({
@@ -226,6 +234,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.queryByText(/file downloaded/)).toBeNull();
   });
 
+  // Test type: Equivalence classes
   it('shows a different layout and export defaults for each report type', async () => {
     mockFetch({
       'GET /analytics/parks': ok([PARK]),
@@ -252,6 +261,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(within(dialog).getByRole('checkbox', { name: 'Hotspot map' })).not.toBeChecked();
   });
 
+  // Test type: Positive
   it('closes the export dialog with Cancel', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
     const user = userEvent.setup();
@@ -266,6 +276,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(exportDialog).not.toHaveAttribute('open');
   });
 
+  // Test type: Positive
   it('opens a saved report with the filters it was built from', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'GET /analytics/reports/report-1': ok(makeReport()) });
     const user = userEvent.setup();
@@ -277,6 +288,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByLabelText('To')).toHaveValue('2026-08-31');
   });
 
+  // Test type: Negative
   it('has no default report type and keeps Criteria locked until one is chosen', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]) });
     const user = userEvent.setup();
@@ -297,6 +309,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByLabelText('From')).toBeInTheDocument();
   });
 
+  // Test type: Positive
   it('starts the journey over from the results after confirming Reset', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'POST /analytics/reports': ok(makeReport(), 201) });
     const user = userEvent.setup();
@@ -336,6 +349,7 @@ describe('AnalyticsPage (UC4)', () => {
     expect(screen.getByRole('button', { name: 'Last 3 months' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // Test type: Positive
   it('leaves a saved report when the journey is reset', async () => {
     mockFetch({ 'GET /analytics/parks': ok([PARK]), 'GET /analytics/reports/report-1': ok(makeReport()) });
     const user = userEvent.setup();
@@ -348,6 +362,7 @@ describe('AnalyticsPage (UC4)', () => {
     screen.getAllByRole('radio').forEach((radio) => expect(radio).not.toBeChecked());
   });
 
+  // Test type: Negative
   it('shows loading, then an error with retry for the park list', async () => {
     let attempt = 0;
     mockFetch({
@@ -372,6 +387,7 @@ describe('SavedReportsPage', () => {
     totalIncidents: 184,
   };
 
+  // Test type: Positive
   it('lists saved reports with an Open button', async () => {
     mockFetch({ 'GET /analytics/reports': ok([SAVED_ROW]) });
     renderWithProviders(<SavedReportsPage />);
@@ -383,6 +399,7 @@ describe('SavedReportsPage', () => {
     expect(screen.getByTestId('report-dialog')).not.toHaveAttribute('open');
   });
 
+  // Test type: Positive
   it('opens a saved report in a pop-up with its results, exports it and closes', async () => {
     const report = makeReport({ filter: { ...makeReport().filter, reportType: 'PATROL_COVERAGE' } });
     const fetch = mockFetch({
@@ -427,6 +444,7 @@ describe('SavedReportsPage', () => {
     expect(within(dialog).queryByTestId('report')).toBeNull();
   });
 
+  // Test type: Negative
   it('shows an error with retry when a saved report cannot be loaded, and an export failure', async () => {
     let attempt = 0;
     mockFetch({
@@ -449,6 +467,7 @@ describe('SavedReportsPage', () => {
     expect(failed).toHaveTextContent('Export as CSV');
   });
 
+  // Test type: Positive
   it('sorts by a column heading and keeps the order in the URL', async () => {
     const saved = (id, generatedAt, totalIncidents, reportType) => ({
       id,
@@ -492,6 +511,7 @@ describe('SavedReportsPage', () => {
     );
   });
 
+  // Test type: Positive
   it('sorts from the Sort menu, in step with the column headings', async () => {
     const saved = (id, generatedAt, totalIncidents) => ({
       id,
@@ -540,6 +560,7 @@ describe('SavedReportsPage', () => {
     expect(screen.getByRole('button', { name: 'Sort: Fewest incidents' })).toBeInTheDocument();
   });
 
+  // Test type: Positive + Boundary
   it('closes the Sort menu with Escape or a click outside, and moves with the arrow keys', async () => {
     mockFetch({
       'GET /analytics/reports': ok([
@@ -572,6 +593,7 @@ describe('SavedReportsPage', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  // Test type: Boundary + Negative
   it('shows the empty and error states', async () => {
     mockFetch({ 'GET /analytics/reports': ok([]) });
     const { unmount } = renderWithProviders(<SavedReportsPage />);
@@ -600,6 +622,7 @@ describe('App routes', () => {
       </QueryClientProvider>,
     );
 
+  // Test type: Positive
   it('shows the dashboard and the saved reports page to a signed-in manager', async () => {
     setToken('jwt');
     mockFetch({
@@ -614,6 +637,7 @@ describe('App routes', () => {
     expect(await screen.findByRole('heading', { name: 'Saved reports' })).toBeInTheDocument();
   });
 
+  // Test type: Negative
   it('sends unknown paths to the dashboard (and signed-out users to login)', async () => {
     renderApp('/nowhere');
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();

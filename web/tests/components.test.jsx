@@ -53,6 +53,7 @@ describe('FilterBar', () => {
     return { onChange, onGenerate, value };
   };
 
+  // Test type: Positive
   it('edits dates, park, report type and incident types', async () => {
     const user = userEvent.setup();
     const { onChange, value } = setup();
@@ -76,6 +77,7 @@ describe('FilterBar', () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...value, dateTo: '2026-09-30' });
   });
 
+  // Test type: Positive
   it('adds a type back in canonical order and can select all again', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -93,6 +95,7 @@ describe('FilterBar', () => {
     expect(onChange.mock.lastCall[0].incidentTypes).toEqual(ALL_TYPES);
   });
 
+  // Test type: Positive
   it('generates on submit and describes each report type', async () => {
     const user = userEvent.setup();
     const { onGenerate } = setup();
@@ -103,6 +106,7 @@ describe('FilterBar', () => {
     expect(onGenerate).toHaveBeenCalled();
   });
 
+  // Test type: Positive
   it('shows one set-up screen at a time with Next and Back', async () => {
     const user = userEvent.setup();
     const onNext = vi.fn();
@@ -119,6 +123,7 @@ describe('FilterBar', () => {
     expect(onGenerate).not.toHaveBeenCalled();
   });
 
+  // Test type: Negative
   it('keeps Next disabled until a report type is chosen', async () => {
     const user = userEvent.setup();
     const onNext = vi.fn();
@@ -131,6 +136,7 @@ describe('FilterBar', () => {
     expect(onNext).not.toHaveBeenCalled();
   });
 
+  // Test type: Positive
   it('shows the criteria screen with Back and Generate', async () => {
     const user = userEvent.setup();
     const onBack = vi.fn();
@@ -142,6 +148,7 @@ describe('FilterBar', () => {
     expect(onGenerate).toHaveBeenCalled();
   });
 
+  // Test type: Equivalence classes
   it('offers the ranger patrol types alongside the community report types', async () => {
     const user = userEvent.setup();
     const { onChange } = setup({ step: 'criteria' });
@@ -159,6 +166,7 @@ describe('FilterBar', () => {
     expect(onChange.mock.lastCall[0].incidentTypes).toHaveLength(9);
   });
 
+  // Test type: Positive
   it('resets the criteria to the defaults but keeps the report type', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -181,6 +189,7 @@ describe('FilterBar', () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...defaultFilters('yala'), reportType: 'PATROL_COVERAGE' });
   });
 
+  // Test type: Negative
   it('highlights invalid fields with the hint (E1) and shows progress', () => {
     setup({
       errors: {
@@ -197,6 +206,7 @@ describe('FilterBar', () => {
 });
 
 describe('KpiTiles', () => {
+  // Test type: Positive
   it('shows the four KPIs and an honest "no patrol data" tile', () => {
     const report = makeReport();
     render(<KpiTiles stats={report.stats} coverage={report.coverage} />);
@@ -207,6 +217,7 @@ describe('KpiTiles', () => {
     expect(screen.getByTestId('kpi-conflict')).toHaveTextContent('68events · 2 injuries');
   });
 
+  // Test type: Equivalence classes
   it('shows coverage once patrol data exists, and no comparison without a previous period', () => {
     render(
       <KpiTiles
@@ -220,6 +231,7 @@ describe('KpiTiles', () => {
 });
 
 describe('HotspotMap', () => {
+  // Test type: Positive
   it('draws the park, one rectangle per cell in its level colour, villages and a numeric legend', () => {
     render(<HotspotMap report={makeReport()} />);
     expect(screen.getByTestId('tiles').dataset.url).toContain('openstreetmap.org');
@@ -235,6 +247,7 @@ describe('HotspotMap', () => {
     ]);
   });
 
+  // Test type: Negative
   it('can hide the heatmap and keeps the patrol layers disabled without UC1 data', async () => {
     const user = userEvent.setup();
     render(<HotspotMap report={makeReport()} />);
@@ -247,6 +260,7 @@ describe('HotspotMap', () => {
     expect(screen.queryAllByTestId('heat-cell')).toHaveLength(0);
   });
 
+  // Test type: Positive
   it('shows ranger GPS points as dots, with a legend, and can hide them', async () => {
     const user = userEvent.setup();
     const patrolPoints = [
@@ -263,6 +277,7 @@ describe('HotspotMap', () => {
     expect(screen.queryByTestId('ranger-points-legend')).toBeNull();
   });
 
+  // Test type: Positive
   it('lists coverage gaps when patrol data exists', async () => {
     const user = userEvent.setup();
     const coverage = { available: true, coveragePercent: 50, unpatrolledSectors: [{ name: 'Sector 4' }] };
@@ -272,6 +287,7 @@ describe('HotspotMap', () => {
     expect(screen.queryByTestId('coverage-gaps')).toBeNull();
   });
 
+  // Test type: Boundary
   it('falls back to the heatmap bounds and says when there are no hotspots', () => {
     const report = makeReport({
       park: { ...PARK, boundary: [] },
@@ -287,6 +303,7 @@ describe('HotspotMap', () => {
     expect(screen.queryByTestId('park-outline')).toBeNull();
   });
 
+  // Test type: Boundary + Negative
   it('renders no map without any bounds', () => {
     render(
       <HotspotMap
@@ -298,12 +315,14 @@ describe('HotspotMap', () => {
 });
 
 describe('ConflictTrendChart', () => {
+  // Test type: Positive
   it('draws conflict events per month and names the peak month', () => {
     render(<ConflictTrendChart trends={makeReport().trends} />);
     expect(screen.getByRole('img', { name: 'Area chart of conflict events per month.' })).toBeInTheDocument();
     expect(screen.getByTestId('trend-peak')).toHaveTextContent('Peak month: Aug (32 events)');
   });
 
+  // Test type: Boundary
   it('labels months with the year when the range spans years, and handles no events', () => {
     const trends = {
       months: ['2025-12', '2026-01'],
@@ -318,6 +337,7 @@ describe('ConflictTrendChart', () => {
 });
 
 describe('ConflictTypeBars', () => {
+  // Test type: Positive + Boundary
   it('lists only the conflict types that occurred, largest first', () => {
     const { unmount } = render(<ConflictTypeBars trends={makeReport().trends} />);
     expect(screen.getAllByTestId('type-bar').map((bar) => bar.textContent)).toEqual([
@@ -331,6 +351,7 @@ describe('ConflictTypeBars', () => {
 });
 
 describe('ReportInsights', () => {
+  // Test type: Positive
   it('points at the busiest hotspot and any unpatrolled sectors', () => {
     const report = makeReport({
       coverage: {
@@ -349,6 +370,7 @@ describe('ReportInsights', () => {
 });
 
 describe('TopHotspotsTable and ReportNotice', () => {
+  // Test type: Positive + Boundary
   it('lists hotspots, or says there are none', () => {
     const { unmount } = render(<TopHotspotsTable rows={makeReport().topHotspots} totalIncidents={184} />);
     const row = screen.getAllByRole('row')[1];
@@ -362,6 +384,7 @@ describe('TopHotspotsTable and ReportNotice', () => {
     expect(screen.getByText('No hotspots yet.')).toBeInTheDocument();
   });
 
+  // Test type: Equivalence classes
   it('shows a notice with an optional action', async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();
@@ -393,6 +416,7 @@ describe('Per-type report panels', () => {
     ],
   };
 
+  // Test type: Boundary
   it('CountBars hides empty rows and puts the longest bar first', () => {
     render(
       <CountBars
@@ -409,17 +433,20 @@ describe('Per-type report panels', () => {
     expect(bars.map((bar) => bar.textContent)).toEqual(['Sector 59', 'Sector 35']);
   });
 
+  // Test type: Boundary
   it('CountBars and the month chart say when there is nothing to show', () => {
     render(<CountBars title="Incidents by type" empty="No incidents in this period." rows={[]} />);
     expect(screen.getByText('No incidents in this period.')).toBeInTheDocument();
   });
 
+  // Test type: Positive
   it('IncidentsByMonthChart names the busiest month', () => {
     render(<IncidentsByMonthChart byMonth={makeReport().stats.byMonth} />);
     expect(screen.getByRole('img', { name: 'Bar chart of incidents per month.' })).toBeInTheDocument();
     expect(screen.getByTestId('busiest-month')).toHaveTextContent('Busiest month: Aug (76 incidents)');
   });
 
+  // Test type: Equivalence classes
   it('CoveragePanel lists sectors not patrolled, or explains why it cannot', () => {
     const { unmount } = render(<CoveragePanel coverage={GAPS} />);
     expect(
@@ -441,6 +468,7 @@ describe('Per-type report panels', () => {
     expect(screen.getByText('No patrol data for this period yet.')).toBeInTheDocument();
   });
 
+  // Test type: Positive
   it('KpiTiles shows the tiles a report type asks for, in its order', () => {
     const report = makeReport();
     render(
@@ -470,6 +498,7 @@ describe('Per-type report panels', () => {
       <ReportResults report={makeReport({ filter: { ...makeReport().filter, reportType }, ...overrides })} />,
     );
 
+  // Test type: Equivalence classes
   it('lays out an incident summary around counts by type, month and sector', () => {
     renderType('INCIDENT_SUMMARY');
     expect(panels()).toEqual({
@@ -488,12 +517,14 @@ describe('Per-type report panels', () => {
     expect(firstTile()).toBe('kpi-incidents');
   });
 
+  // Test type: Equivalence classes
   it('lays out a hotspot map report around the map and top hotspots', () => {
     renderType('HOTSPOT_MAP');
     expect(panels()).toMatchObject({ map: true, hotspots: true, byType: false, coverage: false });
     expect(screen.getByTestId('report')).toHaveAttribute('data-report-type', 'HOTSPOT_MAP');
   });
 
+  // Test type: Equivalence classes
   it('lays out a patrol coverage report around coverage, with the map for context', () => {
     renderType('PATROL_COVERAGE', { coverage: GAPS });
     expect(panels()).toMatchObject({
@@ -507,6 +538,7 @@ describe('Per-type report panels', () => {
     expect(screen.getByTestId('kpi-patrol-hours')).toBeInTheDocument();
   });
 
+  // Test type: Equivalence classes
   it('lays out a human–wildlife conflict report around conflict over time', () => {
     renderType('HUMAN_WILDLIFE_CONFLICT');
     expect(panels()).toMatchObject({
@@ -521,6 +553,7 @@ describe('Per-type report panels', () => {
 });
 
 describe('ExportDialog', () => {
+  // Test type: Positive
   it('ticks the sections it is given by default', () => {
     render(
       <ExportDialog
@@ -537,6 +570,7 @@ describe('ExportDialog', () => {
     expect(ticked).toEqual(['KPI summary', 'Coverage gaps']);
   });
 
+  // Test type: Positive
   it('exports with the chosen format and sections, in a fixed order', async () => {
     const user = userEvent.setup();
     const onExport = vi.fn();
@@ -554,6 +588,7 @@ describe('ExportDialog', () => {
     });
   });
 
+  // Test type: Boundary + Negative
   it('needs at least one section, can be cancelled, and closes', async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
@@ -572,6 +607,7 @@ describe('ExportDialog', () => {
     expect(screen.getByRole('dialog', { hidden: true })).not.toHaveAttribute('open');
   });
 
+  // Test type: Positive
   it('closes on Escape through the cancel event and shows progress while exporting', () => {
     const onCancel = vi.fn();
     render(<ExportDialog open busy onCancel={onCancel} onExport={vi.fn()} />);

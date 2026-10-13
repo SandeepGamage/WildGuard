@@ -19,6 +19,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 1: Collar simulation in HazardMonitoringController', () => {
+    // Test type: Positive + Equivalence classes
     it('simulates collar telemetry and executes geofence checks across risk zones', async () => {
       // 1. Farmland breach reading
       const breachReading = {
@@ -38,6 +39,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
       expect(res.body.data.alert.zone_name).toContain('Palatupana');
     });
 
+    // Test type: Negative + Determinism
     it('suppresses duplicate alerts (A2) by updating existing open alert location without dispatch storm', async () => {
       const reading1 = {
         collarId: 'EL-07',
@@ -61,6 +63,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
       expect(res2.body.data.isDuplicateSuppressed).toBe(true);
     });
 
+    // Test type: Negative + Equivalence classes
     it('logs silent telemetry without active alarms when animal is in safe zone (A1)', async () => {
       const safeReading = {
         collarId: 'EL-07',
@@ -80,6 +83,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 2: Alert on dashboard with status timeline (O1 & UC2e)', () => {
+    // Test type: Positive
     it('creates alert with 5-stage status timeline and logs village early-warning SMS (UC2e)', async () => {
       // Ingest breach in Palatupana Farmland / Village perimeter
       const res = await request(app).post('/api/v1/collar/telemetry').send({
@@ -106,6 +110,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 3: Nearest-responder dispatch (O4 & UC2b)', () => {
+    // Test type: Positive
     it('auto-dispatches nearest responder using patrol positions and updates timeline on 3m acknowledgement', async () => {
       const breachRes = await request(app).post('/api/v1/collar/telemetry').send({
         collarId: 'EL-07',
@@ -139,6 +144,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 4: Escalation and manual responder assignment (O2, UC2d & E2)', () => {
+    // Test type: Negative
     it('escalates alert on timeout/unavailability and lists candidates for manual assignment', async () => {
       const breachRes = await request(app).post('/api/v1/collar/telemetry').send({
         collarId: 'EL-07',
@@ -178,6 +184,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 5: Camera-trap review queue (O3, UC2c & A3)', () => {
+    // Test type: Boundary + Equivalence classes
     it('queues low confidence (<0.80) detections for Operations Officer review and raises alert on approval', async () => {
       // 1. Upload low confidence camera trap image
       const trapRes = await request(app).post('/api/v1/collar/camera-trap').send({
@@ -214,6 +221,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
       expect(reviewActionRes.body.data.alert.animal_label).toContain('TRAP-04');
     });
 
+    // Test type: Boundary + Equivalence classes
     it('auto-raises alert when camera trap AI confidence is >= 0.80 with threat', async () => {
       const trapRes = await request(app).post('/api/v1/collar/camera-trap').send({
         trapId: 'TRAP-09',
@@ -231,6 +239,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Screenshot 6: Collar signal lost & Alert resolution with reason (E1 & Table 18 Step 10)', () => {
+    // Test type: Boundary
     it('flags silent collar (>30 min) as Signal Lost and displays last known position', async () => {
       const sigRes = await request(app)
         .post('/api/v1/collar/devices/COL-402/simulate-signal-lost')
@@ -240,6 +249,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
       expect(sigRes.body.data.lastKnownLocation).toBeDefined();
     });
 
+    // Test type: Positive + Negative
     it('resolves alert with mandatory resolution reason (Table 18 Step 10)', async () => {
       const breachRes = await request(app).post('/api/v1/collar/telemetry').send({
         collarId: 'EL-07',
@@ -274,6 +284,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
   });
 
   describe('Backwards Compatibility & Audit Trail', () => {
+    // Test type: Positive
     it('supports legacy acknowledgeAlert and markFalseAlarm actions', async () => {
       const breachRes = await request(app).post('/api/v1/collar/telemetry').send({
         collarId: 'EL-07',
@@ -293,6 +304,7 @@ describe('UC2: Real-time Wildlife Hazard & Collar Alert Management (SE3070 A2 Re
       expect(falseAlarmRes.body.data.alert.status).toBe(ALERT_STATUS.FALSE_ALARM);
     });
 
+    // Test type: Positive
     it('returns geofence zones, tracked collars, and audit trail', async () => {
       const zones = await request(app).get('/api/v1/collar/zones').expect(200);
       expect(zones.body.data.length).toBeGreaterThan(0);

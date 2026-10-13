@@ -6,6 +6,7 @@ const { createTestApp, ID } = require('./helpers/testApp');
 const request = require('supertest');
 
 describe('phone helpers', () => {
+  // Test type: Positive + Equivalence classes
   it.each([
     ['0771234567', '0771234567'],
     ['+94 77 123 4567', '0771234567'],
@@ -15,10 +16,12 @@ describe('phone helpers', () => {
     expect(normalizePhone(input)).toBe(expected);
   });
 
+  // Test type: Negative + Equivalence classes
   it.each([['12345'], ['abc'], [''], [null], ['07712345678']])('rejects %p', (input) => {
     expect(normalizePhone(input)).toBeNull();
   });
 
+  // Test type: Positive + Negative
   it('masks all but the first three and last three digits', () => {
     expect(maskPhone('0771234812')).toBe('077 *** 812');
     expect(maskPhone(null)).toBeNull();
@@ -26,6 +29,7 @@ describe('phone helpers', () => {
 });
 
 describe('text helpers', () => {
+  // Test type: Positive + Boundary
   it('computes edit distance', () => {
     expect(editDistance('kirinda', 'kirinda')).toBe(0);
     expect(editDistance('kirinda', 'kirnda')).toBe(1);
@@ -34,6 +38,7 @@ describe('text helpers', () => {
 });
 
 describe('status mapping', () => {
+  // Test type: Equivalence classes
   it('maps internal status to Received / Being checked / Outcome', () => {
     expect(reportProgress({ status: 'PENDING', reviewStartedAt: null })).toBe('RECEIVED');
     expect(reportProgress({ status: 'DUPLICATE', reviewStartedAt: null })).toBe('RECEIVED');
@@ -43,6 +48,7 @@ describe('status mapping', () => {
     expect(reportProgress({ status: 'REJECTED' })).toBe('OUTCOME');
   });
 
+  // Test type: Equivalence classes
   it('maps marker colours by verification state', () => {
     expect(markerState({ status: 'PENDING' })).toBe('UNVERIFIED');
     expect(markerState({ status: 'VERIFIED', fieldActionRequired: true })).toBe('ACTION_NEEDED');
@@ -51,6 +57,7 @@ describe('status mapping', () => {
 });
 
 describe('configuration', () => {
+  // Test type: Equivalence classes
   it('enables the SMS simulator outside production only by default', () => {
     expect(loadConfig({ NODE_ENV: 'development' }).smsSimulatorEnabled).toBe(true);
     expect(loadConfig({ NODE_ENV: 'production' }).smsSimulatorEnabled).toBe(false);
@@ -59,6 +66,7 @@ describe('configuration', () => {
     );
   });
 
+  // Test type: Positive
   it('splits the CORS allow-list', () => {
     expect(loadConfig({ CORS_ORIGINS: 'http://a.test, http://b.test' }).corsOrigins).toEqual([
       'http://a.test',
@@ -70,18 +78,21 @@ describe('configuration', () => {
 describe('platform behaviour', () => {
   const { app } = createTestApp();
 
+  // Test type: Positive
   it('reports health without authentication', async () => {
     const res = await request(app).get('/api/v1/health');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
 
+  // Test type: Positive
   it('lists villages for the sign-up picker', async () => {
     const res = await request(app).get('/api/v1/villages');
     expect(res.body.data.map((village) => village.id)).toContain(ID.palatupana);
     expect(res.body.data[0]).not.toHaveProperty('aliases');
   });
 
+  // Test type: Negative
   it('returns a JSON 404 for unknown routes and a 400 for broken JSON', async () => {
     expect((await request(app).get('/api/v1/nope')).body.error.code).toBe('ROUTE_NOT_FOUND');
     const broken = await request(app)
@@ -92,6 +103,7 @@ describe('platform behaviour', () => {
     expect(broken.body.error.code).toBe('INVALID_JSON');
   });
 
+  // Test type: Positive
   it('sets security headers and hides the framework', async () => {
     const res = await request(app).get('/api/v1/health');
     expect(res.headers['x-powered-by']).toBeUndefined();
