@@ -488,6 +488,8 @@
     "reportSubmittedBody": "Tracking code: {{code}}",
     "reportQueued": "Report saved offline",
     "reportQueuedBody": "Will sync automatically once connected",
+    "reportVerified": "Report verified",
+    "reportRejected": "Report rejected",
     "dismiss": "Dismiss"
   }
 }

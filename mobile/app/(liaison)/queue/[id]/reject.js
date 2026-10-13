@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { AppButton } from '../../../../src/components/common/AppButton';
 import { AppHeader } from '../../../../src/components/common/AppHeader';
 import { AppText } from '../../../../src/components/common/AppText';
@@ -15,6 +15,7 @@ import { AppTextInput } from '../../../../src/components/forms/AppTextInput';
 import { RadioCard } from '../../../../src/components/reports/RadioCard';
 import { REJECTION_REASONS } from '../../../../src/constants/domain';
 import { useRejectIncident } from '../../../../src/hooks/useOfficerActions';
+import { useToast } from '../../../../src/contexts/ToastContext';
 import { colors, radius, spacing } from '../../../../src/theme';
 import { friendlyError } from '../../../../src/utils/errors';
 import { rejectSchema } from '../../../../src/validators/officer.schemas';
@@ -24,6 +25,7 @@ export default function RejectScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams();
   const reject = useRejectIncident(id);
+  const { showToast } = useToast();
   const [conflict, setConflict] = useState(null);
   const [formError, setFormError] = useState(null);
 
@@ -36,9 +38,8 @@ export default function RejectScreen() {
     setFormError(null);
     try {
       await reject.mutateAsync(values);
-      Alert.alert(t('reject.title'), t('reject.done'), [
-        { text: t('common.ok'), onPress: () => router.dismissAll() },
-      ]);
+      showToast({ type: 'success', title: t('toast.reportRejected'), message: t('reject.done') });
+      router.dismissAll();
     } catch (error) {
       if (error.code === 'INCIDENT_ALREADY_REVIEWED') setConflict(error.details);
       else setFormError(friendlyError(error, t));

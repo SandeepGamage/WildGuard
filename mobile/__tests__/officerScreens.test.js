@@ -190,11 +190,10 @@ describe('verifying a report (Flow 6)', () => {
       notes: 'Called the reporter and checked collar data.',
       fieldActionRequired: true,
     });
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Verified',
-      'Report verified and the field team was notified.',
-      expect.any(Array),
-    );
+    expect(await screen.findByText('Report verified and the field team was notified.')).toBeTruthy();
+    expect(screen.getByText('Report verified')).toBeTruthy();
+    expect(router.dismissAll).toHaveBeenCalled();
+    expect(Alert.alert).not.toHaveBeenCalled();
   });
 
   it('is honest when the field-team notification could not be sent', async () => {
@@ -203,8 +202,8 @@ describe('verifying a report (Flow 6)', () => {
     fireEvent(screen.getByTestId('field-action-switch'), 'valueChange', true);
     fireEvent.press(screen.getByTestId('save-verification'));
 
-    await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
-    expect(Alert.alert.mock.calls[0][1]).toMatch(/could not be sent/);
+    expect(await screen.findByText(/could not be sent/)).toBeTruthy();
+    expect(router.dismissAll).toHaveBeenCalled();
   });
 
   it('shows who already verified the report when another officer got there first (409)', async () => {
@@ -279,11 +278,10 @@ describe('rejecting a report', () => {
       reason: 'INSUFFICIENT_EVIDENCE',
       notes: 'Could not reach the reporter.',
     });
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Reject report',
-      'Report rejected. The reporter has been informed.',
-      expect.any(Array),
-    );
+    expect(await screen.findByText('Report rejected. The reporter has been informed.')).toBeTruthy();
+    expect(screen.getByText('Report rejected')).toBeTruthy();
+    expect(router.dismissAll).toHaveBeenCalled();
+    expect(Alert.alert).not.toHaveBeenCalled();
   });
 
   it('shows the conflict when the report was already reviewed', async () => {

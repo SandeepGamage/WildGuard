@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Alert, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 import { AppButton } from '../../../../src/components/common/AppButton';
 import { AppHeader } from '../../../../src/components/common/AppHeader';
 import { AppText } from '../../../../src/components/common/AppText';
@@ -16,6 +16,7 @@ import { IncidentMarker } from '../../../../src/components/maps/IncidentMarker';
 import { MARKER_STATES, VERIFICATION_METHODS } from '../../../../src/constants/domain';
 import { useVerifyIncident } from '../../../../src/hooks/useOfficerActions';
 import { useOfficerIncident } from '../../../../src/hooks/useOfficerData';
+import { useToast } from '../../../../src/contexts/ToastContext';
 import { colors, radius, spacing } from '../../../../src/theme';
 import { friendlyError } from '../../../../src/utils/errors';
 import { verifySchema } from '../../../../src/validators/officer.schemas';
@@ -30,6 +31,7 @@ export default function VerifyScreen() {
 
   const incident = useOfficerIncident(id).data;
   const verify = useVerifyIncident(id);
+  const { showToast } = useToast();
   const [conflict, setConflict] = useState(null);
   const [formError, setFormError] = useState(null);
 
@@ -47,13 +49,17 @@ export default function VerifyScreen() {
     setFormError(null);
     try {
       const result = await verify.mutateAsync(values);
+      const notifyFailed = result.fieldActionRequired && !result.fieldTeamNotified;
       let message = t('verify.done');
       if (result.fieldActionRequired) {
-        message = result.fieldTeamNotified ? t('verify.doneField') : t('verify.doneFieldFailed');
+        message = notifyFailed ? t('verify.doneFieldFailed') : t('verify.doneField');
       }
-      Alert.alert(t('verify.verified'), message, [
-        { text: t('common.ok'), onPress: () => router.dismissAll() },
-      ]);
+      showToast({
+        type: notifyFailed ? 'warning' : 'success',
+        title: t('toast.reportVerified'),
+        message,
+      });
+      router.dismissAll();
     } catch (error) {
       if (error.code === 'INCIDENT_ALREADY_REVIEWED') setConflict(error.details);
       else setFormError(friendlyError(error, t));

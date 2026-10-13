@@ -488,6 +488,8 @@
     "reportSubmittedBody": "හඳුනාගැනීමේ අංකය: {{code}}",
     "reportQueued": "නොබැඳිව සුරකින ලදී",
     "reportQueuedBody": "සම්බන්ධතාවය ලැබුණු පසු ස්වයංක්‍රීයව යවනු ලැබේ",
+    "reportVerified": "වාර්තාව තහවුරු කළා",
+    "reportRejected": "වාර්තාව ප්‍රතික්ෂේප කළා",
     "dismiss": "ඉවත් කරන්න"
   }
 }
