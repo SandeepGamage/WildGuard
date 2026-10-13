@@ -1,15 +1,20 @@
-const { randomUUID } = require('node:crypto');
+// Fixed ids, tracking codes and clock keep every run identical (no Math.random, no real time).
 const request = require('supertest');
 const { createTestApp, bearer, TOKENS, ID } = require('./helpers/testApp');
 
 const PALATUPANA = { latitude: 6.2994, longitude: 81.3703 };
 const KIRINDA = { latitude: 6.2386, longitude: 81.3138 };
+const FIXED_CLOCK = () => new Date('2026-09-01T04:00:00Z');
+const UNKNOWN_ID = '00000000-0000-4000-8000-ffffffffffff';
+let fixtureSeq = 0;
+/** Deterministic UUID-shaped id for fixtures. */
+const fixtureId = () => `00000000-0000-4000-8000-${String(++fixtureSeq).padStart(12, '0')}`;
 
 /** Put a community incident straight into the in-memory store. */
 function addIncident(state, overrides = {}) {
   const row = {
-    id: randomUUID(),
-    tracking_code: `C-${Math.floor(Math.random() * 9000) + 1000}`,
+    id: fixtureId(),
+    tracking_code: `C-${String(1000 + fixtureSeq).padStart(4, '0')}`,
     reporter_id: ID.villagerA,
     reporter_phone: '0771234812',
     source: 'APP',
@@ -69,7 +74,7 @@ function seedSummer(state) {
   // Not counted: unverified, rejected, duplicate, outside the range, outside the park, wrong type.
   addIncident(state, { status: 'PENDING' });
   addIncident(state, { status: 'REJECTED' });
-  addIncident(state, { status: 'VERIFIED', duplicate_of_id: randomUUID() });
+  addIncident(state, { status: 'VERIFIED', duplicate_of_id: fixtureId() });
   addIncident(state, { occurred_at: '2026-09-02T06:00:00Z' });
   addIncident(state, { sector_id: 'other-park-sector' });
   addIncident(state, { incident_type: 'OTHER_ANIMAL' });
@@ -81,13 +86,13 @@ function seedSummer(state) {
 
 describe('UC4 access control', () => {
   it('allows only park managers', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     for (const token of [TOKENS.villagerA, TOKENS.officer, TOKENS.ranger]) {
       const calls = [
         request(app).get('/api/v1/analytics/parks').set(bearer(token)),
         request(app).get('/api/v1/analytics/reports').set(bearer(token)),
         generate(app, filters(), token),
-        request(app).get(`/api/v1/analytics/reports/${randomUUID()}`).set(bearer(token)),
+        request(app).get(`/api/v1/analytics/reports/${UNKNOWN_ID}`).set(bearer(token)),
       ];
       for (const res of await Promise.all(calls)) {
         expect(res.status).toBe(403);
@@ -100,7 +105,7 @@ describe('UC4 access control', () => {
 
 describe('GET /analytics/parks', () => {
   it('lists the park with its outline and sectors', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await request(app).get('/api/v1/analytics/parks').set(bearer(TOKENS.manager));
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([
@@ -121,7 +126,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
   const issuesOf = (res) => res.body.error.details.issues;
 
   it('rejects a "to" date before the "from" date', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await generate(app, filters({ dateFrom: '2026-08-31', dateTo: '2026-06-01' }));
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_FAILED');
@@ -129,7 +134,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
   });
 
   it('rejects a range longer than 3 years', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await generate(app, filters({ dateFrom: '2022-01-01', dateTo: '2025-01-02' }));
     expect(res.status).toBe(400);
     expect(issuesOf(res)[0].field).toBe('body.dateTo');
@@ -138,7 +143,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
   });
 
   it('requires a known park', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const missing = await generate(app, filters({ parkId: '' }));
     expect(issuesOf(missing)).toEqual([{ field: 'body.parkId', message: 'Choose a park.' }]);
     const unknown = await generate(app, filters({ parkId: 'wilpattu' }));
@@ -146,7 +151,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
   });
 
   it('rejects malformed dates, unknown types and an empty type list', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const fields = async (body) => issuesOf(await generate(app, body)).map((i) => i.field);
     expect(await fields(filters({ dateFrom: '01/06/2026' }))).toEqual(['body.dateFrom']);
     expect(await fields(filters({ dateTo: '2026-02-31' }))).toEqual(['body.dateTo']);
@@ -157,7 +162,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
 
 describe('POST /analytics/reports – generate', () => {
   it('builds KPIs, trends, heatmap and top hotspots from verified reports only', async () => {
-    const { app, state } = createTestApp({ clock: () => new Date('2026-09-01T04:00:00Z') });
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
 
     const res = await generate(app, filters());
@@ -212,7 +217,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('honours the incident type filter and a custom bandwidth', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
     const res = await generate(app, filters({ incidentTypes: ['SNARE_POACHING'], bandwidthMetres: 800 }));
     expect(res.body.data.stats.totalIncidents).toBe(1);
@@ -223,7 +228,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('includes UC1 patrol sessions, patrol incidents and UC2 collar alerts', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
     state.patrolTracks.push({
       sectorId: ID.sector3,
@@ -264,7 +269,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('adds ranger GPS points inside the park and period to the map, without ids', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
     const point = (id, latitude, longitude, recordedAt) => ({
       id,
@@ -295,7 +300,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('returns an empty result when nothing matches (alternate flow A2)', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
     const res = await generate(app, filters({ dateFrom: '2026-01-01', dateTo: '2026-01-31' }));
     expect(res.status).toBe(200);
@@ -306,8 +311,20 @@ describe('POST /analytics/reports – generate', () => {
     expect(state.reports).toHaveLength(0);
   });
 
+  it('gives the same report for the same filters and data every time', async () => {
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
+    seedSummer(state);
+    const first = (await generate(app, filters())).body.data;
+    const second = (await generate(app, filters())).body.data;
+    // Only the saved report id may differ between runs.
+    const { id: firstId, ...firstBody } = first;
+    const { id: secondId, ...secondBody } = second;
+    expect(secondId).not.toBe(firstId);
+    expect(secondBody).toEqual(firstBody);
+  });
+
   it('reports the data source as unavailable when the query fails (exception E2)', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     state.failAnalyticsQuery = true;
     const res = await generate(app, filters());
     expect(res.status).toBe(503);
@@ -316,7 +333,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('reports the data source as unavailable when saving fails', async () => {
-    const { app, state, repositories } = createTestApp();
+    const { app, state, repositories } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
     repositories.analyticsRepository.saveReport = async () => {
       throw new Error('write concern failed');
@@ -326,7 +343,7 @@ describe('POST /analytics/reports – generate', () => {
   });
 
   it('reports the data source as unavailable when sectors cannot be read', async () => {
-    const { app, repositories } = createTestApp();
+    const { app, repositories } = createTestApp({ clock: FIXED_CLOCK });
     repositories.analyticsRepository.listSectors = async () => {
       throw new Error('down');
     };
@@ -337,7 +354,7 @@ describe('POST /analytics/reports – generate', () => {
 
 describe('saved reports', () => {
   it('fetches a saved report by id and lists the manager’s reports', async () => {
-    const { app, state } = createTestApp();
+    const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
     const created = (await generate(app, filters())).body.data;
 
@@ -355,9 +372,9 @@ describe('saved reports', () => {
   });
 
   it('returns 404 for an unknown report', async () => {
-    const { app } = createTestApp();
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await request(app)
-      .get(`/api/v1/analytics/reports/${randomUUID()}`)
+      .get(`/api/v1/analytics/reports/${UNKNOWN_ID}`)
       .set(bearer(TOKENS.manager));
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('REPORT_NOT_FOUND');
@@ -366,7 +383,7 @@ describe('saved reports', () => {
 
 describe('GET /analytics/reports/:id/export (UC4c)', () => {
   async function withReport() {
-    const ctx = createTestApp();
+    const ctx = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(ctx.state);
     const report = (await generate(ctx.app, filters())).body.data;
     return { ...ctx, report };
@@ -405,8 +422,8 @@ describe('GET /analytics/reports/:id/export (UC4c)', () => {
   });
 
   it('returns 404 when the report does not exist', async () => {
-    const { app } = createTestApp();
-    expect((await exportFile(app, randomUUID(), { format: 'CSV' })).status).toBe(404);
+    const { app } = createTestApp({ clock: FIXED_CLOCK });
+    expect((await exportFile(app, UNKNOWN_ID, { format: 'CSV' })).status).toBe(404);
   });
 
   it('returns EXPORT_FAILED when the file cannot be generated (exception E3)', async () => {

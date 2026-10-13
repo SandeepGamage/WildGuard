@@ -32,6 +32,14 @@
     "format": "prettier --write .",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:uc1": "node scripts/test-uc1.js",
+    "test:uc1:coverage": "node scripts/test-uc1.js --coverage",
+    "test:uc2": "node scripts/test-uc2.js",
+    "test:uc2:coverage": "node scripts/test-uc2.js --coverage",
+    "test:uc3":"node scripts/test-uc3.js",
+    "test:uc3:coverage": "node scripts/test-uc3.js --coverage",
+    "test:uc4": "node scripts/test-uc4.js",
+    "test:uc4:coverage": "node scripts/test-uc4.js --coverage",
     "seed:demo": "node scripts/seed-demo.js"
   },
   "jest": {

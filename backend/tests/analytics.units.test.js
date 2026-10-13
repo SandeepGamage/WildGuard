@@ -615,3 +615,38 @@ describe('conservation report mapping', () => {
     });
   });
 });
+
+describe('determinism', () => {
+  const points = [PALATUPANA, { latitude: 6.31, longitude: 81.38 }, { latitude: 6.35, longitude: 81.39 }];
+  const dataset = () => ({
+    communityIncidents: [incident(), incident({ incidentType: 'ELEPHANT_NEAR_VILLAGE', sectorId: 's4' })],
+    patrolIncidents: [incident({ incidentType: 'SNARE_POACHING' })],
+    collarAlerts: [],
+    receivedCommunityReports: 2,
+    previousPeriodCount: 1,
+  });
+
+  it('computes the same hotspot surface for the same points and bandwidth', () => {
+    const first = new GISMappingService({ cellSizeM: 100 }).calculateSpatialHotspots(points, 500);
+    const second = new GISMappingService({ cellSizeM: 100 }).calculateSpatialHotspots(points, 500);
+    expect(second).toEqual(first);
+  });
+
+  it('aggregates and ranks the same dataset identically every time', () => {
+    const villages = [{ name: 'Palatupana', ...PALATUPANA }];
+    expect(aggregateIncidents(dataset(), SECTORS, ['2026-07'])).toEqual(
+      aggregateIncidents(dataset(), SECTORS, ['2026-07']),
+    );
+    expect(findTopHotspots(dataset().communityIncidents, villages, SECTORS)).toEqual(
+      findTopHotspots(dataset().communityIncidents, villages, SECTORS),
+    );
+  });
+
+  it('writes byte-identical CSV files for the same report', () => {
+    const sections = Object.values(EXPORT_SECTIONS);
+    const first = new CsvExporter().export(sampleReport(), sections);
+    const second = new CsvExporter().export(sampleReport(), sections);
+    expect(second.filename).toBe(first.filename);
+    expect(second.content.equals(first.content)).toBe(true);
+  });
+});
