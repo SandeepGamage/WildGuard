@@ -38,12 +38,14 @@ const incident = (overrides = {}) => ({
 });
 
 describe('geo helpers', () => {
+  // Test type: Positive + Boundary
   it('measures haversine distance', () => {
     expect(distanceM(6.0, 81.0, 6.0, 81.0)).toBe(0);
     // 0.01 degree of latitude is about 1.11 km.
     expect(distanceM(6.0, 81.0, 6.01, 81.0)).toBeCloseTo(1112, -1);
   });
 
+  // Test type: Positive
   it('grows a bounding box by a margin', () => {
     const box = boundingBox([PALATUPANA], 1000);
     expect(box.maxLat - box.minLat).toBeCloseTo(2000 / 111320, 6);
@@ -54,12 +56,14 @@ describe('geo helpers', () => {
 describe('GISMappingService kernel density', () => {
   const gis = new GISMappingService({ cellSizeM: 100 });
 
+  // Test type: Boundary
   it('returns an empty surface when there are no points', () => {
     const result = gis.calculateSpatialHotspots([], 500);
     expect(result.cells).toEqual([]);
     expect(result.maxDensity).toBe(0);
   });
 
+  // Test type: Positive + Boundary
   it('peaks at a single point with the Gaussian maximum 1/(2πh²)', () => {
     const result = gis.calculateSpatialHotspots([PALATUPANA], 500);
     const peak = result.cells.reduce((best, cell) => (cell.density > best.density ? cell : best));
@@ -73,6 +77,7 @@ describe('GISMappingService kernel density', () => {
     expect(result.classBreaks).toHaveLength(5);
   });
 
+  // Test type: Equivalence classes
   it('spreads density further with a wider bandwidth', () => {
     const narrow = gis.calculateSpatialHotspots([PALATUPANA], 300);
     const wide = gis.calculateSpatialHotspots([PALATUPANA], 900);
@@ -80,6 +85,7 @@ describe('GISMappingService kernel density', () => {
     expect(wide.cells.length).toBeGreaterThan(narrow.cells.length);
   });
 
+  // Test type: Equivalence classes
   it('ranks a cluster above an isolated point', () => {
     const cluster = [0, 1, 2].map(() => ({ ...PALATUPANA }));
     const lone = { latitude: 6.35, longitude: 81.39 };
@@ -91,6 +97,7 @@ describe('GISMappingService kernel density', () => {
     expect(near(PALATUPANA)).toBeGreaterThan(near(lone) * 2);
   });
 
+  // Test type: Positive
   it('uses the park outline to fix the grid', () => {
     const area = [
       { latitude: 6.2, longitude: 81.2 },
@@ -103,6 +110,7 @@ describe('GISMappingService kernel density', () => {
 });
 
 describe('report aggregation', () => {
+  // Test type: Boundary
   it('lists every month of the period in Sri Lanka time', () => {
     expect(
       monthsBetween(new Date('2026-06-01T00:00:00+05:30'), new Date('2026-09-01T00:00:00+05:30')),
@@ -114,6 +122,7 @@ describe('report aggregation', () => {
     expect(monthKey(new Date('2026-07-31T20:00:00Z'))).toBe('2026-08');
   });
 
+  // Test type: Positive
   it('counts by type, sector and month and compares with the previous period', () => {
     const dataset = {
       communityIncidents: [
@@ -152,6 +161,7 @@ describe('report aggregation', () => {
     expect(stats).toMatchObject({ patrolIncidents: 2, collarAlerts: 1, conflictEvents: 2, injuries: 1 });
   });
 
+  // Test type: Boundary
   it('has no change percentage when the previous period was empty', () => {
     const stats = aggregateIncidents(
       { communityIncidents: [incident()], patrolIncidents: [], collarAlerts: [], previousPeriodCount: 0 },
@@ -161,6 +171,7 @@ describe('report aggregation', () => {
     expect(stats.changePercent).toBeNull();
   });
 
+  // Test type: Equivalence classes
   it('builds monthly conflict series and ignores non-conflict types', () => {
     const trends = computeConflictTrends(
       [
@@ -177,6 +188,7 @@ describe('report aggregation', () => {
     expect(trends.totals).toEqual([2, 1]);
   });
 
+  // Test type: Boundary
   it('reports coverage as not available without patrol data', () => {
     expect(computePatrolCoverage([], SECTORS, new Date('2026-09-01'))).toEqual({
       available: false,
@@ -186,6 +198,7 @@ describe('report aggregation', () => {
     });
   });
 
+  // Test type: Boundary
   it('finds sectors not patrolled for more than 14 days', () => {
     const coverage = computePatrolCoverage(
       [
@@ -210,6 +223,7 @@ describe('report aggregation', () => {
     ]);
   });
 
+  // Test type: Equivalence classes
   it('ranks hotspot areas by nearest village, else by sector', () => {
     const villages = [{ name: 'Palatupana', ...PALATUPANA }];
     const top = findTopHotspots(
@@ -283,6 +297,7 @@ const sampleReport = () => ({
 });
 
 describe('CSV exporter', () => {
+  // Test type: Negative + Equivalence classes
   it('escapes commas, quotes and line breaks and neutralises formulas', () => {
     expect(csvField('plain')).toBe('plain');
     expect(csvField('a,b')).toBe('"a,b"');
@@ -293,6 +308,7 @@ describe('CSV exporter', () => {
     expect(csvField(null)).toBe('');
   });
 
+  // Test type: Equivalence classes
   it('writes only the chosen sections', () => {
     const file = new CsvExporter().export(sampleReport(), [EXPORT_SECTIONS.KPI_SUMMARY]);
     const text = file.content.toString('utf8');
@@ -304,6 +320,7 @@ describe('CSV exporter', () => {
     expect(text).not.toContain('Incident list');
   });
 
+  // Test type: Equivalence classes
   it('writes every section when asked', () => {
     const text = new CsvExporter()
       .export(sampleReport(), Object.values(EXPORT_SECTIONS))
@@ -316,6 +333,7 @@ describe('CSV exporter', () => {
     expect(text).toContain(`"'=HYPERLINK(""x"")"`);
   });
 
+  // Test type: Positive
   it('lists coverage gaps when patrol data is available', () => {
     const report = {
       ...sampleReport(),
@@ -331,6 +349,7 @@ describe('CSV exporter', () => {
 });
 
 describe('PDF exporter', () => {
+  // Test type: Positive
   it('produces a PDF with every section', async () => {
     const file = await new PdfExporter().export(sampleReport(), Object.values(EXPORT_SECTIONS));
     expect(file.contentType).toBe('application/pdf');
@@ -338,6 +357,7 @@ describe('PDF exporter', () => {
     expect(file.content.length).toBeGreaterThan(1500);
   });
 
+  // Test type: Boundary
   it('handles a report with coverage data and no heatmap cells', async () => {
     const report = {
       ...sampleReport(),
@@ -358,6 +378,7 @@ describe('PDF exporter', () => {
     expect(file.content.subarray(0, 5).toString()).toBe('%PDF-');
   });
 
+  // Test type: Positive
   it('draws basemap tiles under the hotspot map when a tile source is given', async () => {
     const getTiles = jest.fn(async (pixelBox, zoom) => {
       const range = tileRange(pixelBox);
@@ -377,12 +398,14 @@ describe('PDF exporter', () => {
     expect(without.content.toString('latin1')).not.toContain('/Subtype /Image');
   });
 
+  // Test type: Equivalence classes
   it('does not fetch tiles when the hotspot map is not exported', async () => {
     const getTiles = jest.fn();
     await new PdfExporter({ tileSource: { getTiles } }).export(sampleReport(), [EXPORT_SECTIONS.KPI_SUMMARY]);
     expect(getTiles).not.toHaveBeenCalled();
   });
 
+  // Test type: Positive
   it('fits the map frame around the heatmap and park outline', () => {
     const layout = mapLayout(sampleReport(), 500);
     expect(layout.frame.minLat).toBeLessThan(6.2);
@@ -392,12 +415,14 @@ describe('PDF exporter', () => {
     expect(layout.pixelBox.maxX - layout.pixelBox.minX).toBeGreaterThanOrEqual(1000);
   });
 
+  // Test type: Positive
   it('picks a round scale bar distance', () => {
     expect(niceDistance(2600)).toBe(2000);
     expect(niceDistance(999)).toBe(500);
     expect(niceDistance(50)).toBe(100);
   });
 
+  // Test type: Equivalence classes
   it('adds the conflict chart only to human-wildlife conflict reports', async () => {
     const trends = {
       months: ['2026-07', '2026-08', '2026-09'],
@@ -429,6 +454,7 @@ describe('PDF exporter', () => {
     expect(Math.abs(emptyConflict - (await exportAs('HOTSPOT_MAP', empty)))).toBeLessThan(50);
   });
 
+  // Test type: Positive
   it('picks round axis steps for the conflict chart', () => {
     expect(niceStep(0.5)).toBe(1);
     expect(niceStep(9.75)).toBe(10);
@@ -443,6 +469,7 @@ describe('map tiles', () => {
   const okFetch = () =>
     jest.fn(async () => ({ ok: true, status: 200, arrayBuffer: async () => TINY_PNG.buffer.slice(0) }));
 
+  // Test type: Positive
   it('projects lng/lat to Web Mercator pixels', () => {
     expect(project(0, 0, 0)).toEqual({ x: 128, y: 128 });
     const yala = project(81.3, 6.3, 13);
@@ -450,6 +477,7 @@ describe('map tiles', () => {
     expect(Math.floor(yala.y / 256)).toBe(3952);
   });
 
+  // Test type: Boundary
   it('chooses the smallest zoom that is wide enough', () => {
     const bounds = { minLng: 81.2, maxLng: 81.45, minLat: 6.2, maxLat: 6.4 };
     const zoom = chooseZoom(bounds, 1000);
@@ -458,6 +486,7 @@ describe('map tiles', () => {
     expect(width(zoom - 1)).toBeLessThan(1000);
   });
 
+  // Test type: Positive
   it('downloads every covering tile with a User-Agent, then serves repeats from cache', async () => {
     const fetchImpl = okFetch();
     const source = new MapTileSource({ urlTemplate: 'https://tiles.test/{z}/{x}/{y}.png', fetchImpl });
@@ -472,6 +501,7 @@ describe('map tiles', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
+  // Test type: Negative + Boundary
   it('returns null (plain background) when any tile fails or the area is too large', async () => {
     const logger = { warn: jest.fn() };
     const failing = new MapTileSource({
@@ -488,6 +518,7 @@ describe('map tiles', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  // Test type: Equivalence classes + Determinism
   it('is off in tests and defaults to OpenStreetMap elsewhere', () => {
     expect(loadConfig({ NODE_ENV: 'test' }).mapTileUrl).toBe('');
     expect(loadConfig({ NODE_ENV: 'production' }).mapTileUrl).toContain('tile.openstreetmap.org');
@@ -496,12 +527,14 @@ describe('map tiles', () => {
 });
 
 describe('ExportEngine', () => {
+  // Test type: Equivalence classes
   it('chooses the exporter for the format (Strategy)', async () => {
     const engine = new ExportEngine({ logger: silentLogger });
     const csv = await engine.generateFile(sampleReport(), 'CSV', [EXPORT_SECTIONS.KPI_SUMMARY]);
     expect(csv.filename.endsWith('.csv')).toBe(true);
   });
 
+  // Test type: Negative
   it('rejects an unknown format', async () => {
     const engine = new ExportEngine({ logger: silentLogger });
     await expect(engine.generateFile(sampleReport(), 'XLSX', [])).rejects.toMatchObject({
@@ -509,6 +542,7 @@ describe('ExportEngine', () => {
     });
   });
 
+  // Test type: Negative
   it('turns an exporter failure into EXPORT_FAILED (exception E3)', async () => {
     const engine = new ExportEngine({
       exporters: { PDF: { export: async () => Promise.reject(new Error('font missing')) } },
@@ -522,6 +556,7 @@ describe('ExportEngine', () => {
 });
 
 describe('pending UC1/UC2 data sources', () => {
+  // Test type: Boundary
   it('return empty lists until patrol and alert data exist', async () => {
     const patrol = new PendingPatrolDataSource();
     expect(await patrol.listTracks({})).toEqual([]);
@@ -538,6 +573,7 @@ describe('ranger GPS points for the map', () => {
     { latitude: 6.2, longitude: 81.4 },
   ];
 
+  // Test type: Positive + Boundary
   it('keeps one point per ~25 m cell, inside the park, rounded, with no ids', () => {
     const points = thinPatrolPoints(
       [
@@ -555,6 +591,7 @@ describe('ranger GPS points for the map', () => {
     ]);
   });
 
+  // Test type: Boundary
   it('caps a very long patrol', () => {
     const many = Array.from({ length: 5000 }, (_, i) => ({ latitude: 6.21 + i * 0.0003, longitude: 81.3 }));
     expect(thinPatrolPoints(many, []).length).toBe(2000);
@@ -569,6 +606,7 @@ describe('collar alert data source (UC2 → UC4)', () => {
     ...overrides,
   });
 
+  // Test type: Positive
   it('reads the persisted schema fields, with GeoJSON coordinates as [lng, lat]', () => {
     expect(toAnalyticsAlert(stored())).toEqual({
       occurredAt: new Date('2026-08-01T03:00:00Z'),
@@ -578,11 +616,13 @@ describe('collar alert data source (UC2 → UC4)', () => {
     });
   });
 
+  // Test type: Negative
   it('skips alerts stored without a usable position', () => {
     expect(toAnalyticsAlert(stored({ location: { type: 'Point', coordinates: [] } }))).toBeNull();
     expect(toAnalyticsAlert(stored({ location: undefined }))).toBeNull();
   });
 
+  // Test type: Boundary + Equivalence classes
   it('filters on raised_at with an exclusive end and leaves out false alarms', () => {
     const dateFrom = new Date('2026-06-01T00:00:00Z');
     const dateTo = new Date('2026-09-01T00:00:00Z');
@@ -594,6 +634,7 @@ describe('collar alert data source (UC2 → UC4)', () => {
 });
 
 describe('conservation report mapping', () => {
+  // Test type: Positive + Boundary
   it('round-trips a report through the Mongo document shape', () => {
     const report = { ...sampleReport(), createdBy: 'manager-1' };
     const doc = toReportDocument(report);
@@ -626,12 +667,14 @@ describe('determinism', () => {
     previousPeriodCount: 1,
   });
 
+  // Test type: Determinism
   it('computes the same hotspot surface for the same points and bandwidth', () => {
     const first = new GISMappingService({ cellSizeM: 100 }).calculateSpatialHotspots(points, 500);
     const second = new GISMappingService({ cellSizeM: 100 }).calculateSpatialHotspots(points, 500);
     expect(second).toEqual(first);
   });
 
+  // Test type: Determinism
   it('aggregates and ranks the same dataset identically every time', () => {
     const villages = [{ name: 'Palatupana', ...PALATUPANA }];
     expect(aggregateIncidents(dataset(), SECTORS, ['2026-07'])).toEqual(
@@ -642,6 +685,7 @@ describe('determinism', () => {
     );
   });
 
+  // Test type: Determinism
   it('writes byte-identical CSV files for the same report', () => {
     const sections = Object.values(EXPORT_SECTIONS);
     const first = new CsvExporter().export(sampleReport(), sections);

@@ -13,6 +13,8 @@ const uc4CoverageSources = [
   'src/validators/analytics.validators.js',
   'src/models/conservationReport.model.js',
   'src/repositories/sources/**',
+  // Only loaded by the MongoDB wiring; the tests use in-memory repositories.
+  '!src/repositories/sources/patrolTrackPointSource.js',
 ];
 
 const extraArgs = process.argv.slice(2);

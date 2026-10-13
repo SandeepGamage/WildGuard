@@ -85,6 +85,7 @@ function seedSummer(state) {
 }
 
 describe('UC4 access control', () => {
+  // Test type: Equivalence classes + Negative
   it('allows only park managers', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     for (const token of [TOKENS.villagerA, TOKENS.officer, TOKENS.ranger]) {
@@ -104,6 +105,7 @@ describe('UC4 access control', () => {
 });
 
 describe('GET /analytics/parks', () => {
+  // Test type: Positive
   it('lists the park with its outline and sectors', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await request(app).get('/api/v1/analytics/parks').set(bearer(TOKENS.manager));
@@ -125,6 +127,7 @@ describe('GET /analytics/parks', () => {
 describe('POST /analytics/reports – filter validation (exception E1)', () => {
   const issuesOf = (res) => res.body.error.details.issues;
 
+  // Test type: Negative
   it('rejects a "to" date before the "from" date', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await generate(app, filters({ dateFrom: '2026-08-31', dateTo: '2026-06-01' }));
@@ -133,6 +136,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
     expect(issuesOf(res)).toEqual([{ field: 'body.dateTo', message: '"To" date is before "From" date.' }]);
   });
 
+  // Test type: Boundary + Negative
   it('rejects a range longer than 3 years', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await generate(app, filters({ dateFrom: '2022-01-01', dateTo: '2025-01-02' }));
@@ -142,6 +146,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
     expect(ok.status).not.toBe(400);
   });
 
+  // Test type: Negative + Equivalence classes
   it('requires a known park', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const missing = await generate(app, filters({ parkId: '' }));
@@ -150,6 +155,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
     expect(issuesOf(unknown)).toEqual([{ field: 'body.parkId', message: 'Choose a park.' }]);
   });
 
+  // Test type: Negative + Equivalence classes
   it('rejects malformed dates, unknown types and an empty type list', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const fields = async (body) => issuesOf(await generate(app, body)).map((i) => i.field);
@@ -161,6 +167,7 @@ describe('POST /analytics/reports – filter validation (exception E1)', () => {
 });
 
 describe('POST /analytics/reports – generate', () => {
+  // Test type: Positive
   it('builds KPIs, trends, heatmap and top hotspots from verified reports only', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
@@ -216,6 +223,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(state.reports).toHaveLength(1);
   });
 
+  // Test type: Positive + Equivalence classes
   it('honours the incident type filter and a custom bandwidth', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
@@ -227,6 +235,7 @@ describe('POST /analytics/reports – generate', () => {
     ]);
   });
 
+  // Test type: Positive
   it('includes UC1 patrol sessions, patrol incidents and UC2 collar alerts', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
@@ -268,6 +277,7 @@ describe('POST /analytics/reports – generate', () => {
     ]);
   });
 
+  // Test type: Positive + Boundary
   it('adds ranger GPS points inside the park and period to the map, without ids', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
@@ -299,6 +309,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(fetched.body.data.patrolPoints).toHaveLength(2);
   });
 
+  // Test type: Boundary
   it('returns an empty result when nothing matches (alternate flow A2)', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
@@ -311,6 +322,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(state.reports).toHaveLength(0);
   });
 
+  // Test type: Determinism
   it('gives the same report for the same filters and data every time', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
@@ -323,6 +335,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(secondBody).toEqual(firstBody);
   });
 
+  // Test type: Negative
   it('reports the data source as unavailable when the query fails (exception E2)', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     state.failAnalyticsQuery = true;
@@ -332,6 +345,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(JSON.stringify(res.body)).not.toContain('MongoNetworkError');
   });
 
+  // Test type: Negative
   it('reports the data source as unavailable when saving fails', async () => {
     const { app, state, repositories } = createTestApp({ clock: FIXED_CLOCK });
     addIncident(state);
@@ -342,6 +356,7 @@ describe('POST /analytics/reports – generate', () => {
     expect(res.status).toBe(503);
   });
 
+  // Test type: Negative
   it('reports the data source as unavailable when sectors cannot be read', async () => {
     const { app, repositories } = createTestApp({ clock: FIXED_CLOCK });
     repositories.analyticsRepository.listSectors = async () => {
@@ -353,6 +368,7 @@ describe('POST /analytics/reports – generate', () => {
 });
 
 describe('saved reports', () => {
+  // Test type: Positive
   it('fetches a saved report by id and lists the manager’s reports', async () => {
     const { app, state } = createTestApp({ clock: FIXED_CLOCK });
     seedSummer(state);
@@ -371,6 +387,7 @@ describe('saved reports', () => {
     ]);
   });
 
+  // Test type: Negative
   it('returns 404 for an unknown report', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     const res = await request(app)
@@ -389,6 +406,7 @@ describe('GET /analytics/reports/:id/export (UC4c)', () => {
     return { ...ctx, report };
   }
 
+  // Test type: Positive
   it('downloads a CSV with the chosen sections and no reporter phone numbers', async () => {
     const { app, report } = await withReport();
     const res = await exportFile(app, report.id, { format: 'CSV', sections: 'KPI_SUMMARY,INCIDENT_LIST' });
@@ -404,6 +422,7 @@ describe('GET /analytics/reports/:id/export (UC4c)', () => {
     expect(text).not.toContain('0771234812');
   });
 
+  // Test type: Positive
   it('downloads a PDF using the default sections', async () => {
     const { app, report } = await withReport();
     const res = await exportFile(app, report.id, { format: 'PDF' });
@@ -414,6 +433,7 @@ describe('GET /analytics/reports/:id/export (UC4c)', () => {
     expect(res.headers['access-control-expose-headers']).toBe('Content-Disposition');
   });
 
+  // Test type: Negative
   it('validates the format and sections', async () => {
     const { app, report } = await withReport();
     expect((await exportFile(app, report.id, { format: 'DOCX' })).status).toBe(400);
@@ -421,11 +441,13 @@ describe('GET /analytics/reports/:id/export (UC4c)', () => {
     expect((await exportFile(app, report.id, { format: 'CSV', sections: ',' })).status).toBe(400);
   });
 
+  // Test type: Negative
   it('returns 404 when the report does not exist', async () => {
     const { app } = createTestApp({ clock: FIXED_CLOCK });
     expect((await exportFile(app, UNKNOWN_ID, { format: 'CSV' })).status).toBe(404);
   });
 
+  // Test type: Negative
   it('returns EXPORT_FAILED when the file cannot be generated (exception E3)', async () => {
     const { app, report, services } = await withReport();
     services.analyticsService.exportEngine.exporters.PDF = {
